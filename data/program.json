@@ -1,0 +1,74 @@
+{
+  "version": "1.0.0",
+  "notes": "Program-supplied content. Bump 'version' whenever you change anything below. Every item needs a permanent unique 'id' starting with 'p-'. Users receive new/changed items on their next visit unless they turned on 'Ignore new program content'. Items a user deleted never come back; items a user edited are never overwritten.",
+  "templates": [
+    {
+      "id": "p-intro-standard",
+      "section": "intro",
+      "name": "Standard welcome & disclaimer",
+      "content": "Welcome, PAX! Any FNGs here today?\nQuick disclaimer: I'm not a professional. This is a free, peer-led workout. You participate at your own risk. Modify as needed — keep your head on a swivel and look out for each other.\nPhones are out for emergencies. Mission: plant, grow and serve small workout groups for men for the invigoration of male community leadership."
+    },
+    {
+      "id": "p-warmup-classic",
+      "section": "warmup",
+      "name": "Classic Warm-O-Rama",
+      "content": "Mosey around the AO to loosen up\nSSH x 20 IC\nImperial Walkers x 15 IC\nWindmills x 10 IC\nGrass Grabbers x 10 IC\nLittle Baby Arm Circles forward/back x 10 IC\nAbe Vigodas x 10 IC\nMountain Climbers x 15 IC"
+    },
+    {
+      "id": "p-warmup-dynamic",
+      "section": "warmup",
+      "name": "Dynamic mobility warm-up",
+      "content": "Mosey with high knees / butt kickers / karaoke on the way\nSSH x 15 IC\nWorld's Greatest Stretch x 5 each side\nTappy Taps x 10 IC\nSeal Jacks x 15 IC\nDownward dog → Upward dog x 5"
+    },
+    {
+      "id": "p-thang-11s",
+      "section": "thang",
+      "name": "11s",
+      "content": "Two exercises at opposite ends (~50 yds apart).\nStart with 10 reps of exercise A, run, 1 rep of exercise B.\nRun back: 9 of A, run, 2 of B … continue until 1 of A / 10 of B.\nSuggested pair: Merkins / Squats."
+    },
+    {
+      "id": "p-thang-dora",
+      "section": "thang",
+      "name": "Dora 1-2-3",
+      "content": "Partner up. P1 runs to the far marker and back while P2 chips away at the reps; flapjack.\n100 Merkins\n200 LBCs\n300 Squats"
+    },
+    {
+      "id": "p-thang-ladder",
+      "section": "thang",
+      "name": "Coupon ladder",
+      "content": "Grab a coupon. Mosey 25 yds between cones.\nCone 1: 5 Curls\nCone 2: 5 Curls + 5 Overhead Press\nCone 3: 5 Curls + 5 OHP + 5 Goblet Squats\nCone 4: + 5 Coupon Rows\nWork back down the ladder. Repeat until time."
+    },
+    {
+      "id": "p-mary-circle",
+      "section": "mary",
+      "name": "Mary circle",
+      "content": "Circle up. Each PAX calls an exercise, 10–15 IC:\nLBCs, Flutter Kicks, American Hammers, Freddie Mercury, Box Cutters, Dying Cockroach, Plank hold to finish."
+    },
+    {
+      "id": "p-notes-modify",
+      "section": "notes",
+      "name": "Modification reminder",
+      "content": "Remind PAX to modify as needed. Keep the 6 in mind — circle back for anyone falling behind."
+    }
+  ],
+  "aos": [],
+  "workouts": [
+    {
+      "id": "p-workout-sample",
+      "title": "Sample: Full-body ladder",
+      "date": "",
+      "aoId": "",
+      "status": "final",
+      "intro": "Welcome, PAX! Any FNGs?\nI'm not a professional. Modify as needed.",
+      "warmup": "Mosey around the AO\nSSH x 20 IC\nImperial Walkers x 15 IC\nWindmills x 10 IC\nGrass Grabbers x 10 IC",
+      "thangs": [
+        { "title": "11s — Merkins / Squats", "content": "Merkins at one end, Squats at the other. Run between.\n10/1, 9/2 … 1/10." },
+        { "title": "Dora 1-2-3", "content": "Partner up. 100 Merkins, 200 LBCs, 300 Squats. Flapjack with a run to the far marker." }
+      ],
+      "mary": "Mary circle: LBCs, Flutter Kicks, American Hammers x 15 IC",
+      "notes": "",
+      "thirdF": "",
+      "announcements": ""
+    }
+  ]
+}
