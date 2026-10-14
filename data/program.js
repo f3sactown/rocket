@@ -1,7 +1,7 @@
 // Program content that ships with the app. Edit the JSON below, bump "version", and redeploy.
 // See README: Program content.
 window.F3_PROGRAM = {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "notes": "Program-supplied content. Bump 'version' whenever you change anything below. Every item needs a permanent unique 'id' starting with 'p-'. Users receive new/changed items on their next visit unless they turned on 'Ignore new program content'. Items a user deleted never come back; items a user edited are never overwritten.",
   "templates": [
     {
@@ -59,7 +59,6 @@ window.F3_PROGRAM = {
       "name": "Statehouse",
       "location": "Franklin D. Roosevelt Park",
       "address": "1615 9th St, Sacramento, CA 95814",
-      "hashtag": "",
       "schedule": "Monday 5:15am-6:00am"
     },
     {
@@ -67,7 +66,6 @@ window.F3_PROGRAM = {
       "name": "Chain Breakers",
       "location": "Southport Levee Trailhead",
       "address": "1180 Linden Rd, West Sacramento, CA 95691",
-      "hashtag": "",
       "schedule": "Monday 5:00am-6:00am"
     },
     {
@@ -75,7 +73,6 @@ window.F3_PROGRAM = {
       "name": "The Ruff",
       "location": "Southport Levee Trailhead",
       "address": "1180 Linden Rd, West Sacramento, CA 95691",
-      "hashtag": "",
       "schedule": "Monday 5:00am-6:00am"
     },
     {
@@ -83,7 +80,6 @@ window.F3_PROGRAM = {
       "name": "Q-Source",
       "location": "Nugget Market Cafe",
       "address": "2000 Town Center Plaza, West Sacramento, CA",
-      "hashtag": "",
       "schedule": "Monday 6:25am-7:00am"
     },
     {
@@ -91,7 +87,6 @@ window.F3_PROGRAM = {
       "name": "The Rock",
       "location": "Granite Regional Park",
       "address": "8160 Ramona Ave, Sacramento, CA 95826",
-      "hashtag": "",
       "schedule": "Tuesday 5:15am-6:00am"
     },
     {
@@ -99,7 +94,6 @@ window.F3_PROGRAM = {
       "name": "Talko Tuesday",
       "location": "Oki Park",
       "address": "2715 Wissemann Dr, Sacramento, CA 95826",
-      "hashtag": "",
       "schedule": "Tuesday 7:00pm-7:45pm"
     },
     {
@@ -107,7 +101,6 @@ window.F3_PROGRAM = {
       "name": "SafariLand",
       "location": "William Land Park",
       "address": "3901 Land Park Dr, Sacramento, CA 95822",
-      "hashtag": "",
       "schedule": "Tuesday 5:15am-6:00am"
     },
     {
@@ -115,7 +108,6 @@ window.F3_PROGRAM = {
       "name": "The American",
       "location": "Oak Meadow Park",
       "address": "2920 Kadema Dr, Sacramento, CA 95864",
-      "hashtag": "",
       "schedule": "Wednesday 5:30am-6:15am"
     },
     {
@@ -123,7 +115,6 @@ window.F3_PROGRAM = {
       "name": "The Oak",
       "location": "Oak Meadow Park",
       "address": "2920 Kadema Dr, Sacramento, CA 95864",
-      "hashtag": "",
       "schedule": "Wednesday 5:15am-6:15am"
     },
     {
@@ -131,7 +122,6 @@ window.F3_PROGRAM = {
       "name": "The Beacon",
       "location": "Southport Levee Trailhead",
       "address": "1180 Linden Rd, West Sacramento, CA 95691",
-      "hashtag": "",
       "schedule": "Wednesday 5:15am-6:00am"
     },
     {
@@ -139,7 +129,6 @@ window.F3_PROGRAM = {
       "name": "Terminus",
       "location": "Railroad Museum",
       "address": "1001 Front St, Sacramento, CA 95814",
-      "hashtag": "",
       "schedule": "Thursday 5:15am-6:15am"
     },
     {
@@ -147,7 +136,6 @@ window.F3_PROGRAM = {
       "name": "The River",
       "location": "Glenbrook Park",
       "address": "8500 La Riviera Dr, Sacramento CA 95826",
-      "hashtag": "",
       "schedule": "Thursday 5:15am-6:00am"
     },
     {
@@ -155,7 +143,6 @@ window.F3_PROGRAM = {
       "name": "The Burbs",
       "location": "Arden Park",
       "address": "1000 La Sierra Dr, Sacramento, CA 95864",
-      "hashtag": "",
       "schedule": "Thursday 7:00pm-7:45pm"
     },
     {
@@ -163,7 +150,6 @@ window.F3_PROGRAM = {
       "name": "McKinley",
       "location": "McKinley Park",
       "address": "3300 Park Way, Sacramento, CA, 95816",
-      "hashtag": "",
       "schedule": "Friday 5:15am-6:00am"
     },
     {
@@ -171,7 +157,6 @@ window.F3_PROGRAM = {
       "name": "Ironstride",
       "location": "McKinley Park",
       "address": "3300 Park Way, Sacramento, CA, 95816",
-      "hashtag": "",
       "schedule": "Friday 5:15am-6:00am"
     },
     {
@@ -179,7 +164,6 @@ window.F3_PROGRAM = {
       "name": "The Refinery",
       "location": "McKinley Park",
       "address": "3300 Park Way, Sacramento, CA, 95816",
-      "hashtag": "",
       "schedule": "Saturday 6:30am-7:30am"
     },
     {
@@ -187,7 +171,6 @@ window.F3_PROGRAM = {
       "name": "The Gate",
       "location": "Southport Gateway Park",
       "address": "1650 Gateway Dr, West Sacramento, CA 95691",
-      "hashtag": "",
       "schedule": "Saturday 6:30am-7:30am"
     },
     {
@@ -195,7 +178,6 @@ window.F3_PROGRAM = {
       "name": "Winds of Change",
       "location": "Southport Gateway Park",
       "address": "1650 Gateway Dr, West Sacramento, CA 95691",
-      "hashtag": "",
       "schedule": "Saturday 5:30am-6:15am"
     }
   ],
