@@ -61,7 +61,7 @@ a { color: var(--accent); text-decoration: none; }
 .home-head-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .home-head-left { flex: 1; }
 .home-id { flex: 1; min-width: 0; }
-.home-id .region-title { margin-top: 0; overflow-wrap: anywhere; }
+.home-id .region-title { margin-top: 6; overflow-wrap: anywhere; }
 .home-id .greeting { margin-top: 12px; display: inline; text-align: left; font-size: clamp(20px, 5.4vw, 26px); line-height: 1.2; }
 .home-id .greeting .chev { margin-left: 2px; }
 .home-head-left { align-items: flex-start; }
