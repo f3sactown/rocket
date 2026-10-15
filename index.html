@@ -76,7 +76,7 @@
       </svg>
     </div>
     <div class="sp-title">
-      <div class="sp-name" id="splash-name">F3</div>
+      <div class="sp-name">ROCKET</div>
       <div class="sp-sub">Q Planner</div>
     </div>
   </div>
@@ -86,10 +86,6 @@
       var start = Date.now();
       var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
       var MIN = reduce ? 500 : 2300;
-      try {
-        var st = JSON.parse(localStorage.getItem("f3qp:settings") || "{}");
-        if (st.regionName) document.getElementById("splash-name").textContent = st.regionName;
-      } catch (e) {}
       function done() {
         if (!s || s.getAttribute("data-gone")) return;
         s.setAttribute("data-gone", "1");
