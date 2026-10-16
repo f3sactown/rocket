@@ -3,7 +3,7 @@
 A trimmed-down take on [f3stoner/f3-app](https://github.com/f3stoner/f3-app) with only the parts a Q needs:
 
 - **Plan Workout**: date, AO, title, Introduction, Warm-O-Rama, any number of Thangs, Mary / Finisher, Notes, Third F, Announcements. It autosaves drafts and can save or insert section templates. You can also copy from an earlier workout.
-- **Exicon Library**: 938 exercises and thangs from the F3 Nation Exicon, with search plus emphasis, equipment and tag filters. Press **Library** on any section to drop an entry into your plan.
+- **Exicon Library**: ~1,000 exercises and thangs from the F3 Nation Exicon (refreshed weekly), with search plus emphasis, equipment and tag filters. Press **Library** on any section to drop an entry into your plan.
 - **Run Workout**: large-text view to read from at the AO, with Normal, Large and XL sizes. It keeps the screen awake while it's open.
 - **Backblast**: quick-tap attendance from your PAX roster, plus Q / co-Q, visiting PAX and FNGs. The opening line fills in automatically, and the workout details come from the plan. Your edits stay put while attendance updates. Then Share or Copy it to BAND, Slack or GroupMe.
 - **My Templates**, **AOs**, **Settings**, **Import / Export**.
@@ -64,13 +64,21 @@ Settings → Import / Export (also in the menu).
 
 ## Updating the exercise library
 
-`data/library.js` is built from an F3 Nation Exicon export (`source/exicon-export.csv`, taken from the original app's repo). The f3nation.com/exicon page loads its list with JavaScript, so the app can't read it live. To refresh the library:
+`data/library.js` is built from the F3 Codex Exicon (https://codex.f3nation.com/exicon) in two steps:
+
+1. `tools/fetch_exicon.py` downloads the Exicon page, pulls out the entries embedded in it and saves them as `source/exicon-export.csv` (the same `ID,Name,Description,Aliases` CSV the site's Export button gives you).
+2. `tools/build_library.py` turns that CSV into `data/library.js`.
+
+**Automatic refresh:** the **Refresh Exicon library** GitHub Action (`.github/workflows/refresh-exicon.yml`) runs both steps every Monday and commits the result only when the Exicon changed. To run it now, open the repo's **Actions** tab → **Refresh Exicon library** → **Run workflow**. If the Exicon page changes layout, or returns far fewer entries than before, the run fails and nothing is committed; check the run's log.
+
+To refresh by hand:
 
 ```
-python3 tools/build_library.py path/to/new-export.csv
+python3 tools/fetch_exicon.py            # or: --html saved-exicon-page.html
+python3 tools/build_library.py
 ```
 
-The CSV needs `ID,Name,Description` columns. The emphasis, equipment and tag filters are guessed from keywords in each description, so expect a few misses.
+`build_library.py` also accepts any Exicon CSV export: `python3 tools/build_library.py path/to/export.csv`. The emphasis, equipment and tag filters are guessed from keywords in each description, so expect a few misses.
 
 ## Files
 | File | What it is |
@@ -79,4 +87,5 @@ The CSV needs `ID,Name,Description` columns. The emphasis, equipment and tag fil
 | `data/library.js` | Exicon library (generated) |
 | `data/program.js` | Built-in saved content (AOs, templates, sample workout), versioned |
 | `sw.js`, `manifest.webmanifest`, `icon*` | Offline support and home-screen install |
-| `tools/build_library.py`, `source/` | Library rebuild script and source CSV |
+| `tools/fetch_exicon.py`, `tools/build_library.py`, `source/` | Exicon download and library rebuild scripts, and the source CSV |
+| `.github/workflows/refresh-exicon.yml` | Weekly Exicon refresh |

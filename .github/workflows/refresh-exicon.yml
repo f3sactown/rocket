@@ -1,0 +1,49 @@
+name: Refresh Exicon library
+
+# Weekly: download https://codex.f3nation.com/exicon, rebuild data/library.js,
+# and commit it when the Exicon changed. Run it any time from the Actions tab.
+on:
+  schedule:
+    - cron: "17 11 * * 1"   # Mondays 11:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-exicon
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download the Exicon
+        run: python3 tools/fetch_exicon.py
+
+      - name: Rebuild the library if the Exicon changed
+        id: build
+        run: |
+          if git diff --quiet -- source/exicon-export.csv; then
+            echo "Exicon unchanged; nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            python3 tools/build_library.py
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push
+        if: steps.build.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add source/exicon-export.csv data/library.js
+          count=$(python3 -c "import re;print(re.search(r'\"count\":(\d+)',open('data/library.js').read()).group(1))")
+          git commit -m "Refresh Exicon library ($count entries)"
+          git push
