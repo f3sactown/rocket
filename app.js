@@ -30,7 +30,7 @@ const DEFAULT_SETTINGS = {
   openingTemplate: "{count} HIM met at {ao} today to {why}.",
   ignoreProgram: false,
   runTextSize: "large",
-  librarySources: ["f3", "program"],
+  libraryHiddenSources: [],   // every source is on unless the user turns it off, including ones added later
 };
 
 const COLLECTIONS = ["aos", "templates", "workouts", "backblasts"];
@@ -272,8 +272,8 @@ const LIBRARY_SOURCES = [
 function libSource(it) { return isProgram(it) ? "program" : "f3"; }
 function libSourcePill(it) { const src = LIBRARY_SOURCES.find(x => x.key === libSource(it)); return `<span class="pill ${src.pill}">${src.label}</span>`; }
 function enabledLibrarySources() {
-  const v = state.settings.librarySources;
-  return Array.isArray(v) ? v : DEFAULT_SETTINGS.librarySources;
+  const off = Array.isArray(state.settings.libraryHiddenSources) ? state.settings.libraryHiddenSources : [];
+  return LIBRARY_SOURCES.map(x => x.key).filter(k => !off.includes(k));
 }
 function visibleLibraryItems() {
   const on = enabledLibrarySources();
@@ -300,7 +300,7 @@ function libraryBrowserHtml({ title = "", picker = false } = {}) {
     <div class="label"><span data-lib-count></span><button class="linkish" data-lib-clear>Clear filters</button></div>
     <div data-lib-list></div>
     <div class="more"><button class="btn sm hidden" data-lib-more>Show more</button></div>
-    <p class="hint">Showing: ${LIBRARY_SOURCES.filter(x => enabledLibrarySources().includes(x.key)).map(x => `<span class="pill ${x.pill}">${x.label}</span>`).join(" ") || "no sources"}.
+    <p class="hint">${enabledLibrarySources().length === LIBRARY_SOURCES.length ? "Showing all sources." : `Showing only: ${LIBRARY_SOURCES.filter(x => enabledLibrarySources().includes(x.key)).map(x => `<span class="pill ${x.pill}">${x.label}</span>`).join(" ")}.`}
       ${picker ? "Tap a name to read it, + to add it." : `Tap a name to read it. <button class="linkish" data-go="#/settings">Change sources in Settings ›</button>`}</p>`;
 }
 function bindLibraryBrowser(root, { onPick } = {}) {
@@ -1237,7 +1237,7 @@ function viewSettings() {
       </div>
       <div class="card">
         <div class="field-label" style="color:var(--accent)">Exicon library sources</div>
-        <p class="muted" style="font-size:14px;margin:0 0 12px">Choose which exercises and thangs show up when you open the Exicon library or press Library while planning your Q.</p>
+        <p class="muted" style="font-size:14px;margin:0 0 12px">Choose which exercises and thangs show up when you open the Exicon library or press Library while planning your Q. All sources are on to start.</p>
         ${LIBRARY_SOURCES.map(x => `<label class="switch" style="margin-bottom:10px"><input type="checkbox" data-libsrc="${x.key}" ${enabledLibrarySources().includes(x.key) ? "checked" : ""}>
           <span><span class="pill ${x.pill}">${x.label}</span><br><span class="muted" style="font-size:13px">${x.desc}</span></span></label>`).join("")}
       </div>
@@ -1275,7 +1275,7 @@ function viewSettings() {
   $$("[data-libsrc]").forEach(el => el.onchange = () => {
     const on = $$("[data-libsrc]").filter(x => x.checked).map(x => x.dataset.libsrc);
     if (!on.length) { el.checked = true; toast("Keep at least one library source turned on"); return; }
-    s.librarySources = on; save("settings");
+    s.libraryHiddenSources = LIBRARY_SOURCES.map(x => x.key).filter(k => !on.includes(k)); save("settings");
   });
   $("[data-ignore]").onchange = e => { s.ignoreProgram = e.target.checked; save("settings"); toast(e.target.checked ? "New program content will be ignored" : "Program updates turned on"); if (!e.target.checked) syncProgram().then(() => viewSettings()); };
   $("[data-progremove]").onclick = async () => {

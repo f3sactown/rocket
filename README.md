@@ -49,7 +49,7 @@ On a phone, open the URL and use **Add to Home Screen**. It then runs like an ap
 
 Program items carry a **Program** badge in My Templates, AOs and the Planner, so users can pick out and delete the ones they don't want.
 
-In the Exicon library, F3 Nation Exicon entries carry a red **F3** badge. Program warm-up, thang and Mary templates also appear there with the **Program** badge, along with any entries in an optional `library` array in `data/program.js` (`{ id, name, text, kind: "exercise" | "thang", emphasis, equipment, tags }`). Under **Settings → Exicon library sources**, each user picks which of these sources (F3, Program) the Library shows, both on the Exicon page and in the planner's Library picker. To add a source, add an entry to `LIBRARY_SOURCES` in `app.js`.
+In the Exicon library, F3 Nation Exicon entries carry a red **F3** badge. Program warm-up, thang and Mary templates also appear there with the **Program** badge, along with any entries in an optional `library` array in `data/program.js` (`{ id, name, text, kind: "exercise" | "thang", emphasis, equipment, tags }`). Under **Settings → Exicon library sources**, each user picks which of these sources (F3, Program) the Library shows (all of them by default), both on the Exicon page and in the planner's Library picker. To add a source, add an entry to `LIBRARY_SOURCES` in `app.js`; it starts out turned on for everyone.
 
 `templates[].section` must be one of: `intro`, `warmup`, `thang`, `mary`, `notes`, `cot`.
 Workouts follow this shape: `{ id, title, date, aoId, status, intro, warmup, thangs: [{title, content}], mary, notes, thirdF, announcements }`.
