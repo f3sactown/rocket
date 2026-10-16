@@ -3,7 +3,7 @@
 A trimmed-down take on [f3stoner/f3-app](https://github.com/f3stoner/f3-app) with only the parts a Q needs:
 
 - **Plan Workout**: date, AO, title, Introduction, Warm-O-Rama, any number of Thangs, Mary / Finisher, Notes, Third F, Announcements. It autosaves drafts and can save or insert section templates. You can also copy from an earlier workout.
-- **Exicon Library**: ~1,000 exercises and thangs from the F3 Nation Exicon (refreshed weekly), with search plus emphasis, equipment and tag filters. Press **Library** on any section to drop an entry into your plan.
+- **Exicon Library**: exercises and thangs from the F3 Nation Exicon and the FiA Lexicon/Exicon (refreshed weekly), with search plus emphasis, equipment and tag filters. Press **Library** on any section to drop an entry into your plan.
 - **Run Workout**: large-text view to read from at the AO, with Normal, Large and XL sizes. It keeps the screen awake while it's open.
 - **Backblast**: quick-tap attendance from your PAX roster, plus Q / co-Q, visiting PAX and FNGs. The opening line fills in automatically, and the workout details come from the plan. Your edits stay put while attendance updates. Then Share or Copy it to BAND, Slack or GroupMe.
 - **My Templates**, **AOs**, **Settings**, **Import / Export**.
@@ -49,7 +49,7 @@ On a phone, open the URL and use **Add to Home Screen**. It then runs like an ap
 
 Program items carry a **Program** badge in My Templates, AOs and the Planner, so users can pick out and delete the ones they don't want.
 
-In the Exicon library, F3 Nation Exicon entries carry a red **F3** badge. Program warm-up, thang and Mary templates also appear there with the **Program** badge, along with any entries in an optional `library` array in `data/program.js` (`{ id, name, text, kind: "exercise" | "thang", emphasis, equipment, tags }`). Under **Settings → Exicon library sources**, each user picks which of these sources (F3, Program) the Library shows (all of them by default), both on the Exicon page and in the planner's Library picker. To add a source, add an entry to `LIBRARY_SOURCES` in `app.js`; it starts out turned on for everyone.
+In the Exicon library, F3 Nation Exicon entries carry a red **F3** badge and FiA Lexicon/Exicon entries a light green **FiA** badge. Program warm-up, thang and Mary templates also appear there with the **Program** badge, along with any entries in an optional `library` array in `data/program.js` (`{ id, name, text, kind: "exercise" | "thang", emphasis, equipment, tags }`). Under **Settings → Exicon library sources**, each user picks which of these sources (F3, FiA, Program) the Library shows (all of them by default), both on the Exicon page and in the planner's Library picker. To add a source, add an entry to `LIBRARY_SOURCES` in `app.js`; it starts out turned on for everyone.
 
 `templates[].section` must be one of: `intro`, `warmup`, `thang`, `mary`, `notes`, `cot`.
 Workouts follow this shape: `{ id, title, date, aoId, status, intro, warmup, thangs: [{title, content}], mary, notes, thirdF, announcements }`.
@@ -64,17 +64,20 @@ Settings → Import / Export (also in the menu).
 
 ## Updating the exercise library
 
-`data/library.js` is built from the F3 Codex Exicon (https://codex.f3nation.com/exicon) in two steps:
+`data/library.js` is built from two sources:
 
-1. `tools/fetch_exicon.py` downloads the Exicon page, pulls out the entries embedded in it and saves them as `source/exicon-export.csv` (the same `ID,Name,Description,Aliases` CSV the site's Export button gives you).
-2. `tools/build_library.py` turns that CSV into `data/library.js`.
+- **F3**: the F3 Codex Exicon (https://codex.f3nation.com/exicon). `tools/fetch_exicon.py` downloads the Exicon page, pulls out the entries embedded in it and saves them as `source/exicon-export.csv` (the same `ID,Name,Description,Aliases` CSV the site's Export button gives you).
+- **FiA**: the [FiA Lexicon/Exicon Google Sheet](https://docs.google.com/spreadsheets/d/1-aBi3UGOwhGChtKEFdVjikbqfcCWP35mcoKqqxqKssI/edit?gid=1132183543), "Lexicon" tab. `tools/fetch_fia.py` downloads its CSV export (the sheet is shared as "anyone with the link can view") and saves it as `source/fia-lexicon.csv`. Rows with Category `TERM` are glossary terms and are left out; `Routine` rows become thangs.
 
-**Automatic refresh:** the **Refresh Exicon library** GitHub Action (`.github/workflows/refresh-exicon.yml`) runs both steps every Monday and commits the result only when the Exicon changed. To run it now, open the repo's **Actions** tab → **Refresh Exicon library** → **Run workflow**. If the Exicon page changes layout, or returns far fewer entries than before, the run fails and nothing is committed; check the run's log.
+`tools/build_library.py` then turns both CSVs into `data/library.js`.
+
+**Automatic refresh:** the **Refresh Exicon library** GitHub Action (`.github/workflows/refresh-exicon.yml`) downloads both sources every Monday and commits the result only when one of them changed. To run it now, open the repo's **Actions** tab → **Refresh Exicon library** → **Run workflow**. If a source changes layout, or returns far fewer entries than before, that source is left as it was and the run is marked failed (the other source still updates); check the run's log.
 
 To refresh by hand:
 
 ```
 python3 tools/fetch_exicon.py            # or: --html saved-exicon-page.html
+python3 tools/fetch_fia.py               # or: --csv downloaded-sheet.csv
 python3 tools/build_library.py
 ```
 
@@ -87,5 +90,5 @@ python3 tools/build_library.py
 | `data/library.js` | Exicon library (generated) |
 | `data/program.js` | Built-in saved content (AOs, templates, sample workout), versioned |
 | `sw.js`, `manifest.webmanifest`, `icon*` | Offline support and home-screen install |
-| `tools/fetch_exicon.py`, `tools/build_library.py`, `source/` | Exicon download and library rebuild scripts, and the source CSV |
-| `.github/workflows/refresh-exicon.yml` | Weekly Exicon refresh |
+| `tools/fetch_exicon.py`, `tools/fetch_fia.py`, `tools/build_library.py`, `source/` | Exicon and FiA download scripts, the library rebuild script, and the source CSVs |
+| `.github/workflows/refresh-exicon.yml` | Weekly Exicon and FiA refresh |
