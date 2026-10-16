@@ -225,7 +225,7 @@ async function loadLibrary() {
   if (!window.F3_LIBRARY) throw new Error("Library (data/library.js) didn't load");
   const lib = window.F3_LIBRARY;
   const extra = programLibraryItems();
-  libraryCache = { ...lib, items: [...lib.items.map(it => ({ ...it, source: "f3" })), ...extra], count: lib.items.length + extra.length };
+  libraryCache = { ...lib, items: [...lib.items.map(it => ({ ...it, source: it.source || "f3" })), ...extra], count: lib.items.length + extra.length };
   return libraryCache;
 }
 /** Exercises & thangs from data/program.js (its "library" list plus warm-up/thang/Mary templates),
@@ -267,9 +267,10 @@ function searchLibrary(items, { q = "", kind = "all", picked = {} }) {
 /** Where library entries come from; Settings picks which ones the Library shows. */
 const LIBRARY_SOURCES = [
   { key: "f3", label: "F3", pill: "f3", desc: "Exercises and thangs from the F3 Nation Exicon." },
+  { key: "fia", label: "FiA", pill: "fia", desc: "Exercises and routines from the FiA Lexicon/Exicon." },
   { key: "program", label: "Program", pill: "prog", desc: "Warm-ups, thangs and Mary that come with this app." },
 ];
-function libSource(it) { return isProgram(it) ? "program" : "f3"; }
+function libSource(it) { return isProgram(it) ? "program" : LIBRARY_SOURCES.some(x => x.key === it.source) ? it.source : "f3"; }
 function libSourcePill(it) { const src = LIBRARY_SOURCES.find(x => x.key === libSource(it)); return `<span class="pill ${src.pill}">${src.label}</span>`; }
 function enabledLibrarySources() {
   const off = Array.isArray(state.settings.libraryHiddenSources) ? state.settings.libraryHiddenSources : [];
@@ -1100,7 +1101,7 @@ function viewLibrary() {
     <div class="page" style="padding-top:4px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
         <h1 class="page-title">Exicon</h1><button class="btn accent sm" style="border-radius:12px;padding:10px 14px" data-go="#/plan">Plan New Workout</button></div>
-      <p class="page-sub">Exercises and thangs from the F3 Nation Exicon. Use the Library buttons while planning to drop one into your workout.</p>
+      <p class="page-sub">Exercises and thangs from the F3 Nation Exicon and the FiA Lexicon. Use the Library buttons while planning to drop one into your workout.</p>
       <div data-lib-root>${libraryBrowserHtml()}</div>
     </div>${bottomNav("")}`;
   bindLibraryBrowser($("[data-lib-root]"));
@@ -1256,7 +1257,7 @@ function viewSettings() {
       <div class="card">
         <div class="field-label" style="color:var(--accent)">Data</div>
         <div class="btn-row"><button class="btn" data-go="#/data">Import / Export</button></div>
-        <p class="hint">App ${APP_VERSION} · Exercise library: F3 Nation Exicon${libraryCache ? ` (${libraryCache.count} entries, built ${esc(libraryCache.builtAt)})` : ""}</p>
+        <p class="hint">App ${APP_VERSION} · Exercise library: F3 Nation Exicon and FiA Lexicon${libraryCache ? ` (${libraryCache.count} entries, built ${esc(libraryCache.builtAt)})` : ""}</p>
       </div>
     </div>${bottomNav("")}`;
   if (!libraryCache) loadLibrary().catch(() => {});

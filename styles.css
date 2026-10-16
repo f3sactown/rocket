@@ -95,6 +95,7 @@ a { color: var(--accent); text-decoration: none; }
   border: 1px solid var(--border-strong); border-radius: 999px; padding: 3px 10px; color: var(--muted); white-space: nowrap;
 }
 .pill.prog { color: var(--accent); border-color: rgba(140,200,242,.35); }
+.pill.fia { color: #a8e6a1; border-color: rgba(168,230,161,.45); }
 .pill.f3 { color: var(--danger); border-color: rgba(229,72,77,.45); }
 .pill.draft { color: #f2c46d; border-color: rgba(242,196,109,.35); }
 .pill.good { color: var(--good); border-color: rgba(111,220,140,.35); }
