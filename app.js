@@ -222,8 +222,24 @@ let libraryCache = null;
 async function loadLibrary() {
   if (libraryCache) return libraryCache;
   if (!window.F3_LIBRARY) throw new Error("Library (data/library.js) didn't load");
-  libraryCache = window.F3_LIBRARY;
+  const lib = window.F3_LIBRARY;
+  const extra = programLibraryItems();
+  libraryCache = { ...lib, items: [...lib.items.map(it => ({ ...it, source: "f3" })), ...extra], count: lib.items.length + extra.length };
   return libraryCache;
+}
+/** Exercises & thangs from data/program.js (its "library" list plus warm-up/thang/Mary templates),
+ *  shown in the Library alongside the Exicon with a Program badge. */
+function programLibraryItems() {
+  const prog = window.F3_PROGRAM || {};
+  const fromLib = (prog.library || []).map(it => ({
+    id: it.id, name: it.name || "", text: it.text || it.content || "", kind: it.kind === "thang" ? "thang" : "exercise",
+    emphasis: it.emphasis || [], equipment: it.equipment || [], tags: it.tags || [], source: "program",
+  }));
+  const fromTpl = (prog.templates || []).filter(t => ["warmup", "thang", "mary"].includes(t.section)).map(t => ({
+    id: t.id, name: t.name || "", text: t.content || "", kind: "thang",
+    emphasis: [], equipment: [], tags: t.section === "thang" ? [] : [t.section], source: "program",
+  }));
+  return [...fromLib, ...fromTpl];
 }
 const FILTERS = {
   emphasis: ["upper", "lower", "core", "cardio", "heavy", "run", "ruck", "mobility"],
@@ -267,7 +283,7 @@ function libraryBrowserHtml({ title = "", picker = false } = {}) {
     <div class="label"><span data-lib-count></span><button class="linkish" data-lib-clear>Clear filters</button></div>
     <div data-lib-list></div>
     <div class="more"><button class="btn sm hidden" data-lib-more>Show more</button></div>
-    <p class="hint">Source: F3 Nation Exicon. ${picker ? "Tap a name to read it, + to add it." : "Tap a name to read it."}</p>`;
+    <p class="hint">Source: F3 Nation Exicon (<span class="pill f3">F3</span>) plus the app's own <span class="pill prog">Program</span> items. ${picker ? "Tap a name to read it, + to add it." : "Tap a name to read it."}</p>`;
 }
 function bindLibraryBrowser(root, { onPick } = {}) {
   const st = { q: "", kind: "all", picked: { emphasis: [], equipment: [], tags: [] }, limit: 60, open: new Set() };
@@ -279,7 +295,7 @@ function bindLibraryBrowser(root, { onPick } = {}) {
     listEl.innerHTML = res.slice(0, st.limit).map(it => `
       <div class="lib-item" data-id="${it.id}">
         <div class="lib-head" data-toggle>
-          <div class="name">${esc(it.name)}</div>
+          <div class="name">${esc(it.name)} ${isProgram(it) ? `<span class="pill prog">Program</span>` : `<span class="pill f3">F3</span>`}</div>
           <div class="tags">${esc(libTagLine(it))}</div>
           ${onPick ? `<button class="round-btn" data-add title="Add">+</button>` : ""}
         </div>
