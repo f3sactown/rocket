@@ -30,6 +30,7 @@ const DEFAULT_SETTINGS = {
   openingTemplate: "{count} HIM met at {ao} today to {why}.",
   ignoreProgram: false,
   runTextSize: "large",
+  librarySources: ["f3", "program"],
 };
 
 const COLLECTIONS = ["aos", "templates", "workouts", "backblasts"];
@@ -263,6 +264,22 @@ function searchLibrary(items, { q = "", kind = "all", picked = {} }) {
   }
   return out;
 }
+/** Where library entries come from; Settings picks which ones the Library shows. */
+const LIBRARY_SOURCES = [
+  { key: "f3", label: "F3", pill: "f3", desc: "Exercises and thangs from the F3 Nation Exicon." },
+  { key: "program", label: "Program", pill: "prog", desc: "Warm-ups, thangs and Mary that come with this app." },
+];
+function libSource(it) { return isProgram(it) ? "program" : "f3"; }
+function libSourcePill(it) { const src = LIBRARY_SOURCES.find(x => x.key === libSource(it)); return `<span class="pill ${src.pill}">${src.label}</span>`; }
+function enabledLibrarySources() {
+  const v = state.settings.librarySources;
+  return Array.isArray(v) ? v : DEFAULT_SETTINGS.librarySources;
+}
+function visibleLibraryItems() {
+  const on = enabledLibrarySources();
+  return libraryCache ? libraryCache.items.filter(it => on.includes(libSource(it))) : [];
+}
+function libSearchPlaceholder() { return `Search ${libraryCache ? visibleLibraryItems().length : ""} exercises & thangs…`; }
 function libTagLine(it) {
   return [it.kind === "thang" ? "thang" : "exercise", ...it.emphasis, ...it.tags.filter(t => t !== "routine")].slice(0, 5).join(" · ");
 }
@@ -271,7 +288,7 @@ function libTagLine(it) {
 function libraryBrowserHtml({ title = "", picker = false } = {}) {
   return `
     ${title}
-    <input class="input" data-lib-q placeholder="Search ${libraryCache ? libraryCache.count : ""} exercises & thangs…" type="search" autocomplete="off">
+    <input class="input" data-lib-q placeholder="${libSearchPlaceholder()}" type="search" autocomplete="off">
     <div class="spacer"></div>
     <select class="input" data-lib-kind>
       <option value="all">All</option><option value="exercise">Exercises</option><option value="thang">Thangs / routines</option>
@@ -283,19 +300,25 @@ function libraryBrowserHtml({ title = "", picker = false } = {}) {
     <div class="label"><span data-lib-count></span><button class="linkish" data-lib-clear>Clear filters</button></div>
     <div data-lib-list></div>
     <div class="more"><button class="btn sm hidden" data-lib-more>Show more</button></div>
-    <p class="hint">Source: F3 Nation Exicon (<span class="pill f3">F3</span>) plus the app's own <span class="pill prog">Program</span> items. ${picker ? "Tap a name to read it, + to add it." : "Tap a name to read it."}</p>`;
+    <p class="hint">Showing: ${LIBRARY_SOURCES.filter(x => enabledLibrarySources().includes(x.key)).map(x => `<span class="pill ${x.pill}">${x.label}</span>`).join(" ") || "no sources"}.
+      ${picker ? "Tap a name to read it, + to add it." : `Tap a name to read it. <button class="linkish" data-go="#/settings">Change sources in Settings ›</button>`}</p>`;
 }
 function bindLibraryBrowser(root, { onPick } = {}) {
   const st = { q: "", kind: "all", picked: { emphasis: [], equipment: [], tags: [] }, limit: 60, open: new Set() };
   const listEl = $("[data-lib-list]", root);
   const draw = () => {
     if (!libraryCache) { listEl.innerHTML = `<div class="empty">Loading library…</div>`; return; }
-    const res = searchLibrary(libraryCache.items, st);
+    if (!enabledLibrarySources().length) {
+      $("[data-lib-count]", root).textContent = "0 matches";
+      listEl.innerHTML = `<div class="empty">No library sources are turned on. Pick at least one under Settings → Exicon library sources.</div>`;
+      $("[data-lib-more]", root).classList.add("hidden"); return;
+    }
+    const res = searchLibrary(visibleLibraryItems(), st);
     $("[data-lib-count]", root).textContent = `${res.length} match${res.length === 1 ? "" : "es"}`;
     listEl.innerHTML = res.slice(0, st.limit).map(it => `
       <div class="lib-item" data-id="${it.id}">
         <div class="lib-head" data-toggle>
-          <div class="name">${esc(it.name)} ${isProgram(it) ? `<span class="pill prog">Program</span>` : `<span class="pill f3">F3</span>`}</div>
+          <div class="name">${esc(it.name)} ${libSourcePill(it)}</div>
           <div class="tags">${esc(libTagLine(it))}</div>
           ${onPick ? `<button class="round-btn" data-add title="Add">+</button>` : ""}
         </div>
@@ -325,7 +348,7 @@ function bindLibraryBrowser(root, { onPick } = {}) {
     if (e.target.closest("[data-toggle]")) { st.open.has(it.id) ? st.open.delete(it.id) : st.open.add(it.id); draw(); }
   });
   draw();
-  if (!libraryCache) loadLibrary().then(() => { q.placeholder = `Search ${libraryCache.count} exercises & thangs…`; draw(); })
+  if (!libraryCache) loadLibrary().then(() => { q.placeholder = libSearchPlaceholder(); draw(); })
     .catch(() => { listEl.innerHTML = `<div class="empty">Couldn't load the library. Check your connection and reload.</div>`; });
 }
 
@@ -1213,6 +1236,12 @@ function viewSettings() {
         <p class="hint">One name per line. Used for quick-tap attendance on backblasts. New names you add on a backblast land here automatically.</p>
       </div>
       <div class="card">
+        <div class="field-label" style="color:var(--accent)">Exicon library sources</div>
+        <p class="muted" style="font-size:14px;margin:0 0 12px">Choose which exercises and thangs show up when you open the Exicon library or press Library while planning your Q.</p>
+        ${LIBRARY_SOURCES.map(x => `<label class="switch" style="margin-bottom:10px"><input type="checkbox" data-libsrc="${x.key}" ${enabledLibrarySources().includes(x.key) ? "checked" : ""}>
+          <span><span class="pill ${x.pill}">${x.label}</span><br><span class="muted" style="font-size:13px">${x.desc}</span></span></label>`).join("")}
+      </div>
+      <div class="card">
         <div class="field-label" style="color:var(--accent)">Program content</div>
         <p class="muted" style="font-size:14px;margin:0 0 12px">The app ships with starter templates and a sample workout, and can add more when it updates. Anything you delete stays deleted; anything you edit is yours and won't be overwritten.</p>
         <label class="switch"><input type="checkbox" data-ignore ${s.ignoreProgram ? "checked" : ""}>
@@ -1243,6 +1272,11 @@ function viewSettings() {
     catch { toast("Couldn't read that image. Try a PNG or JPG."); }
   };
   $("[data-logo-remove]")?.addEventListener("click", () => { s.logo = ""; save("settings"); toast("Logo removed"); viewSettings(); });
+  $$("[data-libsrc]").forEach(el => el.onchange = () => {
+    const on = $$("[data-libsrc]").filter(x => x.checked).map(x => x.dataset.libsrc);
+    if (!on.length) { el.checked = true; toast("Keep at least one library source turned on"); return; }
+    s.librarySources = on; save("settings");
+  });
   $("[data-ignore]").onchange = e => { s.ignoreProgram = e.target.checked; save("settings"); toast(e.target.checked ? "New program content will be ignored" : "Program updates turned on"); if (!e.target.checked) syncProgram().then(() => viewSettings()); };
   $("[data-progremove]").onclick = async () => {
     if (!(await confirmModal("Remove every unedited template, AO and sample workout that came with the app? Items you've edited are kept. Future updates won't re-add these.", "Remove"))) return;
