@@ -1,4 +1,4 @@
-# F3 Q Planner
+# Rocket
 
 A trimmed-down take on [f3stoner/f3-app](https://github.com/f3stoner/f3-app) with only the parts a Q needs:
 
