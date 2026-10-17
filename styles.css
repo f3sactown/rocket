@@ -374,7 +374,6 @@ textarea.input.short { min-height: 80px; }
 .sp-smoke circle:nth-child(5) { animation-delay: .5s; }
 .sp-title { text-align: center; animation: sp-fadein .5s ease-out both; margin-top: 4px; }
 .sp-name { font-family: var(--font-display); font-weight: 700; font-size: clamp(26px, 7vw, 38px); text-transform: uppercase; letter-spacing: .02em; line-height: 1; padding: 0 20px; }
-.sp-sub { font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: .3em; text-transform: uppercase; color: var(--accent); margin-top: 8px; }
 
 @keyframes sp-shake { 0% { transform: translate(0, 0); } 25% { transform: translate(-1.5px, .5px); } 50% { transform: translate(1.5px, -.5px); } 75% { transform: translate(-1px, 0); } 100% { transform: translate(0, 0); } }
 @keyframes sp-ignite { 0% { transform: scaleY(.15); opacity: .4; } 60% { transform: scaleY(.6); opacity: 1; } 100% { transform: scaleY(1.8); opacity: 1; } }

@@ -1,4 +1,4 @@
-/* F3 Q Planner — plan workouts, write backblasts, browse the Exicon.
+/* Rocket — plan workouts, write backblasts, browse the Exicon.
    Everything is stored in this browser (localStorage). No server needed. */
 "use strict";
 
@@ -1372,7 +1372,7 @@ function viewData() {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `f3-q-planner-${keys.length === DATA_KINDS.length ? "backup" : keys.join("-")}-${todayISO()}.json`;
+    a.download = `rocket-${keys.length === DATA_KINDS.length ? "backup" : keys.join("-")}-${todayISO()}.json`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     toast("Backup downloaded");
@@ -1385,7 +1385,7 @@ function viewData() {
     let payload;
     try { payload = JSON.parse(await file.text()); } catch { box.innerHTML = `<p class="hint" style="color:var(--danger)">That file isn't valid JSON.</p>`; return; }
     const data = payload?.data;
-    if (payload?.app !== "f3-q-planner" || !data) { box.innerHTML = `<p class="hint" style="color:var(--danger)">That doesn't look like an F3 Q Planner export.</p>`; return; }
+    if (payload?.app !== "f3-q-planner" || !data) { box.innerHTML = `<p class="hint" style="color:var(--danger)">That doesn't look like a Rocket export.</p>`; return; }
     const present = DATA_KINDS.filter(k => data[k.key] !== undefined);
     box.innerHTML = `
       <p class="hint">Exported ${esc(payload.exportedAt ? new Date(payload.exportedAt).toLocaleString() : "")}. Choose what to bring in:</p>
