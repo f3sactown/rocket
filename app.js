@@ -75,6 +75,14 @@ function regionRosterNames() {
   if (builtInRegion()?.key === "sactown") return window.F3_ROSTER?.names || [];
   return customCache()?.roster || [];
 }
+/** All-time [posts, Qs] for a PAX name in the region's data, or null if the name isn't there. */
+function regionTotals(name) {
+  const n = String(name || "").trim().toLowerCase();
+  if (!n) return null;
+  const totals = builtInRegion()?.key === "sactown" ? window.F3_ATTENDANCE?.totals : customCache()?.totals;
+  const key = totals && Object.keys(totals).find(k => k.toLowerCase() === n);
+  return key ? totals[key] : null;
+}
 function regionAttendance() {
   if (builtInRegion()?.key === "sactown") return window.F3_ATTENDANCE?.aos || {};
   return customCache()?.attendance || {};
@@ -182,7 +190,7 @@ const cleanName = s => String(s || "").replace(/[‘’]/g, "'").replace(/\s+/g,
  *  "Master Data" (Post Date, AO Name, PAX Name) and "Sites" (AO Name, Day, Location, Time, Address, Retired).
  *  Each tab is optional; a missing tab just means no data of that kind. */
 async function readRegionSheet(id) {
-  const out = { sheetId: id, fetchedAt: nowIso(), aos: [], roster: [], attendance: {}, missing: [] };
+  const out = { sheetId: id, fetchedAt: nowIso(), aos: [], roster: [], attendance: {}, totals: {}, missing: [] };
   const tryTab = async (tab, need, tq) => {
     try {
       const t = await sheetTab(id, tab, tq);
@@ -217,6 +225,19 @@ async function readRegionSheet(id) {
       if (!date || date < since || !ao || !pax || !keepPaxName(pax)) continue;
       const m = out.attendance[ao] ||= {};
       if (!m[pax] || m[pax] < date) m[pax] = date;
+    }
+    // All-time totals per PAX for "My stats": the sheet's running "Post Total"/"Q Total" (highest value), else sum of "Post"/"Q".
+    const ci = n => head.cols.indexOf(n);
+    const [pt, qt, po, qo] = ["post total", "q total", "post", "q"].map(ci);
+    const agg = pt >= 0 && qt >= 0 ? `max(${colLetter(pt)}), max(${colLetter(qt)})` : po >= 0 && qo >= 0 ? `sum(${colLetter(po)}), sum(${colLetter(qo)})` : "";
+    if (agg) {
+      try {
+        const t = await sheetTab(id, "Master Data", `select ${colLetter(p)}, ${agg} where ${colLetter(p)} is not null group by ${colLetter(p)}`);
+        for (const r of t.rows) {
+          const pax = cleanName(r[0]), posts = Math.round(Number(r[1]) || 0), qs = Math.round(Number(r[2]) || 0);
+          if (pax && (posts || qs)) out.totals[pax] = [posts, qs];
+        }
+      } catch (e) { if (e.message === "not-shared") throw e; }
     }
   }
   return out;
@@ -732,7 +753,11 @@ function viewHome() {
   const others = up.slice(1, 4);
   const bbs = [...state.backblasts].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   const userWorkouts = state.workouts.filter(w => w.source !== "program");
-  const fngs = state.backblasts.reduce((n, b) => n + (b.fngs?.length || 0), 0);
+  // Posts and Qs come from the region's attendance data, looked up by the F3 name in Settings.
+  const mine = regionTotals(s.f3Name);
+  const statsNote = mine ? "" : regionKey() === "none" ? `<button class="linkish" data-go="#/settings?focus=region">Choose a region</button> to see your posts and Qs.`
+    : !s.f3Name ? `<button class="linkish" data-go="#/settings?focus=f3Name">Set your nickname</button> to see your posts and Qs.`
+    : `No posts found for “${esc(s.f3Name)}” in ${esc(s.regionName || "your region")}'s data. Check that your nickname matches the sheet.`;
   const homeAo = aoName(s.homeAoId);
   const notice = state.program.notice;
   const isToday = next && next.date === todayISO();
@@ -797,10 +822,11 @@ function viewHome() {
       <div class="label">My stats <button class="linkish" data-go="#/backblasts">Backblasts ›</button></div>
       <div class="stats">
         <div class="stats-grid">
-          <div class="stat"><b>${state.backblasts.length}</b><span>Backblasts</span></div>
-          <div class="stat"><b>${userWorkouts.length}</b><span>Workouts planned</span></div>
-          <div class="stat"><b>${fngs}</b><span>FNGs EH'd</span></div>
+          <div class="stat"><b>${mine ? mine[0].toLocaleString() : "—"}</b><span>Total posts</span></div>
+          <div class="stat"><b>${mine ? mine[1].toLocaleString() : "—"}</b><span>Total Qs</span></div>
+          <div class="stat"><b>${userWorkouts.length}</b><span>Qs planned</span></div>
         </div>
+        ${statsNote ? `<p class="muted stats-note">${statsNote}</p>` : ""}
         <button class="stats-foot" data-go="${bbs[0] ? "#/backblast/" + bbs[0].id : "#/backblast/new"}">
           <span>Last backblast <b>${bbs[0] ? esc(fmtDate(bbs[0].date, { month: "short", day: "numeric", year: "numeric" })) : "—"}</b></span><span>›</span></button>
       </div>
