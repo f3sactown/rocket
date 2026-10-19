@@ -959,11 +959,28 @@ function viewBackblast(id, query) {
   let active = true;
   cleanup = () => { active = false; autosave.flush(); };
 
+  /** Who has posted at this AO in the last 3 months, most recent first: the region's attendance
+   *  records (data/attendance.js, matched by AO name) plus backblasts saved on this device. */
+  const RECENT_DAYS = 92;
   const recentAtAo = () => {
-    const names = [];
-    [...state.backblasts].filter(b => b.aoId && b.aoId === bb.aoId && b.id !== bb.id).sort((a, b) => (b.date || "").localeCompare(a.date || ""))
-      .slice(0, 8).forEach(b => names.push(...b.qs, ...b.pax));
-    return uniqNames(names).filter(n => !inAny(n)).slice(0, 24);
+    if (!bb.aoId) return [];
+    const ref = bb.date || todayISO();
+    const cutoff = new Date(new Date(`${ref}T12:00:00`).getTime() - RECENT_DAYS * 864e5).toISOString().slice(0, 10);
+    const last = new Map();
+    const note = (name, date) => {
+      const key = String(name).trim().toLowerCase();
+      if (!key || !date || date < cutoff || date > ref) return;
+      const cur = last.get(key);
+      if (!cur || cur.date < date) last.set(key, { name: String(name).trim(), date });
+    };
+    const ao = state.aos.find(a => a.id === bb.aoId);
+    const norm = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const sheet = window.F3_ATTENDANCE?.aos || {};
+    const key = ao && Object.keys(sheet).find(k => norm(k) === norm(ao.name));
+    if (key) for (const [name, date] of Object.entries(sheet[key])) note(name, date);
+    state.backblasts.filter(b => b.aoId === bb.aoId && b.id !== bb.id).forEach(b => [...b.qs, ...b.pax].forEach(n => note(n, b.date)));
+    return [...last.values()].sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name))
+      .map(x => x.name).filter(n => !inAny(n));
   };
   const inAny = n => [...bb.qs, ...bb.pax, ...bb.visitors, ...bb.fngs].some(x => x.toLowerCase() === n.toLowerCase());
   const addToRoster = names => {
@@ -1035,12 +1052,13 @@ function viewBackblast(id, query) {
     $("[data-total]").textContent = `${n} SELECTED`;
     const recent = recentAtAo();
     const rest = state.roster.filter(r => !inAny(r) && !recent.some(x => x.toLowerCase() === r.toLowerCase()));
-    const shown = showAllRoster ? rest : rest.slice(0, ROSTER_PREVIEW);
+    const preview = recent.length ? 0 : ROSTER_PREVIEW;  // with regulars listed, the rest wait behind Show all
+    const shown = showAllRoster ? rest : rest.slice(0, preview);
     $("[data-quick]").innerHTML = `
-      ${recent.length ? `<div class="field-label">Recent at ${esc(aoName(bb.aoId))}</div><div class="chips">${recent.map(r => `<button class="chip" data-quickadd="${esc(r)}">${esc(r)}</button>`).join("")}</div><div class="spacer"></div>` : ""}
+      ${recent.length ? `<div class="field-label">At ${esc(aoName(bb.aoId))} in the last 3 months (${recent.length})</div><div class="chips">${recent.map(r => `<button class="chip" data-quickadd="${esc(r)}">${esc(r)}</button>`).join("")}</div><div class="spacer"></div>` : ""}
       <div class="field-label" style="display:flex;justify-content:space-between">PAX roster (${state.roster.length}) <button class="tiny-btn accent" data-go="#/settings">Edit roster</button></div>
-      ${rest.length ? `<div class="chips">${shown.map(r => `<button class="chip" data-quickadd="${esc(r)}">${esc(r)}</button>`).join("")}</div>
-        ${rest.length > ROSTER_PREVIEW ? `<div class="spacer"></div><button class="tiny-btn accent" data-roster-more>${showAllRoster ? "Show fewer" : `Show all ${rest.length}`}</button><span class="muted" style="font-size:13px"> · or search above</span>` : ""}`
+      ${rest.length ? `${shown.length ? `<div class="chips">${shown.map(r => `<button class="chip" data-quickadd="${esc(r)}">${esc(r)}</button>`).join("")}</div><div class="spacer"></div>` : ""}
+        ${rest.length > preview ? `<button class="tiny-btn accent" data-roster-more>${showAllRoster ? "Show fewer" : `Show all ${rest.length}${recent.length ? " others" : ""}`}</button><span class="muted" style="font-size:13px"> · or search above</span>` : ""}`
         : `<p class="muted" style="font-size:13px;margin:0">${state.roster.length ? "Everyone on the roster is checked in." : "Your roster is empty. Names you add here are saved to it for quick tap next time."}</p>`}`;
     $("[data-live]").textContent = liveData(bb);
     for (const k of ["opening", "details"]) { const el = $(`[data-edit="${k}"]`); if (document.activeElement !== el && el.value !== bb[k]) el.value = bb[k]; }

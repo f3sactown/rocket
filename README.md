@@ -66,7 +66,9 @@ Settings → Import / Export (also in the menu).
 
 `data/roster.js` holds the region's PAX names, taken from the **Roster** tab ("F3 Name" column) of the [F3 SacTown Data sheet](https://docs.google.com/spreadsheets/d/1_R4F0syR4m7eBen4j92PJCFeGrxEvNrbrL7LxFG46So/edit). Names with parentheses are left out (visitors from other regions such as "Spellcheck (Delta)", and placeholders such as "Mike (FNG)"), except ones whose only parenthesis is "(2.0)", like "Bo (2.0)". `tools/fetch_roster.py` downloads it (the sheet is shared as "anyone with the link can view"), and the weekly refresh below keeps it current.
 
-When the app opens, it adds any of those names it hasn't added before to that device's PAX roster, so they show up for quick-tap attendance on backblasts. A name a user removes from their roster (Settings → PAX roster) isn't added back. The backblast page shows the first 30 roster names with a **Show all** button; the search box finds anyone.
+When the app opens, it adds any of those names it hasn't added before to that device's PAX roster, so they show up for quick-tap attendance on backblasts. A name a user removes from their roster (Settings → PAX roster) isn't added back. `data/attendance.js` comes from the same sheet's **Master Data** tab (one row per PAX per workout). `tools/fetch_attendance.py` keeps, for each AO, the last date each PAX posted there in the past 180 days, using the same parentheses rule as the roster.
+
+On the backblast page, once an AO is picked, the people who posted at that AO in the last 3 months (before the backblast's date) are listed first, most recent first. They come from the attendance records, matched by AO name, plus backblasts saved on that device. Everyone else on the roster is behind **Show all**. With no AO picked, or an AO with no records, the first 30 roster names show instead. The search box finds anyone.
 
 ## Updating the exercise library
 
@@ -98,4 +100,5 @@ python3 tools/build_library.py
 | `sw.js`, `manifest.webmanifest`, `icon*` | Offline support and home-screen install |
 | `tools/fetch_exicon.py`, `tools/fetch_fia.py`, `tools/build_library.py`, `source/` | Exicon and FiA download scripts, the library rebuild script, and the source CSVs |
 | `data/roster.js`, `tools/fetch_roster.py` | Region PAX roster (generated) and its download script |
-| `.github/workflows/refresh-exicon.yml` | Weekly Exicon, FiA and roster refresh |
+| `data/attendance.js`, `tools/fetch_attendance.py` | Recent attendance per AO (generated) and its download script |
+| `.github/workflows/refresh-exicon.yml` | Weekly Exicon, FiA, roster and attendance refresh |
