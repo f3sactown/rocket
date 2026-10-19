@@ -41,9 +41,25 @@ const state = {
   templates: store.get("templates", []),
   workouts: store.get("workouts", []),
   backblasts: store.get("backblasts", []),
-  program: { version: "", removed: [], hashes: {}, notice: null, ...store.get("program", {}) },
+  program: { version: "", removed: [], hashes: {}, notice: null, rosterAdded: [], ...store.get("program", {}) },
 };
 function save(...keys) { keys.forEach(k => store.set(k, state[k])); }
+
+/** Add the region roster (data/roster.js, from the F3 SacTown Data sheet) to this device's PAX roster.
+ *  Each name is added once: a name the user later removes from their roster isn't added back. */
+function syncRoster() {
+  const names = window.F3_ROSTER?.names;
+  if (!Array.isArray(names)) return 0;
+  if (!Array.isArray(state.program.rosterAdded)) state.program.rosterAdded = [];
+  const done = new Set(state.program.rosterAdded.map(n => n.toLowerCase()));
+  const fresh = names.filter(n => n && !done.has(n.toLowerCase()));
+  if (!fresh.length) return 0;
+  const have = new Set(state.roster.map(n => n.toLowerCase()));
+  const add = fresh.filter(n => !have.has(n.toLowerCase()));
+  if (add.length) { state.roster = uniqNames([...state.roster, ...add]).sort((a, b) => a.localeCompare(b)); save("roster"); }
+  state.program.rosterAdded.push(...fresh); save("program");
+  return add.length;
+}
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
@@ -1008,6 +1024,8 @@ function viewBackblast(id, query) {
       </div>
     </div>`;
 
+  const ROSTER_PREVIEW = 30;
+  let showAllRoster = false;
   const drawLists = () => {
     for (const key of ["qs", "pax", "visitors", "fngs"]) {
       $(`[data-list="${key}"]`).innerHTML = bb[key].map((n, i) => `<button class="chip ${key === "qs" ? "q" : "on"}" data-rm="${key}" data-i="${i}">${key === "qs" ? "Q: " : ""}${esc(n)} <span class="x">×</span></button>`).join("")
@@ -1017,10 +1035,12 @@ function viewBackblast(id, query) {
     $("[data-total]").textContent = `${n} SELECTED`;
     const recent = recentAtAo();
     const rest = state.roster.filter(r => !inAny(r) && !recent.some(x => x.toLowerCase() === r.toLowerCase()));
+    const shown = showAllRoster ? rest : rest.slice(0, ROSTER_PREVIEW);
     $("[data-quick]").innerHTML = `
       ${recent.length ? `<div class="field-label">Recent at ${esc(aoName(bb.aoId))}</div><div class="chips">${recent.map(r => `<button class="chip" data-quickadd="${esc(r)}">${esc(r)}</button>`).join("")}</div><div class="spacer"></div>` : ""}
       <div class="field-label" style="display:flex;justify-content:space-between">PAX roster (${state.roster.length}) <button class="tiny-btn accent" data-go="#/settings">Edit roster</button></div>
-      ${rest.length ? `<div class="chips">${rest.map(r => `<button class="chip" data-quickadd="${esc(r)}">${esc(r)}</button>`).join("")}</div>`
+      ${rest.length ? `<div class="chips">${shown.map(r => `<button class="chip" data-quickadd="${esc(r)}">${esc(r)}</button>`).join("")}</div>
+        ${rest.length > ROSTER_PREVIEW ? `<div class="spacer"></div><button class="tiny-btn accent" data-roster-more>${showAllRoster ? "Show fewer" : `Show all ${rest.length}`}</button><span class="muted" style="font-size:13px"> · or search above</span>` : ""}`
         : `<p class="muted" style="font-size:13px;margin:0">${state.roster.length ? "Everyone on the roster is checked in." : "Your roster is empty. Names you add here are saved to it for quick tap next time."}</p>`}`;
     $("[data-live]").textContent = liveData(bb);
     for (const k of ["opening", "details"]) { const el = $(`[data-edit="${k}"]`); if (document.activeElement !== el && el.value !== bb[k]) el.value = bb[k]; }
@@ -1073,7 +1093,8 @@ function viewBackblast(id, query) {
     const rm = e.target.closest("[data-rm]");
     if (rm) { bb[rm.dataset.rm].splice(+rm.dataset.i, 1); changed(); return; }
     const qa = e.target.closest("[data-quickadd]");
-    if (qa) { addName("pax", qa.dataset.quickadd); }
+    if (qa) { addName("pax", qa.dataset.quickadd); return; }
+    if (e.target.closest("[data-roster-more]")) { showAllRoster = !showAllRoster; drawLists(); }
   });
   $("[data-cottpl]").onclick = () => insertTemplateModal("cot", t => {
     bb.cot = (bb.cot || "").trim() ? `${bb.cot.trim()}\n\n${t.content}` : t.content; $('[data-edit="cot"]').value = bb.cot; autosave();
@@ -1439,6 +1460,7 @@ function viewData() {
   if (state.backblasts.some(b => "hashtags" in b || "hashtagsEdited" in b)) {
     state.backblasts.forEach(b => { delete b.hashtags; delete b.hashtagsEdited; }); save("backblasts");
   }
+  syncRoster();
   render();
   const r = await syncProgram();
   if (r && (r.added || r.updated)) render();

@@ -1,9 +1,12 @@
 name: Refresh Exicon library
 
-# Weekly: download the F3 Exicon (https://codex.f3nation.com/exicon) and the FiA
-# Lexicon/Exicon Google Sheet, rebuild data/library.js, and commit it when either
-# changed. Run it any time from the Actions tab.
+# Weekly: download the F3 Exicon (https://codex.f3nation.com/exicon), the FiA
+# Lexicon/Exicon Google Sheet and the PAX roster from the F3 SacTown Data sheet,
+# rebuild data/library.js and data/roster.js, and commit whatever changed.
+# Run it any time from the Actions tab.
 on:
+  push:
+    branches: [claude/dazzling-planck-w5rkzz]   # TEMPORARY: first roster download; removed before merge
   schedule:
     - cron: "17 11 * * 1"   # Mondays 11:17 UTC
   workflow_dispatch:
@@ -37,15 +40,25 @@ jobs:
         continue-on-error: true
         run: python3 tools/fetch_fia.py
 
+      - name: Download the PAX roster
+        id: roster
+        continue-on-error: true
+        run: python3 tools/fetch_roster.py
+
       - name: Rebuild the library if a source changed
         id: build
         run: |
           git add -N source/fia-lexicon.csv 2>/dev/null || true
           if git diff --quiet -- source/exicon-export.csv source/fia-lexicon.csv; then
-            echo "Sources unchanged; nothing to do."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Library sources unchanged."
           else
             python3 tools/build_library.py
+          fi
+          git add -N data/roster.js 2>/dev/null || true
+          if git diff --quiet -- data/library.js data/roster.js source/; then
+            echo "Nothing changed; nothing to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -54,14 +67,15 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add source/exicon-export.csv data/library.js
-          [ -f source/fia-lexicon.csv ] && git add source/fia-lexicon.csv
+          git add source/ data/library.js
+          [ -f data/roster.js ] && git add data/roster.js
           count=$(python3 -c "import re;print(re.search(r'\"count\":(\d+)',open('data/library.js').read()).group(1))")
-          git commit -m "Refresh Exicon library ($count entries)"
+          pax=$(python3 -c "import re,os;print(re.search(r'\"count\": ?(\d+)',open('data/roster.js').read()).group(1) if os.path.exists('data/roster.js') else 0)")
+          git commit -m "Refresh Exicon library ($count entries) and PAX roster ($pax names)"
           git push
 
       - name: Fail the run if a download failed
-        if: steps.f3.outcome == 'failure' || steps.fia.outcome == 'failure'
+        if: steps.f3.outcome == 'failure' || steps.fia.outcome == 'failure' || steps.roster.outcome == 'failure'
         run: |
-          echo "F3 Exicon download: ${{ steps.f3.outcome }} · FiA download: ${{ steps.fia.outcome }}"
+          echo "F3 Exicon: ${{ steps.f3.outcome }} · FiA: ${{ steps.fia.outcome }} · Roster: ${{ steps.roster.outcome }}"
           exit 1
