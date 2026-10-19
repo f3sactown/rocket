@@ -5,8 +5,6 @@ name: Refresh Exicon library
 # Data sheet; rebuild data/library.js, data/roster.js and data/attendance.js, and
 # commit whatever changed. Run it any time from the Actions tab.
 on:
-  push:
-    branches: [claude/dazzling-planck-w5rkzz]   # TEMPORARY: first attendance download; removed before merge
   schedule:
     - cron: "17 11 * * 1"   # Mondays 11:17 UTC
   workflow_dispatch:
