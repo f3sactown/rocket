@@ -60,7 +60,9 @@ const REGION_REFRESH_HOURS = 6;     // how often a custom sheet is re-read
 const ATTENDANCE_KEEP_DAYS = 180;
 let regionCache = store.get("regionCache", null);  // custom sheet data: { sheetId, fetchedAt, aos, roster, attendance, error }
 
-function regionKey() { return state.settings.region || "sactown"; }
+function regionKey() { return state.settings.region || "none"; }
+/** True once the user has a real region name (picked a region or typed one), not the placeholder. */
+function regionNameSet() { const n = (state.settings.regionName || "").trim(); return !!n && n !== DEFAULT_SETTINGS.regionName; }
 function builtInRegion() { return REGIONS.find(r => r.key === regionKey()) || null; }
 function sheetIdFromUrl(url) { return String(url || "").match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,})/)?.[1] || ""; }
 function customCache() {
@@ -131,6 +133,8 @@ async function setRegion(next) {
   if (prev === "custom") state.aos = state.aos.filter(a => a.source !== "region");
   if (!state.aos.some(a => a.id === s.homeAoId)) s.homeAoId = "";
   save("aos");
+  const regionNames = [...REGIONS.map(r => r.name), s.customRegionName].filter(Boolean);
+  if (next === "none" && regionNames.includes(s.regionName)) s.regionName = DEFAULT_SETTINGS.regionName;
   s.region = next;
   const built = REGIONS.find(r => r.key === next);
   if (built) s.regionName = built.name;
@@ -703,7 +707,7 @@ function render() {
   const routes = {
     home: viewHome, planner: viewPlanner, plan: () => viewPlan(id, query), workout: () => viewWorkout(id),
     run: () => viewRun(id), backblasts: viewBackblasts, backblast: () => viewBackblast(id, query),
-    library: viewLibrary, templates: viewTemplates, aos: viewAos, settings: viewSettings, data: viewData,
+    library: viewLibrary, templates: viewTemplates, aos: viewAos, settings: () => viewSettings(query), data: viewData,
   };
   (routes[r] || viewHome)();
   window.scrollTo(0, 0);
@@ -766,7 +770,9 @@ function viewHome() {
           <h1 class="region-title">${esc(s.regionName || "F3")}</h1>
           <button class="greeting" data-go="#/settings">${greetingWord()}${s.f3Name ? ", " + esc(s.f3Name) : ""}<span class="chev">›</span></button>
           <div class="greeting-row"><span class="muted" style="font-size:14px">Keep showing up.</span>
-            ${homeAo ? `<span class="pill">Home AO · ${esc(homeAo)}</span>` : s.f3Name ? "" : `<button class="pill" data-go="#/settings" style="background:none;cursor:pointer">Set your F3 name</button>`}</div>
+            ${!regionNameSet() ? `<button class="pill" data-go="#/settings?focus=region" style="background:none;cursor:pointer">Choose region</button>`
+              : homeAo ? `<span class="pill">Home AO · ${esc(homeAo)}</span>`
+              : s.f3Name ? "" : `<button class="pill" data-go="#/settings?focus=f3Name" style="background:none;cursor:pointer">Set your nickname</button>`}</div>
         </div>
       </div>
       <button class="menu-btn" data-menu aria-label="Menu" style="margin-top:2px">${ICON.menu}</button>
@@ -1483,7 +1489,7 @@ function bindRegionCard(card) {
     loadCustom();
   };
 }
-function viewSettings() {
+function viewSettings(query) {
   const s = state.settings;
   const p = state.program;
   const progCount = [...state.templates, ...state.aos, ...state.workouts].filter(x => x.source === "program").length;
@@ -1548,6 +1554,12 @@ function viewSettings() {
     </div>${bottomNav("")}`;
   if (!libraryCache) loadLibrary().catch(() => {});
   bindRegionCard($("[data-region-card]"));
+  const focus = query?.get?.("focus");  // from the home page's "Choose region" / "Set your nickname" buttons
+  if (focus) setTimeout(() => {
+    const el = focus === "region" ? $("[data-region-card]") : $(`[data-s="${focus}"]`);
+    el?.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (el?.matches("input")) el.focus({ preventScroll: true });
+  }, 50);
   const saveS = debounce(() => save("settings"), 300);
   $$("[data-s]").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => { s[el.dataset.s] = el.value; saveS(); }));
   const saveRoster = debounce(() => { state.roster = uniqNames($("[data-roster]").value.split("\n")); save("roster"); }, 400);
@@ -1726,9 +1738,11 @@ function viewData() {
   if (state.backblasts.some(b => "hashtags" in b || "hashtagsEdited" in b)) {
     state.backblasts.forEach(b => { delete b.hashtags; delete b.hashtagsEdited; }); save("backblasts");
   }
-  if (!state.settings.region) {  // installs from before regions existed were all F3 SacTown
-    state.settings.region = "sactown";
-    if (state.settings.regionName === DEFAULT_SETTINGS.regionName) state.settings.regionName = "F3 SacTown";
+  if (!state.settings.region) {
+    // New installs start with no region. Installs from before regions existed already have the
+    // F3 SacTown AOs and roster (they've synced program content), so they stay on F3 SacTown.
+    state.settings.region = state.program.version ? "sactown" : "none";
+    if (state.settings.region === "sactown" && state.settings.regionName === DEFAULT_SETTINGS.regionName) state.settings.regionName = "F3 SacTown";
     save("settings");
   }
   syncRoster();

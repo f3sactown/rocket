@@ -66,14 +66,16 @@ Settings → Import / Export (also in the menu).
 
 **Settings → Region** picks where the AOs, the PAX roster and recent attendance come from:
 
-- **F3 SacTown** (the default): AOs from `data/program.js`, the roster from `data/roster.js` and attendance from `data/attendance.js`. All three come from the F3 SacTown Data sheet and are refreshed weekly by GitHub Actions (see below). Choosing it also sets the region name to "F3 SacTown".
+- **F3 SacTown**: AOs from `data/program.js`, the roster from `data/roster.js` and attendance from `data/attendance.js`. All three come from the F3 SacTown Data sheet and are refreshed weekly by GitHub Actions (see below). Choosing it also sets the region name to "F3 SacTown".
 - **Custom Google Sheet**: the user enters a region name and pastes a Google Sheets link. The app reads the sheet straight from the browser through Google's `gviz/tq` CSV endpoint, which allows cross-origin reads, and re-reads it every 6 hours. The sheet must be shared as "Anyone with the link can view" and laid out like the SacTown sheet:
   - **Roster**: an "F3 Name" column;
   - **Master Data**: "Post Date", "AO Name" and "PAX Name", one row per PAX per workout. Only the last 180 days are requested;
   - **Sites**: "AO Name", "Day", "Location", "Time", "Address" and "Retired". Retired rows are skipped.
 
   Any tab can be missing. The parentheses rule below applies to these names too.
-- **None**: no region data.
+- **None** (the default for new installs): no region data. Installs from before regions existed are moved to F3 SacTown, since they already have its AOs and roster.
+
+Until a region name is set, by picking a region or typing one, the home page shows a **Choose region** button that opens Settings → Region. After that, it shows **Set your nickname** until the F3 name is filled in.
 
 Switching region removes the AOs and roster names the old region added. AOs the user edited are kept. To add another built-in region, add it to `REGIONS` in `app.js` along with its data files.
 
