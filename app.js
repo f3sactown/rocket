@@ -745,6 +745,7 @@ function upcomingWorkouts() {
 }
 function greetingWord() {
   const h = new Date().getHours();
+  if (h >= 4 && h < 6) return "Good gloom";  // 4:00–5:59am, workout time
   return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
 }
 function viewHome() {
