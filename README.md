@@ -62,6 +62,12 @@ Settings → Import / Export (also in the menu).
 - **Export**: tick any of Settings, PAX roster, AOs, Saved templates, Saved workouts and Backblasts, then download a `.json` file. Unedited program items are left out unless you tick that option.
 - **Import**: choose a file. The app lists what the file contains, and you tick what to bring in. Then pick **Merge** (adds new items and updates matching ones) or **Replace** (wipes the selected categories first).
 
+## PAX roster from the region sheet
+
+`data/roster.js` holds the region's PAX names, taken from the **Roster** tab ("F3 Name" column) of the [F3 SacTown Data sheet](https://docs.google.com/spreadsheets/d/1_R4F0syR4m7eBen4j92PJCFeGrxEvNrbrL7LxFG46So/edit). Names with parentheses are left out (visitors from other regions such as "Spellcheck (Delta)", and placeholders such as "Mike (FNG)"), except ones whose only parenthesis is "(2.0)", like "Bo (2.0)". `tools/fetch_roster.py` downloads it (the sheet is shared as "anyone with the link can view"), and the weekly refresh below keeps it current.
+
+When the app opens, it adds any of those names it hasn't added before to that device's PAX roster, so they show up for quick-tap attendance on backblasts. A name a user removes from their roster (Settings → PAX roster) isn't added back. The backblast page shows the first 30 roster names with a **Show all** button; the search box finds anyone.
+
 ## Updating the exercise library
 
 `data/library.js` is built from two sources:
@@ -91,4 +97,5 @@ python3 tools/build_library.py
 | `data/program.js` | Built-in saved content (AOs, templates, sample workout), versioned |
 | `sw.js`, `manifest.webmanifest`, `icon*` | Offline support and home-screen install |
 | `tools/fetch_exicon.py`, `tools/fetch_fia.py`, `tools/build_library.py`, `source/` | Exicon and FiA download scripts, the library rebuild script, and the source CSVs |
-| `.github/workflows/refresh-exicon.yml` | Weekly Exicon and FiA refresh |
+| `data/roster.js`, `tools/fetch_roster.py` | Region PAX roster (generated) and its download script |
+| `.github/workflows/refresh-exicon.yml` | Weekly Exicon, FiA and roster refresh |
