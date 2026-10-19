@@ -62,6 +62,21 @@ Settings → Import / Export (also in the menu).
 - **Export**: tick any of Settings, PAX roster, AOs, Saved templates, Saved workouts and Backblasts, then download a `.json` file. Unedited program items are left out unless you tick that option.
 - **Import**: choose a file. The app lists what the file contains, and you tick what to bring in. Then pick **Merge** (adds new items and updates matching ones) or **Replace** (wipes the selected categories first).
 
+## Regions
+
+**Settings → Region** picks where the AOs, the PAX roster and recent attendance come from:
+
+- **F3 SacTown** (the default): AOs from `data/program.js`, the roster from `data/roster.js` and attendance from `data/attendance.js`. All three come from the F3 SacTown Data sheet and are refreshed weekly by GitHub Actions (see below). Choosing it also sets the region name to "F3 SacTown".
+- **Custom Google Sheet**: the user enters a region name and pastes a Google Sheets link. The app reads the sheet straight from the browser through Google's `gviz/tq` CSV endpoint, which allows cross-origin reads, and re-reads it every 6 hours. The sheet must be shared as "Anyone with the link can view" and laid out like the SacTown sheet:
+  - **Roster**: an "F3 Name" column;
+  - **Master Data**: "Post Date", "AO Name" and "PAX Name", one row per PAX per workout. Only the last 180 days are requested;
+  - **Sites**: "AO Name", "Day", "Location", "Time", "Address" and "Retired". Retired rows are skipped.
+
+  Any tab can be missing. The parentheses rule below applies to these names too.
+- **None**: no region data.
+
+Switching region removes the AOs and roster names the old region added. AOs the user edited are kept. To add another built-in region, add it to `REGIONS` in `app.js` along with its data files.
+
 ## PAX roster from the region sheet
 
 `data/roster.js` holds the region's PAX names, taken from the **Roster** tab ("F3 Name" column) of the [F3 SacTown Data sheet](https://docs.google.com/spreadsheets/d/1_R4F0syR4m7eBen4j92PJCFeGrxEvNrbrL7LxFG46So/edit). Names with parentheses are left out (visitors from other regions such as "Spellcheck (Delta)", and placeholders such as "Mike (FNG)"), except ones whose only parenthesis is "(2.0)", like "Bo (2.0)". `tools/fetch_roster.py` downloads it (the sheet is shared as "anyone with the link can view"), and the weekly refresh below keeps it current.

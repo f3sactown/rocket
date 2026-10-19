@@ -30,7 +30,10 @@ const DEFAULT_SETTINGS = {
   openingTemplate: "{count} HIM met at {ao} today to {why}.",
   ignoreProgram: false,
   runTextSize: "large",
-  libraryHiddenSources: [],   // every source is on unless the user turns it off, including ones added later
+  libraryHiddenSources: [],
+  region: "",            // "sactown" (a built-in region), "custom" (the user's own sheet) or "none"
+  customSheetUrl: "",
+  customRegionName: "",   // every source is on unless the user turns it off, including ones added later
 };
 
 const COLLECTIONS = ["aos", "templates", "workouts", "backblasts"];
@@ -45,20 +48,199 @@ const state = {
 };
 function save(...keys) { keys.forEach(k => store.set(k, state[k])); }
 
-/** Add the region roster (data/roster.js, from the F3 SacTown Data sheet) to this device's PAX roster.
- *  Each name is added once: a name the user later removes from their roster isn't added back. */
+/* ------------------------------------------------------------------ */
+/* Region data: AOs, PAX roster and attendance from a region's sheet   */
+/* ------------------------------------------------------------------ */
+/** Built-in regions. Their data ships with the app (refreshed weekly by GitHub Actions):
+ *  AOs come from program content, the roster from data/roster.js, attendance from data/attendance.js. */
+const REGIONS = [
+  { key: "sactown", name: "F3 SacTown", sheet: "https://docs.google.com/spreadsheets/d/1_R4F0syR4m7eBen4j92PJCFeGrxEvNrbrL7LxFG46So/edit" },
+];
+const REGION_REFRESH_HOURS = 6;     // how often a custom sheet is re-read
+const ATTENDANCE_KEEP_DAYS = 180;
+let regionCache = store.get("regionCache", null);  // custom sheet data: { sheetId, fetchedAt, aos, roster, attendance, error }
+
+function regionKey() { return state.settings.region || "sactown"; }
+function builtInRegion() { return REGIONS.find(r => r.key === regionKey()) || null; }
+function sheetIdFromUrl(url) { return String(url || "").match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,})/)?.[1] || ""; }
+function customCache() {
+  const id = sheetIdFromUrl(state.settings.customSheetUrl);
+  return regionKey() === "custom" && id && regionCache?.sheetId === id ? regionCache : null;
+}
+/** Same rule as the region roster: leave out names with parentheses unless the only one is "(2.0)". */
+function keepPaxName(name) { return (String(name).match(/\([^)]*\)?/g) || []).every(g => g.replace(/\s/g, "") === "(2.0)"); }
+function regionRosterNames() {
+  if (builtInRegion()?.key === "sactown") return window.F3_ROSTER?.names || [];
+  return customCache()?.roster || [];
+}
+function regionAttendance() {
+  if (builtInRegion()?.key === "sactown") return window.F3_ATTENDANCE?.aos || {};
+  return customCache()?.attendance || {};
+}
+
+/** Add the region's roster to this device's PAX roster. Each name is added once per region: a name
+ *  the user later removes from their roster isn't added back. */
 function syncRoster() {
-  const names = window.F3_ROSTER?.names;
-  if (!Array.isArray(names)) return 0;
-  if (!Array.isArray(state.program.rosterAdded)) state.program.rosterAdded = [];
-  const done = new Set(state.program.rosterAdded.map(n => n.toLowerCase()));
+  const key = regionKey();
+  const p = state.program;
+  if (!p.rosterAddedBy || typeof p.rosterAddedBy !== "object") p.rosterAddedBy = {};
+  if (Array.isArray(p.rosterAdded)) { p.rosterAddedBy.sactown = [...(p.rosterAddedBy.sactown || []), ...p.rosterAdded]; delete p.rosterAdded; save("program"); }
+  const names = regionRosterNames();
+  if (!names.length) return 0;
+  const doneList = p.rosterAddedBy[key] ||= [];
+  const done = new Set(doneList.map(n => n.toLowerCase()));
   const fresh = names.filter(n => n && !done.has(n.toLowerCase()));
   if (!fresh.length) return 0;
   const have = new Set(state.roster.map(n => n.toLowerCase()));
   const add = fresh.filter(n => !have.has(n.toLowerCase()));
   if (add.length) { state.roster = uniqNames([...state.roster, ...add]).sort((a, b) => a.localeCompare(b)); save("roster"); }
-  state.program.rosterAdded.push(...fresh); save("program");
+  doneList.push(...fresh); save("program");
   return add.length;
+}
+
+/** Custom region AOs (from the sheet's Sites tab) live in state.aos with source "region".
+ *  Unedited ones follow the sheet; ones the user deleted stay deleted. */
+function syncRegionAos() {
+  const want = customCache()?.aos || [];
+  const removed = state.program.removed;
+  let changed = false;
+  const ids = new Set(want.map(a => a.id));
+  const keep = state.aos.filter(a => a.source !== "region" || ids.has(a.id));
+  if (keep.length !== state.aos.length) { state.aos = keep; changed = true; }
+  for (const raw of want) {
+    if (removed.includes(raw.id)) continue;
+    const i = state.aos.findIndex(a => a.id === raw.id);
+    if (i === -1) { state.aos.push({ ...raw, source: "region", createdAt: nowIso(), updatedAt: nowIso() }); changed = true; }
+    else if (state.aos[i].source === "region" && ["name", "location", "address", "schedule"].some(k => state.aos[i][k] !== raw[k])) {
+      Object.assign(state.aos[i], raw, { updatedAt: nowIso() }); changed = true;
+    }
+  }
+  if (changed) save("aos");
+  return changed;
+}
+
+/** Switch region: take away what the old region added (unedited AOs, roster names it added),
+ *  then bring in the new region's AOs and roster. */
+async function setRegion(next) {
+  const s = state.settings, prev = regionKey();
+  if (next === prev) return;
+  const p = state.program;
+  const added = new Set((p.rosterAddedBy?.[prev] || []).map(n => n.toLowerCase()));
+  if (added.size) { state.roster = state.roster.filter(n => !added.has(n.toLowerCase())); delete p.rosterAddedBy[prev]; save("roster", "program"); }
+  if (prev === "sactown") state.aos = state.aos.filter(a => a.source !== "program");
+  if (prev === "custom") state.aos = state.aos.filter(a => a.source !== "region");
+  if (!state.aos.some(a => a.id === s.homeAoId)) s.homeAoId = "";
+  save("aos");
+  s.region = next;
+  const built = REGIONS.find(r => r.key === next);
+  if (built) s.regionName = built.name;
+  else if (next === "custom" && s.customRegionName) s.regionName = s.customRegionName;
+  save("settings");
+  if (next === "sactown") await syncProgram({ force: true });
+  if (next === "custom") await refreshCustomRegion({ force: true });
+  syncRoster();
+}
+
+/* --- Reading a Google Sheet from the browser (gviz CSV endpoint, which allows cross-origin reads) --- */
+function parseCsv(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+async function sheetTab(id, tab, tq) {
+  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(tab)}${tq ? `&tq=${encodeURIComponent(tq)}` : ""}`;
+  const res = await fetch(url, { cache: "no-store" });
+  const text = await res.text();
+  if (!res.ok || /^\s*</.test(text) || /google\.visualization\.Query/.test(text)) throw new Error("not-shared");
+  const [head = [], ...rows] = parseCsv(text);
+  const cols = head.map(h => h.trim().toLowerCase());
+  return { cols, rows: rows.filter(r => r.some(c => c.trim())) };
+}
+const colLetter = i => (i >= 26 ? colLetter(Math.floor(i / 26) - 1) : "") + String.fromCharCode(65 + (i % 26));
+function sheetDate(raw) {
+  const v = String(raw || "").trim();
+  let m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (m) { const y = m[3].length === 2 ? `20${m[3]}` : m[3]; return `${y}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`; }
+  m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : "";
+}
+const cleanName = s => String(s || "").replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim();
+
+/** Read a region sheet laid out like the F3 SacTown Data sheet: tabs "Roster" (F3 Name),
+ *  "Master Data" (Post Date, AO Name, PAX Name) and "Sites" (AO Name, Day, Location, Time, Address, Retired).
+ *  Each tab is optional; a missing tab just means no data of that kind. */
+async function readRegionSheet(id) {
+  const out = { sheetId: id, fetchedAt: nowIso(), aos: [], roster: [], attendance: {}, missing: [] };
+  const tryTab = async (tab, need, tq) => {
+    try {
+      const t = await sheetTab(id, tab, tq);
+      if (need.every(n => t.cols.includes(n))) return t;
+    } catch (e) { if (e.message === "not-shared") throw e; }
+    out.missing.push(tab); return null;
+  };
+  const roster = await tryTab("Roster", ["f3 name"]);
+  if (roster) {
+    const i = roster.cols.indexOf("f3 name");
+    out.roster = uniqNames(roster.rows.map(r => cleanName(r[i])).filter(n => n && keepPaxName(n))).sort((a, b) => a.localeCompare(b));
+  }
+  const sites = await tryTab("Sites", ["ao name"]);
+  if (sites) {
+    const c = n => sites.cols.indexOf(n), get = (r, n) => (c(n) >= 0 ? cleanName(r[c(n)]) : "");
+    out.aos = sites.rows.filter(r => get(r, "ao name") && !/^(y|yes|true)$/i.test(get(r, "retired"))).map(r => ({
+      id: `rg-${get(r, "ao name").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`,
+      name: get(r, "ao name"), location: get(r, "location"), address: get(r, "address"),
+      schedule: [get(r, "day"), get(r, "time")].filter(Boolean).join(" "),
+    }));
+  }
+  // Master Data can be long, so ask for the recent rows only (falls back to everything if the date column isn't a date).
+  const since = new Date(Date.now() - ATTENDANCE_KEEP_DAYS * 864e5).toISOString().slice(0, 10);
+  const head = await tryTab("Master Data", ["post date", "ao name", "pax name"], "limit 0");
+  if (head) {
+    const [d, a, p] = ["post date", "ao name", "pax name"].map(n => head.cols.indexOf(n));
+    let md;
+    try { md = await sheetTab(id, "Master Data", `select ${colLetter(d)},${colLetter(a)},${colLetter(p)} where ${colLetter(d)} >= date '${since}'`); md.idx = [0, 1, 2]; }
+    catch (e) { if (e.message === "not-shared") throw e; md = await sheetTab(id, "Master Data"); md.idx = [d, a, p]; }
+    for (const r of md.rows) {
+      const date = sheetDate(r[md.idx[0]]), ao = cleanName(r[md.idx[1]]), pax = cleanName(r[md.idx[2]]);
+      if (!date || date < since || !ao || !pax || !keepPaxName(pax)) continue;
+      const m = out.attendance[ao] ||= {};
+      if (!m[pax] || m[pax] < date) m[pax] = date;
+    }
+  }
+  return out;
+}
+
+/** Re-read the custom sheet when it's due (or forced), then apply its AOs and roster. */
+let regionLoading = null;
+function refreshCustomRegion(opts) {
+  return regionLoading ||= loadCustomRegion(opts).finally(() => { regionLoading = null; });
+}
+async function loadCustomRegion({ force = false } = {}) {
+  if (regionKey() !== "custom") return null;
+  const id = sheetIdFromUrl(state.settings.customSheetUrl);
+  if (!id) return null;
+  const fresh = regionCache?.sheetId === id && regionCache.fetchedAt && Date.now() - Date.parse(regionCache.fetchedAt) < REGION_REFRESH_HOURS * 36e5;
+  if (fresh && !force && !regionCache.error) { syncRegionAos(); return regionCache; }
+  try {
+    regionCache = await readRegionSheet(id);
+  } catch (e) {
+    const msg = e.message === "not-shared"
+      ? "Couldn't read that sheet. In Google Sheets, click Share and set General access to “Anyone with the link” (Viewer)."
+      : "Couldn't reach Google Sheets. Check your connection and try again.";
+    regionCache = { ...(regionCache?.sheetId === id ? regionCache : { sheetId: id, aos: [], roster: [], attendance: {} }), error: msg };
+  }
+  store.set("regionCache", regionCache);
+  syncRegionAos();
+  syncRoster();
+  return regionCache;
 }
 
 /* ------------------------------------------------------------------ */
@@ -77,6 +259,10 @@ function fmtDate(iso, opts = { weekday: "short", month: "short", day: "numeric",
   if (!iso) return "";
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("en-US", opts);
+}
+function fmtWhen(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? "" : d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 function hash(str) {
   let h = 5381;
@@ -205,6 +391,7 @@ async function syncProgram({ force = false } = {}) {
   for (const coll of PROGRAM_COLLECTIONS) {
     for (const raw of prog[coll] || []) {
       if (!raw.id || p.removed.includes(raw.id)) continue;
+      if (coll === "aos" && regionKey() !== "sactown") continue;  // the program's AOs are F3 SacTown's
       const h = hash(JSON.stringify(raw));
       const idx = state[coll].findIndex(x => x.id === raw.id);
       if (idx === -1) {
@@ -225,12 +412,15 @@ async function syncProgram({ force = false } = {}) {
 }
 
 function forgetProgramItem(item) {
-  if (isProgram(item) && !state.program.removed.includes(item.id)) {
+  if ((isProgram(item) || String(item.source || "").startsWith("region")) && !state.program.removed.includes(item.id)) {
     state.program.removed.push(item.id);
     save("program");
   }
 }
-function markEdited(item) { if (item.source === "program") item.source = "program-edited"; }
+function markEdited(item) {
+  if (item.source === "program") item.source = "program-edited";
+  else if (item.source === "region") item.source = "region-edited";
+}
 
 /* ------------------------------------------------------------------ */
 /* Exicon library                                                      */
@@ -975,7 +1165,7 @@ function viewBackblast(id, query) {
     };
     const ao = state.aos.find(a => a.id === bb.aoId);
     const norm = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
-    const sheet = window.F3_ATTENDANCE?.aos || {};
+    const sheet = regionAttendance();
     const key = ao && Object.keys(sheet).find(k => norm(k) === norm(ao.name));
     if (key) for (const [name, date] of Object.entries(sheet[key])) note(name, date);
     state.backblasts.filter(b => b.aoId === bb.aoId && b.id !== bb.id).forEach(b => [...b.qs, ...b.pax].forEach(n => note(n, b.date)));
@@ -1218,7 +1408,7 @@ function viewAos() {
         <h1 class="page-title">AOs</h1><button class="btn accent sm" style="border-radius:12px;padding:10px 14px" data-add>+ Add AO</button></div>
       <p class="page-sub">Add your AOs once. They fill in the location line on every backblast.</p>
       <div class="list">${state.aos.map(a => `<div class="row" style="cursor:default"><div class="grow">
-          <div class="title">${esc(a.name)} ${a.id === state.settings.homeAoId ? `<span class="pill good">Home</span>` : ""}${isProgram(a) ? ` <span class="pill prog">Program</span>` : ""}</div>
+          <div class="title">${esc(a.name)} ${a.id === state.settings.homeAoId ? `<span class="pill good">Home</span>` : ""}${isProgram(a) ? ` <span class="pill prog">Program</span>` : String(a.source || "").startsWith("region") ? ` <span class="pill prog">${esc(state.settings.customRegionName || "Region sheet")}</span>` : ""}</div>
           <div class="sub">${esc([a.location, a.schedule].filter(Boolean).join(" · ") || "No details")}</div></div>
           <button class="btn sm" data-edit="${a.id}">Edit</button><button class="btn sm danger" data-del="${a.id}">Delete</button></div>`).join("") || `<div class="empty">No AOs yet.</div>`}</div>
     </div>${bottomNav("")}`;
@@ -1237,6 +1427,62 @@ function viewAos() {
 /* ------------------------------------------------------------------ */
 /* Settings                                                            */
 /* ------------------------------------------------------------------ */
+function regionCardHtml() {
+  const s = state.settings, key = regionKey(), c = regionCache;
+  const opt = (k, title, desc) => `<label class="switch" style="margin-bottom:10px"><input type="radio" name="region" data-region="${k}" ${key === k ? "checked" : ""}>
+    <span><b>${title}</b><br><span class="muted" style="font-size:13px">${desc}</span></span></label>`;
+  const id = sheetIdFromUrl(s.customSheetUrl);
+  const status = key !== "custom" ? "" : !s.customSheetUrl ? "" : !id ? `<p class="hint" style="color:var(--danger)">That doesn't look like a Google Sheets link. It should contain /spreadsheets/d/…</p>`
+    : c?.sheetId !== id ? `<p class="hint">Not loaded yet.</p>`
+    : `<p class="hint" ${c.error ? `style="color:var(--danger)"` : ""}>${c.error ? esc(c.error) : `Loaded ${esc(fmtWhen(c.fetchedAt))}: ${c.aos.length} AO${c.aos.length === 1 ? "" : "s"}, ${c.roster.length} PAX, attendance at ${Object.keys(c.attendance).length} AO${Object.keys(c.attendance).length === 1 ? "" : "s"}.`}
+      ${!c.error && c.missing?.length ? ` No ${c.missing.map(esc).join(", ")} tab found.` : ""}</p>`;
+  return `
+    <div class="field-label" style="color:var(--accent)">Region</div>
+    <p class="muted" style="font-size:14px;margin:0 0 12px">Your region supplies the AOs, the PAX roster and who has been at each AO lately (shown first on backblasts).</p>
+    ${REGIONS.map(r => opt(r.key, esc(r.name), `AOs, PAX roster and attendance from the <a href="${r.sheet}" target="_blank" rel="noopener">${esc(r.name)} data sheet</a>, updated weekly.`)).join("")}
+    ${opt("custom", "Custom Google Sheet", "Use your region's own sheet. It's read from your browser, and re-read every few hours.")}
+    ${key === "custom" ? `<div style="margin:0 0 12px 32px">
+      <label class="field"><span>Region name</span><input class="input" data-custom="customRegionName" value="${esc(s.customRegionName)}" placeholder="F3 My Region"></label>
+      <label class="field"><span>Google Sheet link</span><input class="input" data-custom="customSheetUrl" value="${esc(s.customSheetUrl)}" placeholder="https://docs.google.com/spreadsheets/d/…" inputmode="url" autocomplete="off"></label>
+      <div class="btn-row"><button class="btn sm accent" data-region-load>${c?.sheetId === id && !c?.error ? "Reload sheet" : "Load sheet"}</button></div>
+      ${status}
+      <p class="hint">Lay the sheet out like the <a href="${REGIONS[0].sheet}" target="_blank" rel="noopener">F3 SacTown data sheet</a>: a <b>Roster</b> tab with an "F3 Name" column, a <b>Master Data</b> tab with "Post Date", "AO Name" and "PAX Name" (one row per PAX per workout), and a <b>Sites</b> tab with "AO Name", "Day", "Location", "Time", "Address" and "Retired". Any tab can be left out. Share it as “Anyone with the link” can view.</p>
+    </div>` : ""}
+    ${opt("none", "None", "No region data. Add your own AOs and PAX.")}
+    <p class="hint">Switching region takes away the AOs and roster names the old region added. AOs you edited stay.</p>`;
+}
+function bindRegionCard(card) {
+  const redraw = () => { card.innerHTML = regionCardHtml(); bindRegionCard(card); };
+  $$("[data-region]", card).forEach(el => el.onchange = async () => {
+    const next = el.dataset.region;
+    if (next !== regionKey() && regionKey() !== "none"
+      && !(await confirmModal(`Switch region? The AOs and roster names that ${state.settings.regionName || "your region"} added are taken away. AOs you edited stay.`, "Switch"))) { redraw(); return; }
+    await setRegion(next);
+    toast(next === "none" ? "No region selected" : `Region: ${state.settings.regionName || "Custom"}`);
+    viewSettings();
+  });
+  $$("[data-custom]", card).forEach(el => el.addEventListener("change", async () => {
+    const s = state.settings, k = el.dataset.custom;
+    s[k] = el.value.trim();
+    if (k === "customRegionName" && s.customRegionName) s.regionName = s.customRegionName;
+    save("settings");
+    if (k === "customSheetUrl" && sheetIdFromUrl(s.customSheetUrl)) { await loadCustom(); return; }
+    viewSettings();
+  }));
+  const loadCustom = async () => {
+    const b = $("[data-region-load]", card); if (b) { b.disabled = true; b.textContent = "Loading…"; }
+    const c = await refreshCustomRegion({ force: true });
+    toast(c && !c.error ? "Sheet loaded" : "Couldn't load the sheet");
+    viewSettings();
+  };
+  const load = $("[data-region-load]", card);
+  if (load) load.onclick = () => {
+    const url = $('[data-custom="customSheetUrl"]', card).value.trim();
+    if (url !== state.settings.customSheetUrl) { state.settings.customSheetUrl = url; save("settings"); }
+    if (!sheetIdFromUrl(url)) { toast("Paste a Google Sheets link first"); return; }
+    loadCustom();
+  };
+}
 function viewSettings() {
   const s = state.settings;
   const p = state.program;
@@ -1245,6 +1491,7 @@ function viewSettings() {
     <div class="page" style="padding-top:4px">
       <h1 class="page-title">Settings</h1>
       <p class="page-sub">Saved in this browser on this device only — use Import / Export to back up or move your data.</p>
+      <div class="card" data-region-card>${regionCardHtml()}</div>
       <div class="card">
         <div class="field-label" style="color:var(--accent)">You &amp; your region</div>
         <div class="two-col">
@@ -1300,6 +1547,7 @@ function viewSettings() {
       </div>
     </div>${bottomNav("")}`;
   if (!libraryCache) loadLibrary().catch(() => {});
+  bindRegionCard($("[data-region-card]"));
   const saveS = debounce(() => save("settings"), 300);
   $$("[data-s]").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => { s[el.dataset.s] = el.value; saveS(); }));
   const saveRoster = debounce(() => { state.roster = uniqNames($("[data-roster]").value.split("\n")); save("roster"); }, 400);
@@ -1478,10 +1726,16 @@ function viewData() {
   if (state.backblasts.some(b => "hashtags" in b || "hashtagsEdited" in b)) {
     state.backblasts.forEach(b => { delete b.hashtags; delete b.hashtagsEdited; }); save("backblasts");
   }
+  if (!state.settings.region) {  // installs from before regions existed were all F3 SacTown
+    state.settings.region = "sactown";
+    if (state.settings.regionName === DEFAULT_SETTINGS.regionName) state.settings.regionName = "F3 SacTown";
+    save("settings");
+  }
   syncRoster();
   render();
   const r = await syncProgram();
   if (r && (r.added || r.updated)) render();
+  if (regionKey() === "custom") refreshCustomRegion().then(c => c && render());
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
