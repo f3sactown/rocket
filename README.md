@@ -85,6 +85,8 @@ Switching region removes the AOs and roster names the old region added. AOs the 
 
 When the app opens, it adds any of those names it hasn't added before to that device's PAX roster, so they show up for quick-tap attendance on backblasts. A name a user removes from their roster (Settings → PAX roster) isn't added back. `data/attendance.js` comes from the same sheet's **Master Data** tab (one row per PAX per workout). `tools/fetch_attendance.py` keeps, for each AO, the last date each PAX posted there in the past 180 days, using the same parentheses rule as the roster.
 
+It also keeps each PAX's all-time totals: the sheet's running "Post Total" and "Q Total" columns, or the sums of "Post" and "Q" when those columns are missing. The home page's **My stats** shows **Total posts** and **Total Qs** for the F3 name entered in Settings, plus **Qs planned**, the number of workouts planned in the app. A custom region sheet supplies the same totals.
+
 On the backblast page, once an AO is picked, the people who posted at that AO in the last 3 months (before the backblast's date) are listed first, most recent first. They come from the attendance records, matched by AO name, plus backblasts saved on that device. Everyone else on the roster is behind **Show all**. With no AO picked, or an AO with no records, the first 30 roster names show instead. The search box finds anyone.
 
 ## Updating the exercise library
