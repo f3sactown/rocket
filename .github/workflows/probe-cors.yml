@@ -1,0 +1,18 @@
+name: Probe Google Sheets CORS (temporary)
+on:
+  push:
+    branches: [claude/dazzling-planck-w5rkzz]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          ID=1_R4F0syR4m7eBen4j92PJCFeGrxEvNrbrL7LxFG46So
+          for u in \
+            "https://docs.google.com/spreadsheets/d/$ID/gviz/tq?tqx=out:csv&sheet=Roster" \
+            "https://docs.google.com/spreadsheets/d/$ID/gviz/tq?tqx=out:csv&sheet=Master%20Data&tq=select%20A,B,C%20where%20A%20%3E%3D%20date%20%272026-07-01%27" \
+            "https://docs.google.com/spreadsheets/d/$ID/export?format=csv&gid=52995101"; do
+            echo "=== $u"
+            curl -sS -L -D - -o body.txt -H "Origin: https://rocket.f3sactown.com" "$u" | grep -iE "^(HTTP|access-control|content-type|location)" || true
+            echo "--- bytes: $(wc -c < body.txt)"; head -c 400 body.txt; echo
+          done
