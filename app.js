@@ -745,6 +745,7 @@ function upcomingWorkouts() {
 }
 function greetingWord() {
   const h = new Date().getHours();
+  if (h >= 4 && h < 6) return "Good gloom";  // 4:00–5:59am, workout time
   return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
 }
 function viewHome() {
@@ -794,7 +795,7 @@ function viewHome() {
         ${s.logo ? `<img class="home-logo" src="${esc(s.logo)}" alt="${esc(s.regionName || "Region")} logo">` : ""}
         <div class="home-id">
           <h1 class="region-title">${esc(s.regionName || DEFAULT_SETTINGS.regionName)}</h1>
-          <button class="greeting" data-go="#/settings">${greetingWord()}, ${esc(s.f3Name || "PAX Name")}<span class="chev">›</span></button>
+          <button class="greeting" data-go="#/settings">${greetingWord()}, ${esc(s.f3Name || "{PAX}")}<span class="chev">›</span></button>
           <div class="greeting-row"><span class="muted" style="font-size:14px">Keep showing up.</span>
             ${!regionNameSet() ? `<button class="pill" data-go="#/settings?focus=region" style="background:none;cursor:pointer">Choose region</button>`
               : homeAo ? `<span class="pill">Home AO · ${esc(homeAo)}</span>`

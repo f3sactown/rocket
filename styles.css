@@ -66,6 +66,8 @@ a { color: var(--accent); text-decoration: none; }
 .home-id .greeting .chev { margin-left: 2px; }
 .home-head-left { align-items: flex-start; }
 .home-id .greeting-row { flex-wrap: wrap; row-gap: 6px; }
+/* Run the greeting row under the menu button so its pill lines up with the page's right edge. */
+.home-id .greeting-row { margin-right: -58px; }
 .home-logo { height: 120px; width: auto; max-width: 34%; object-fit: contain; object-position: left bottom; display: block; flex: none; }
 @media (max-width: 420px) {
   .home-logo { max-width: 32%; }
