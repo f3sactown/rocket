@@ -64,7 +64,7 @@ Settings → Import / Export (also in the menu).
 
 ## PAX roster from the region sheet
 
-`data/roster.js` holds the region's PAX names, taken from the **Roster** tab ("F3 Name" column) of the [F3 SacTown Data sheet](https://docs.google.com/spreadsheets/d/1_R4F0syR4m7eBen4j92PJCFeGrxEvNrbrL7LxFG46So/edit). `tools/fetch_roster.py` downloads it (the sheet is shared as "anyone with the link can view"), and the weekly refresh below keeps it current.
+`data/roster.js` holds the region's PAX names, taken from the **Roster** tab ("F3 Name" column) of the [F3 SacTown Data sheet](https://docs.google.com/spreadsheets/d/1_R4F0syR4m7eBen4j92PJCFeGrxEvNrbrL7LxFG46So/edit). Names with parentheses are left out (visitors from other regions such as "Spellcheck (Delta)", and placeholders such as "Mike (FNG)"), except ones whose only parenthesis is "(2.0)", like "Bo (2.0)". `tools/fetch_roster.py` downloads it (the sheet is shared as "anyone with the link can view"), and the weekly refresh below keeps it current.
 
 When the app opens, it adds any of those names it hasn't added before to that device's PAX roster, so they show up for quick-tap attendance on backblasts. A name a user removes from their roster (Settings → PAX roster) isn't added back. The backblast page shows the first 30 roster names with a **Show all** button; the search box finds anyone.
 

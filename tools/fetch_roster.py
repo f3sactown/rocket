@@ -5,8 +5,10 @@ Usage:  python3 tools/fetch_roster.py [--csv downloaded.csv] [--out data/roster.
 
 The sheet is shared as "anyone with the link can view", so the CSV export of its
 "Roster" tab downloads without signing in. The names in its "F3 Name" column are
-written to data/roster.js; the app adds any it hasn't added before to each
-device's PAX roster for quick-tap attendance (names a user removed stay removed).
+written to data/roster.js, leaving out names with parentheses (visitors such as
+"Spellcheck (Delta)" and placeholders such as "Mike (FNG)") unless the only one
+is "(2.0)". The app adds any it hasn't added before to each device's PAX roster
+for quick-tap attendance (names a user removed stay removed).
 Pass --csv to read a CSV you downloaded yourself (File > Download > CSV).
 
 It exits with an error (and writes nothing) if the column is missing or the name
@@ -36,6 +38,12 @@ def fetch(url: str) -> str:
         return res.read().decode("utf-8-sig")
 
 
+def keep(name: str) -> bool:
+    """Leave out visitors and placeholders: any name with parentheses, except "(2.0)" ones."""
+    groups = re.findall(r"\([^)]*\)?", name)
+    return all(g.replace(" ", "") == "(2.0)" for g in groups)
+
+
 def read_names(text: str) -> list:
     reader = csv.DictReader(io.StringIO(text))
     col = next((c for c in reader.fieldnames or [] if c and c.strip().lower() == COLUMN), None)
@@ -44,7 +52,7 @@ def read_names(text: str) -> list:
     names, seen = [], set()
     for r in reader:
         name = re.sub(r"\s+", " ", (r.get(col) or "").replace("‘", "'").replace("’", "'")).strip()
-        if name and name.lower() not in seen:
+        if name and keep(name) and name.lower() not in seen:
             seen.add(name.lower())
             names.append(name)
     return sorted(names, key=str.lower)
