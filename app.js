@@ -1475,7 +1475,7 @@ function regionCardHtml() {
     ${REGIONS.map(r => opt(r.key, esc(r.name), `AOs, PAX roster and attendance from the <a href="${r.sheet}" target="_blank" rel="noopener">${esc(r.name)} data sheet</a>, updated weekly.`)).join("")}
     ${opt("custom", "Custom Google Sheet", "Use your region's own sheet. It's read from your browser, and re-read every few hours.")}
     ${key === "custom" ? `<div style="margin:0 0 12px 32px">
-      <label class="field"><span>Region name</span><input class="input" data-custom="customRegionName" value="${esc(s.customRegionName)}" placeholder="My Region"></label>
+      <label class="field"><span>Region name</span><input class="input" data-custom="customRegionName" value="${esc(s.customRegionName)}" placeholder="Region Name"></label>
       <label class="field"><span>Google Sheet link</span><input class="input" data-custom="customSheetUrl" value="${esc(s.customSheetUrl)}" placeholder="https://docs.google.com/spreadsheets/d/…" inputmode="url" autocomplete="off"></label>
       <div class="btn-row"><button class="btn sm accent" data-region-load>${c?.sheetId === id && !c?.error ? "Reload sheet" : "Load sheet"}</button></div>
       ${status}
@@ -1528,8 +1528,8 @@ function viewSettings(query) {
       <div class="card">
         <div class="field-label" style="color:var(--accent)">You &amp; your region</div>
         <div class="two-col">
-          <label class="field"><span>Your F3 name</span><input class="input" data-s="f3Name" value="${esc(s.f3Name)}" placeholder="PAX Name"></label>
-          <label class="field"><span>Region name</span><input class="input" data-s="regionName" value="${esc(s.regionName)}"></label>
+          <label class="field"><span>Your PAX Name</span><input class="input" data-s="f3Name" value="${esc(s.f3Name)}" placeholder="PAX Name"></label>
+          <label class="field"><span>Region name</span><input class="input" data-s="regionName" value="${esc(regionNameSet() ? s.regionName : "")}" placeholder="Region Name"></label>
         </div>
         <label class="field" style="margin:0"><span>Home AO</span><select class="input" data-s="homeAoId">${aoOptions(s.homeAoId)}</select></label>
         <p class="hint"><button class="linkish" data-go="#/aos">Manage AOs ›</button></p>
