@@ -909,11 +909,11 @@ function viewHome() {
       ${hero}
       <div class="label">Quick access</div>
       <div class="tiles">
-        ${tile("#/plan", ICON.plan, "Plan Workout", "Build your beatdown", false)}
+        ${tile("#/plan", ICON.plan, "Plan Workout", "Build your beatdown", true)}
         ${tile("#/planner", ICON.calendar, "My Planner", "Upcoming & past BDs", true)}
         ${tile("#/backblast/new", ICON.megaphone, "Backblast", "Write & share", true)}
-        ${tile("#/library", ICON.book, "Exicon", "Browse exercises", false)}
-        ${tile("#/templates", ICON.layers, "Templates", "Reusable sections", false)}
+        ${tile("#/library", ICON.book, "Exicon", "Browse exercises", true)}
+        ${tile("#/templates", ICON.layers, "Templates", "Reusable sections", true)}
       </div>
       <div class="label">Upcoming Qs</div>
       ${others.length ? `<div class="list">${others.map(workoutRow).join("")}</div>` : `
