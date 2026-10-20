@@ -1,0 +1,13 @@
+name: Probe missing tab (temporary)
+on:
+  push:
+    branches: [claude/dazzling-planck-w5rkzz]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          ID=1_R4F0syR4m7eBen4j92PJCFeGrxEvNrbrL7LxFG46So
+          for t in "No%20Such%20Tab" "roster" "Sites"; do
+            echo "=== $t"; curl -sS -D - -o b.txt "https://docs.google.com/spreadsheets/d/$ID/gviz/tq?tqx=out:csv&headers=1&sheet=$t&tq=limit%200" | grep -iE "^(HTTP|content-type)"; head -c 300 b.txt; echo
+          done
