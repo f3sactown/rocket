@@ -951,6 +951,21 @@ function viewHome() {
 
 /** Size the home-page logo so its bottom lines up with the bottom of "Keep showing up."
  *  The logo's width changes how the text wraps, so settle it over a few passes. */
+/** Page y of the top of the capital letters on an element's first line (its text box starts a little higher). */
+function textCapTop(el) {
+  const node = [...el.childNodes].find(n => n.nodeType === 3 && n.textContent.trim()) || el.firstChild;
+  if (!node) return null;
+  const range = document.createRange(); range.selectNodeContents(node.nodeType === 3 ? node : el);
+  const r = range.getClientRects()[0];
+  if (!r) return null;
+  const ctx = (textCapTop.ctx ||= document.createElement("canvas").getContext("2d"));
+  ctx.font = getComputedStyle(el).font;
+  const m = ctx.measureText("H");
+  if (!m.fontBoundingBoxAscent) return r.top;
+  // The text box spans the font's ascent to descent; the caps start (ascent - cap height) below its top.
+  const boxH = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
+  return r.top + (r.height - boxH) / 2 + (m.fontBoundingBoxAscent - m.actualBoundingBoxAscent);
+}
 function fitHomeLogo(img) {
   const sub = $(".home-id .greeting-row .muted");
   if (!img.isConnected || !sub) return;
@@ -961,12 +976,14 @@ function fitHomeLogo(img) {
     if (Math.abs(img.offsetHeight - h) < 1) break;
     img.style.height = h + "px";
   }
-  // Move the logo so the middle of the visible image lines up with the middle of the greeting's first line.
+  // Move the logo so the top of the visible image lines up with the top of the region name's letters.
   // (The image is centred in its box; a wide logo is scaled down to the box's width, so it's shorter than the box.)
-  const line = $(".home-id .greeting")?.getClientRects()[0];
-  if (!line) return;
+  const title = $(".home-id .region-title");
+  const capTop = title && textCapTop(title);
+  if (capTop == null) return;
   const box = img.getBoundingClientRect();
-  const shift = Math.round(line.top + line.height / 2 - (box.top + box.height / 2));
+  const shown = img.naturalWidth ? Math.min(box.height, box.width * img.naturalHeight / img.naturalWidth) : box.height;
+  const shift = Math.round(capTop - (box.top + (box.height - shown) / 2));
   if (shift) img.style.transform = `translateY(${shift}px)`;
 }
 
