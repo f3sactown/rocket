@@ -640,7 +640,7 @@ function libTagLine(it) {
 function libraryBrowserHtml({ title = "", picker = false } = {}) {
   return `
     ${title}
-    <input class="input" data-lib-q placeholder="${libSearchPlaceholder()}" type="search" autocomplete="off">
+    <input class="input" data-lib-q data-noautofocus="1" placeholder="${libSearchPlaceholder()}" type="search" autocomplete="off">
     <div class="spacer"></div>
     <select class="input" data-lib-kind>
       <option value="all">All</option><option value="exercise">Exercises</option><option value="thang">Thangs / routines</option>
