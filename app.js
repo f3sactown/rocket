@@ -593,6 +593,13 @@ async function syncProgram({ force = false } = {}) {
       p.hashes[raw.id] = h;
     }
   }
+  // Unedited program items the program no longer has are removed (edited ones are the user's now).
+  for (const coll of PROGRAM_COLLECTIONS) {
+    const ids = new Set((prog[coll] || []).map(x => x.id));
+    const before = state[coll].length;
+    state[coll] = state[coll].filter(x => x.source !== "program" || ids.has(x.id));
+    result.removed = (result.removed || 0) + before - state[coll].length;
+  }
   p.version = prog.version;
   if (!firstRun && (result.added || result.updated)) p.notice = result;
   save("program", ...PROGRAM_COLLECTIONS);
@@ -751,7 +758,9 @@ function bindLibraryBrowser(root, { onPick } = {}) {
 /* Workout text                                                        */
 /* ------------------------------------------------------------------ */
 const SECTION_LABELS = { intro: "Introduction", warmup: "Warm-O-Rama", thang: "Thang", mary: "Mary / Finisher", notes: "Notes", thirdF: "Third F", announcements: "Announcements", cot: "Backblast COT / Closing" };
-const TEMPLATE_SECTIONS = ["intro", "warmup", "thang", "mary", "notes", "cot"];
+// FiA regions call the Third F section "Community".
+Object.defineProperty(SECTION_LABELS, "thirdF", { enumerable: true, get: () => (isFiaRegion() ? "Community" : "Third F") });
+const TEMPLATE_SECTIONS = ["intro", "warmup", "thang", "mary", "notes", "thirdF", "announcements", "cot"];
 
 function thangLabel(t, i) {
   const title = (t.title || "").trim();
@@ -767,7 +776,7 @@ function workoutSections(w, { includeNotes = true, includeTitle = true } = {}) {
   (w.thangs || []).forEach((t, i) => add(thangLabel(t, i), t.content));
   add("Mary / Finisher", w.mary);
   if (includeNotes) add("Notes", w.notes);
-  add("Third F", w.thirdF);
+  add(SECTION_LABELS.thirdF, w.thirdF);
   add("Announcements", w.announcements);
   return parts;
 }
@@ -1165,8 +1174,8 @@ function viewPlan(id, query) {
       </div>
       ${sectionHtml("mary", { lib: true })}
       ${sectionHtml("notes", { placeholder: "Private notes for you — not included in the backblast" })}
-      ${sectionHtml("thirdF", { tpl: false, placeholder: "Third F discussion" })}
-      ${sectionHtml("announcements", { tpl: false, placeholder: "Announcements for this BD…" })}
+      ${sectionHtml("thirdF", { placeholder: `${SECTION_LABELS.thirdF} discussion` })}
+      ${sectionHtml("announcements", { placeholder: "Announcements for this BD…" })}
       <div class="sticky-actions">
         <button class="btn" data-preview>Preview</button>
         <button class="btn accent" data-savedraft>Save Draft</button>
@@ -1360,7 +1369,7 @@ function viewBackblasts() {
       <p class="page-sub">Write it, copy it, post it to BAND, Slack or GroupMe.</p>
       <div class="list">${list.map(b => `<button class="row" data-go="#/backblast/${b.id}"><div class="grow">
         <div class="eyebrow">${esc([fmtDate(b.date), aoName(b.aoId)].filter(Boolean).join(" · "))}</div>
-        <div class="title">${esc(state.workouts.find(w => w.id === b.workoutId)?.title || b.opening || "Backblast")}</div>
+        <div class="title">${esc(state.workouts.find(w => w.id === b.workoutId)?.title || "Untitled workout")}</div>
         <div class="sub">${bbCount(b)} PAX · Q: ${esc(b.qs.join(", ") || "—")}</div></div><span class="chev">›</span></button>`).join("") || `<div class="empty">No backblasts yet.</div>`}</div>
     </div>${bottomNav("backblast")}`;
 }
@@ -1466,8 +1475,9 @@ function viewBackblast(id, query) {
         <div class="bb-block"><div class="field-label">Edit opening</div><textarea rows="2" data-edit="opening">${esc(bb.opening)}</textarea></div>
         <div class="bb-block"><div class="field-label live-dot">Live session data</div><div class="bb-live" data-live></div></div>
         <div class="bb-block"><div class="field-label">Edit workout details</div><textarea rows="10" data-edit="details" placeholder="What did you do? Pick a workout above to fill this in.">${esc(bb.details)}</textarea></div>
-        <div class="bb-block"><div class="field-label" style="display:flex;justify-content:space-between">COT / Closing <button class="tiny-btn accent" data-cottpl>Insert Saved</button></div>
-          <textarea rows="3" data-edit="cot" placeholder="Prayers, praises, moleskin…">${esc(bb.cot)}</textarea></div>
+        <div class="bb-block"><div class="field-label">COT / Closing</div>
+          <textarea rows="3" data-edit="cot" placeholder="Prayers, praises, moleskin…">${esc(bb.cot)}</textarea>
+          <div class="section-tools"><button class="tiny-btn" data-cotsave>Save Section as Template</button><button class="tiny-btn" data-cottpl>Insert Saved Template</button></div></div>
       </div>
       <p class="hint">Heads up for BAND: @tags may not carry over, and text after links can get cut off.</p>
       <div class="btn-grid" style="margin-top:14px">
@@ -1552,6 +1562,7 @@ function viewBackblast(id, query) {
     if (qa) { addName("pax", qa.dataset.quickadd); return; }
     if (e.target.closest("[data-roster-more]")) { showAllRoster = !showAllRoster; drawLists(); }
   });
+  $("[data-cotsave]").onclick = () => saveTemplateModal("cot", bb.cot);
   $("[data-cottpl]").onclick = () => insertTemplateModal("cot", t => {
     bb.cot = (bb.cot || "").trim() ? `${bb.cot.trim()}\n\n${t.content}` : t.content; $('[data-edit="cot"]').value = bb.cot; autosave();
   });

@@ -1,14 +1,14 @@
 // Program content that ships with the app. Edit the JSON below, bump "version", and redeploy.
 // See README: Program content.
 window.F3_PROGRAM = {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "notes": "Program-supplied content. Bump 'version' whenever you change anything below. Every item needs a permanent unique 'id' starting with 'p-'. Users receive new/changed items on their next visit unless they turned on 'Ignore new program content'. Items a user deleted never come back; items a user edited are never overwritten.",
   "templates": [
     {
       "id": "p-intro-standard",
       "section": "intro",
       "name": "Standard welcome & disclaimer",
-      "content": "Welcome, PAX! Any FNGs here today?\nQuick disclaimer: I'm not a professional. This is a free, peer-led workout. You participate at your own risk. Modify as needed — keep your head on a swivel and look out for each other.\nPhones are out for emergencies. Mission: plant, grow and serve small workout groups for men for the invigoration of male community leadership."
+      "content": "Welcome, PAX! Any FNGs here today?\nQuick disclaimer: I'm not a professional. This is a free, peer-led workout. You participate at your own risk. Modify as needed — keep your head on a swivel and look out for each other.\nPhones are out for emergencies."
     },
     {
       "id": "p-warmup-classic",
@@ -33,12 +33,6 @@ window.F3_PROGRAM = {
       "section": "thang",
       "name": "Dora 1-2-3",
       "content": "Partner up. P1 runs to the far marker and back while P2 chips away at the reps; flapjack.\n100 Merkins\n200 LBCs\n300 Squats"
-    },
-    {
-      "id": "p-thang-ladder",
-      "section": "thang",
-      "name": "Coupon ladder",
-      "content": "Grab a coupon. Mosey 25 yds between cones.\nCone 1: 5 Curls\nCone 2: 5 Curls + 5 Overhead Press\nCone 3: 5 Curls + 5 OHP + 5 Goblet Squats\nCone 4: + 5 Coupon Rows\nWork back down the ladder. Repeat until time."
     },
     {
       "id": "p-mary-circle",
