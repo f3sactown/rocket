@@ -56,6 +56,14 @@ function save(...keys) { keys.forEach(k => store.set(k, state[k])); }
  *  AOs come from program content, the roster from data/roster.js, attendance from data/attendance.js. */
 const REGIONS = [
   { key: "sactown", name: "F3 SacTown", logo: "data/logos/f3-sactown.png", sheet: "https://docs.google.com/spreadsheets/d/1_R4F0syR4m7eBen4j92PJCFeGrxEvNrbrL7LxFG46So/edit" },
+  // "live" regions are read from their sheet in the browser (like a custom sheet), with the tabs/columns set here.
+  { key: "fiasactown", name: "FiA SacTown", logo: "data/logos/fia-sactown.png", live: true,
+    sheet: "https://docs.google.com/spreadsheets/d/1PuKNvGWbvgq1PE7RyECcGTsYcV-pv5Umz-a4g7SM_yQ/edit",
+    map: {
+      roster: { tab: "Roster", name: "Name" },
+      attendance: { tab: "Master Data", date: "Date", ao: "AO", pax: "PAX Name", postTotal: "", qTotal: "", post: "Post", q: "Q" },
+      sites: { tab: "Sites", ao: "Name", location: "Location", address: "", day: "Day", time: "Time", retired: "" },
+    } },
 ];
 const REGION_REFRESH_HOURS = 6;     // how often a custom sheet is re-read
 const ATTENDANCE_KEEP_DAYS = 180;
@@ -107,9 +115,15 @@ const OLD_DEFAULT_REGION_NAME = "F3 My Region";  // the placeholder before it lo
 function regionNameSet() { const n = (state.settings.regionName || "").trim(); return !!n && n !== DEFAULT_SETTINGS.regionName && n !== OLD_DEFAULT_REGION_NAME; }
 function builtInRegion() { return REGIONS.find(r => r.key === regionKey()) || null; }
 function sheetIdFromUrl(url) { return String(url || "").match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,})/)?.[1] || ""; }
+/** The sheet read in the browser for this region: the user's own (custom) or a built-in "live" region's. */
+function liveSheetUrl() {
+  if (regionKey() === "custom") return state.settings.customSheetUrl;
+  return builtInRegion()?.live ? builtInRegion().sheet : "";
+}
+function isLiveRegion() { return !!sheetIdFromUrl(liveSheetUrl()); }
 function customCache() {
-  const id = sheetIdFromUrl(state.settings.customSheetUrl);
-  return regionKey() === "custom" && id && regionCache?.sheetId === id ? regionCache : null;
+  const id = sheetIdFromUrl(liveSheetUrl());
+  return id && regionCache?.sheetId === id ? regionCache : null;
 }
 /** Same rule as the region roster: leave out names with parentheses unless the only one is "(2.0)". */
 function keepPaxName(name) { return (String(name).match(/\([^)]*\)?/g) || []).every(g => g.replace(/\s/g, "") === "(2.0)"); }
@@ -186,7 +200,7 @@ async function setRegion(next) {
   const added = new Set((p.rosterAddedBy?.[prev] || []).map(n => n.toLowerCase()));
   if (added.size) { state.roster = state.roster.filter(n => !added.has(n.toLowerCase())); delete p.rosterAddedBy[prev]; save("roster", "program"); }
   if (prev === "sactown") state.aos = state.aos.filter(a => a.source !== "program");
-  if (prev === "custom") state.aos = state.aos.filter(a => a.source !== "region");
+  if (prev === "custom" || REGIONS.find(r => r.key === prev)?.live) state.aos = state.aos.filter(a => a.source !== "region");
   if (!state.aos.some(a => a.id === s.homeAoId)) s.homeAoId = "";
   save("aos");
   const regionNames = [...REGIONS.map(r => r.name), s.customRegionName].filter(Boolean);
@@ -206,7 +220,7 @@ async function setRegion(next) {
   save("settings");
   regionNameChanged();
   if (next === "sactown") { await syncProgram({ force: true }); state.program.notice = null; save("program"); }  // the region's AOs aren't an "app update"
-  if (next === "custom") await refreshCustomRegion({ force: true });
+  if (isLiveRegion()) await refreshCustomRegion({ force: true });
   syncRoster();
 }
 
@@ -270,6 +284,7 @@ const SHEET_PARTS = [
 /** The saved tab/column choices for the custom sheet: { roster: { tab, name }, attendance: { tab, date, … }, … }.
  *  A field left unset is guessed; "" means "not used". */
 function sheetMap() {
+  if (builtInRegion()?.map) return structuredClone(builtInRegion().map);
   const m = state.settings.customMap;
   return m && typeof m === "object" ? m : (state.settings.customMap = {});
 }
@@ -352,8 +367,8 @@ function refreshCustomRegion(opts) {
   return regionLoading ||= loadCustomRegion(opts).finally(() => { regionLoading = null; });
 }
 async function loadCustomRegion({ force = false } = {}) {
-  if (regionKey() !== "custom") return null;
-  const id = sheetIdFromUrl(state.settings.customSheetUrl);
+  if (!isLiveRegion()) return null;
+  const id = sheetIdFromUrl(liveSheetUrl());
   if (!id) return null;
   const fresh = regionCache?.sheetId === id && regionCache.fetchedAt && Date.now() - Date.parse(regionCache.fetchedAt) < REGION_REFRESH_HOURS * 36e5;
   if (fresh && !force && !regionCache.error) { syncRegionAos(); return regionCache; }
@@ -1641,7 +1656,7 @@ function viewAos() {
         <h1 class="page-title">AOs</h1><button class="btn accent sm" style="border-radius:12px;padding:10px 14px" data-add>+ Add AO</button></div>
       <p class="page-sub">Add your AOs once. They fill in the location line on every backblast.</p>
       <div class="list">${state.aos.map(a => `<div class="row" style="cursor:default"><div class="grow">
-          <div class="title">${esc(a.name)} ${a.id === state.settings.homeAoId ? `<span class="pill good">Home</span>` : ""}${isProgram(a) ? ` <span class="pill prog">Program</span>` : String(a.source || "").startsWith("region") ? ` <span class="pill prog">${esc(state.settings.customRegionName || "Region sheet")}</span>` : ""}</div>
+          <div class="title">${esc(a.name)} ${a.id === state.settings.homeAoId ? `<span class="pill good">Home</span>` : ""}${isProgram(a) ? ` <span class="pill prog">Program</span>` : String(a.source || "").startsWith("region") ? ` <span class="pill prog">${esc(state.settings.regionName || "Region sheet")}</span>` : ""}</div>
           <div class="sub">${esc([a.location, a.schedule].filter(Boolean).join(" · ") || "No details")}</div></div>
           <button class="btn sm" data-edit="${a.id}">Edit</button><button class="btn sm danger" data-del="${a.id}">Delete</button></div>`).join("") || `<div class="empty">No AOs yet.</div>`}</div>
     </div>${bottomNav("")}`;
@@ -1665,10 +1680,12 @@ function regionCardHtml() {
   const opt = (k, title, desc) => `<label class="switch" style="margin-bottom:10px"><input type="radio" name="region" data-region="${k}" ${key === k ? "checked" : ""}>
     <span><b>${title}</b><br><span class="muted" style="font-size:13px">${desc}</span></span></label>`;
   const id = sheetIdFromUrl(s.customSheetUrl);
-  const status = key !== "custom" ? "" : !s.customSheetUrl ? "" : !id ? `<p class="hint" style="color:var(--danger)">That doesn't look like a Google Sheets link. It should contain /spreadsheets/d/…</p>`
-    : c?.sheetId !== id ? `<p class="hint">Not loaded yet.</p>`
-    : `<p class="hint" ${c.error ? `style="color:var(--danger)"` : ""}>${c.error ? esc(c.error) : `Loaded ${esc(fmtWhen(c.fetchedAt))}: ${c.aos.length} AO${c.aos.length === 1 ? "" : "s"}, ${c.roster.length} PAX, attendance at ${Object.keys(c.attendance).length} AO${Object.keys(c.attendance).length === 1 ? "" : "s"}.`}
+  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  const loadedLine = (sid) => c?.sheetId !== sid ? `<p class="hint">Not loaded yet.</p>`
+    : `<p class="hint" ${c.error ? `style="color:var(--danger)"` : ""}>${c.error ? esc(c.error) : `Loaded ${esc(fmtWhen(c.fetchedAt))}: ${plural(c.aos.length, "AO")}, ${c.roster.length} PAX, attendance at ${plural(Object.keys(c.attendance).length, "AO")}.`}
       ${!c.error && c.missing?.length ? ` Not loaded: ${c.missing.map(esc).join("; ")}.` : ""}</p>`;
+  const status = key !== "custom" ? "" : !s.customSheetUrl ? "" : !id ? `<p class="hint" style="color:var(--danger)">That doesn't look like a Google Sheets link. It should contain /spreadsheets/d/…</p>`
+    : loadedLine(id);
   const loaded = key === "custom" && id && c?.sheetId === id && !c.error && c.headers;
   const columns = !loaded ? "" : `
     <div class="map-block">
@@ -1681,7 +1698,7 @@ function regionCardHtml() {
           <div class="map-row"><span><b>${esc(part.label)}</b> tab${part.hint ? `<br><span class="muted" style="font-size:12px">${esc(part.hint)}</span>` : ""}</span>
             <input class="input" data-map-tab="${part.key}" value="${esc(tab)}" placeholder="Tab name (blank = not used)"></div>
           ${!tab.trim() ? "" : !heads ? `<p class="hint" style="color:var(--danger);margin:0 0 8px">No tab named “${esc(tab)}” found.</p>`
-          : (c.unsure?.[part.key] ? `<p class="hint" style="color:#f2c46d;margin:0 0 8px">These are the first tab's columns. Google shows the first tab when it can't find one named “${esc(tab)}”, so check the name if they look wrong.</p>` : "") + part.fields.map(f => `<label class="map-row"><span>${esc(f.label)}${f.need ? ` <span style="color:var(--danger)">*</span>` : ""}</span>
+          : (c.unsure?.[part.key] ? `<p class="hint" style="color:#f2c46d;margin:0 0 8px">These match the sheet's first tab. That's fine if “${esc(tab)}” is the first tab; otherwise check the name, because Google shows the first tab when it can't find one with that name.</p>` : "") + part.fields.map(f => `<label class="map-row"><span>${esc(f.label)}${f.need ? ` <span style="color:var(--danger)">*</span>` : ""}</span>
               <select class="input" data-map-part="${part.key}" data-map-field="${f.key}">
                 <option value="">${f.need ? "— pick a column —" : "Not used"}</option>
                 ${heads.filter(Boolean).map(h => `<option ${picked[f.key] === h ? "selected" : ""}>${esc(h)}</option>`).join("")}
@@ -1692,7 +1709,8 @@ function regionCardHtml() {
   return `
     <div class="field-label" style="color:var(--accent)">Region</div>
     <p class="muted" style="font-size:14px;margin:0 0 12px">Your region supplies the AOs, the PAX roster and who has been at each AO lately (shown first on backblasts).</p>
-    ${REGIONS.map(r => opt(r.key, esc(r.name), `AOs, PAX roster and attendance from the <a href="${r.sheet}" target="_blank" rel="noopener">${esc(r.name)} data sheet</a>, updated weekly.`)).join("")}
+    ${REGIONS.map(r => opt(r.key, esc(r.name), `AOs, PAX roster and attendance from the <a href="${r.sheet}" target="_blank" rel="noopener">${esc(r.name)} data sheet</a>, ${r.live ? "read from your browser and re-read every few hours" : "updated weekly"}.`)
+      + (r.live && key === r.key ? `<div style="margin:-4px 0 12px 32px">${loadedLine(sheetIdFromUrl(r.sheet))}<button class="btn sm accent" data-region-reload>Reload sheet</button></div>` : "")).join("")}
     ${opt("custom", "Custom Google Sheet", "Use your region's own sheet. It's read from your browser, and re-read every few hours.")}
     ${key === "custom" ? `<div style="margin:0 0 12px 32px">
       <label class="field"><span>Region name</span><input class="input" data-custom="customRegionName" value="${esc(s.customRegionName)}" placeholder="Region Name"></label>
@@ -1729,6 +1747,8 @@ function bindRegionCard(card) {
     toast(c && !c.error ? "Sheet loaded" : "Couldn't load the sheet");
     viewSettings();
   };
+  const reloadLive = $("[data-region-reload]", card);
+  if (reloadLive) reloadLive.onclick = () => loadCustom();
   const remap = async (fn) => { fn(sheetMap()); save("settings"); await loadCustom(); };
   $$("[data-map-field]", card).forEach(el => el.onchange = () => remap(m => { (m[el.dataset.mapPart] ||= {})[el.dataset.mapField] = el.value; }));
   $$("[data-map-tab]", card).forEach(el => el.onchange = () => remap(m => { m[el.dataset.mapTab] = { tab: el.value.trim() }; }));
@@ -2021,7 +2041,7 @@ function viewData() {
   render();
   const r = await syncProgram();
   if (r && (r.added || r.updated)) render();
-  if (regionKey() === "custom") refreshCustomRegion().then(c => c && render());
+  if (isLiveRegion()) refreshCustomRegion().then(c => c && render());
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
