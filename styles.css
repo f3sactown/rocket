@@ -445,3 +445,9 @@ textarea.input.short { min-height: 80px; }
 
 /* Keeps a letter's case inside uppercase headings (the i in "FiA"). */
 .keep-case { text-transform: none; }
+
+/* Logo choice when picking a region */
+.logo-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.logo-choice figure { margin: 0; border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; background: #08090b; }
+.logo-choice img { width: 100%; height: 110px; object-fit: contain; display: block; }
+.logo-choice figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; }
