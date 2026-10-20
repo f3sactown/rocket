@@ -33,7 +33,8 @@ const DEFAULT_SETTINGS = {
   libraryHiddenSources: [],
   region: "",            // "sactown" (a built-in region), "custom" (the user's own sheet) or "none"
   customSheetUrl: "",
-  customRegionName: "",   // every source is on unless the user turns it off, including ones added later
+  customRegionName: "",
+  theme: "",             // "f3" or "fia"; picked from the region name when that changes, and changeable after   // every source is on unless the user turns it off, including ones added later
 };
 
 const COLLECTIONS = ["aos", "templates", "workouts", "backblasts"];
@@ -59,6 +60,31 @@ const REGIONS = [
 const REGION_REFRESH_HOURS = 6;     // how often a custom sheet is re-read
 const ATTENDANCE_KEEP_DAYS = 180;
 let regionCache = store.get("regionCache", null);  // custom sheet data: { sheetId, fetchedAt, aos, roster, attendance, error }
+
+/* --- Themes --- */
+const THEMES = [
+  { key: "f3", name: "F3", desc: "Blue", swatch: "#8cc8f2" },
+  { key: "fia", name: "FiA", desc: "Teal", swatch: "#5fd0c8" },
+];
+/** The theme that suits a region name: FiA regions get the FiA theme, everything else F3. */
+function themeForRegion(name) { return /\bfia\b/i.test(String(name || "")) ? "fia" : "f3"; }
+function applyTheme() {
+  const t = THEMES.some(x => x.key === state.settings.theme) ? state.settings.theme : "f3";
+  if (t === "f3") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+}
+/** Call after the region name changes: picks the matching theme (the user can still change it after). */
+function regionNameChanged() {
+  const t = themeForRegion(state.settings.regionName);
+  if (t !== state.settings.theme) { state.settings.theme = t; save("settings"); applyTheme(); }
+}
+function themeCardHtml() {
+  const cur = THEMES.some(x => x.key === state.settings.theme) ? state.settings.theme : "f3";
+  return `<div class="field-label" style="color:var(--accent)">Theme</div>
+    <p class="muted" style="font-size:14px;margin:0 0 12px">Picked to match your region name when it changes. Change it any time.</p>
+    <div class="theme-row">${THEMES.map(t => `<label class="theme-opt ${cur === t.key ? "on" : ""}">
+      <input type="radio" name="theme" data-theme-pick="${t.key}" ${cur === t.key ? "checked" : ""}>
+      <span class="theme-swatch" style="background:${t.swatch}"></span><span><b>${esc(t.name)}</b><br><span class="muted" style="font-size:13px">${esc(t.desc)}</span></span></label>`).join("")}</div>`;
+}
 
 function regionKey() { return state.settings.region || "none"; }
 /** True once the user has a real region name (picked a region or typed one), not the placeholder. */
@@ -149,6 +175,7 @@ async function setRegion(next) {
   if (built) s.regionName = built.name;
   else if (next === "custom" && s.customRegionName) s.regionName = s.customRegionName;
   save("settings");
+  regionNameChanged();
   if (next === "sactown") await syncProgram({ force: true });
   if (next === "custom") await refreshCustomRegion({ force: true });
   syncRoster();
@@ -1565,7 +1592,7 @@ function bindRegionCard(card) {
   $$("[data-custom]", card).forEach(el => el.addEventListener("change", async () => {
     const s = state.settings, k = el.dataset.custom;
     s[k] = el.value.trim();
-    if (k === "customRegionName" && s.customRegionName) s.regionName = s.customRegionName;
+    if (k === "customRegionName" && s.customRegionName) { s.regionName = s.customRegionName; regionNameChanged(); }
     save("settings");
     if (k === "customSheetUrl" && sheetIdFromUrl(s.customSheetUrl)) { await loadCustom(); return; }
     viewSettings();
@@ -1615,6 +1642,7 @@ function viewSettings(query) {
           <p class="hint">Shown at the top left of the home page, next to the region name. PNG with a transparent background looks best.</p>
         </div>
       </div>
+      <div class="card" data-theme-card>${themeCardHtml()}</div>
       <div class="card">
         <div class="field-label" style="color:var(--accent)">Backblast defaults</div>
         <label class="field"><span>Default why</span><input class="input" data-s="defaultWhy" value="${esc(s.defaultWhy)}"></label>
@@ -1659,7 +1687,15 @@ function viewSettings(query) {
     if (el?.matches("input")) el.focus({ preventScroll: true });
   }, 50);
   const saveS = debounce(() => save("settings"), 300);
-  $$("[data-s]").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => { s[el.dataset.s] = el.value; saveS(); }));
+  $$("[data-s]").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => {
+    s[el.dataset.s] = el.value; saveS();
+    if (el.dataset.s === "regionName") { regionNameChanged(); $("[data-theme-card]").innerHTML = themeCardHtml(); bindThemeCard(); }
+  }));
+  const bindThemeCard = () => $$("[data-theme-pick]").forEach(el => el.onchange = () => {
+    s.theme = el.dataset.themePick; save("settings"); applyTheme();
+    $("[data-theme-card]").innerHTML = themeCardHtml(); bindThemeCard();
+  });
+  bindThemeCard();
   const saveRoster = debounce(() => { state.roster = uniqNames($("[data-roster]").value.split("\n")); save("roster"); }, 400);
   $("[data-roster]").addEventListener("input", saveRoster);
   cleanup = () => { saveS.flush(); saveRoster.flush(); };
@@ -1830,6 +1866,8 @@ function viewData() {
 /* Boot                                                                */
 /* ------------------------------------------------------------------ */
 (async function boot() {
+  if (!state.settings.theme) { state.settings.theme = themeForRegion(state.settings.regionName); save("settings"); }
+  applyTheme();
   for (const k of COLLECTIONS) if (!Array.isArray(state[k])) state[k] = [];
   if (state.aos.some(a => "hashtag" in a)) { state.aos.forEach(a => delete a.hashtag); save("aos"); }
   if ("hashtags" in state.settings) { delete state.settings.hashtags; save("settings"); }
