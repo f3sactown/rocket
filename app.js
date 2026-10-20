@@ -55,7 +55,7 @@ function save(...keys) { keys.forEach(k => store.set(k, state[k])); }
 /** Built-in regions. Their data ships with the app (refreshed weekly by GitHub Actions):
  *  AOs come from program content, the roster from data/roster.js, attendance from data/attendance.js. */
 const REGIONS = [
-  { key: "sactown", name: "F3 SacTown", sheet: "https://docs.google.com/spreadsheets/d/1_R4F0syR4m7eBen4j92PJCFeGrxEvNrbrL7LxFG46So/edit" },
+  { key: "sactown", name: "F3 SacTown", logo: "data/logos/f3-sactown.png", sheet: "https://docs.google.com/spreadsheets/d/1_R4F0syR4m7eBen4j92PJCFeGrxEvNrbrL7LxFG46So/edit" },
 ];
 const REGION_REFRESH_HOURS = 6;     // how often a custom sheet is re-read
 const ATTENDANCE_KEEP_DAYS = 180;
@@ -195,9 +195,12 @@ async function setRegion(next) {
   const built = REGIONS.find(r => r.key === next);
   if (built) s.regionName = built.name;
   else if (next === "custom" && s.customRegionName) s.regionName = s.customRegionName;
+  // A built-in region brings its logo; leaving it takes that logo away (a logo the user uploaded is replaced).
+  if (built?.logo) { s.logo = built.logo; s.logoFromRegion = built.key; s.logoOffered = true; }
+  else if (s.logoFromRegion) { s.logo = ""; s.logoFromRegion = ""; }
   save("settings");
   regionNameChanged();
-  if (next === "sactown") await syncProgram({ force: true });
+  if (next === "sactown") { await syncProgram({ force: true }); state.program.notice = null; save("program"); }  // the region's AOs aren't an "app update"
   if (next === "custom") await refreshCustomRegion({ force: true });
   syncRoster();
 }
@@ -1803,10 +1806,10 @@ function viewSettings(query) {
   $("[data-logo]").onchange = async e => {
     const file = e.target.files[0];
     if (!file) return;
-    try { s.logo = await imageToDataUrl(file, 400); save("settings"); toast("Logo saved"); viewSettings(); }
+    try { s.logo = await imageToDataUrl(file, 400); s.logoFromRegion = ""; save("settings"); toast("Logo saved"); viewSettings(); }
     catch { toast("Couldn't read that image. Try a PNG or JPG."); }
   };
-  $("[data-logo-remove]")?.addEventListener("click", () => { s.logo = ""; save("settings"); toast("Logo removed"); viewSettings(); });
+  $("[data-logo-remove]")?.addEventListener("click", () => { s.logo = ""; s.logoFromRegion = ""; save("settings"); toast("Logo removed"); viewSettings(); });
   $$("[data-libsrc]").forEach(el => el.onchange = () => {
     const on = $$("[data-libsrc]").filter(x => x.checked).map(x => x.dataset.libsrc);
     if (!on.length) { el.checked = true; toast("Keep at least one library source turned on"); return; }
@@ -1976,6 +1979,12 @@ function viewData() {
     state.backblasts.forEach(b => { delete b.hashtags; delete b.hashtagsEdited; }); save("backblasts");
   }
   if (state.settings.regionName === OLD_DEFAULT_REGION_NAME) { state.settings.regionName = DEFAULT_SETTINGS.regionName; save("settings"); }
+  // Phones already on a built-in region get its logo once (if they have none); removing it later sticks.
+  const reg = REGIONS.find(r => r.key === state.settings.region);
+  if (reg?.logo && !state.settings.logoOffered) {
+    if (!state.settings.logo) { state.settings.logo = reg.logo; state.settings.logoFromRegion = reg.key; }
+    state.settings.logoOffered = true; save("settings");
+  }
   if (!state.settings.region) {
     // New installs start with no region. Installs from before regions existed already have the
     // F3 SacTown AOs and roster (they've synced program content), so they stay on F3 SacTown.

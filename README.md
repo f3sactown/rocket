@@ -72,7 +72,7 @@ A region name containing "FiA" also changes some wording. The backblast opening 
 
 **Settings → Region** picks where the AOs, the PAX roster and recent attendance come from:
 
-- **F3 SacTown**: AOs from `data/program.js`, the roster from `data/roster.js` and attendance from `data/attendance.js`. All three come from the F3 SacTown Data sheet and are refreshed weekly by GitHub Actions (see below). Choosing it also sets the region name to "F3 SacTown".
+- **F3 SacTown**: its logo (`data/logos/f3-sactown.png`, set as the home page logo when the region is chosen, and removed if the user later switches away), AOs from `data/program.js`, the roster from `data/roster.js` and attendance from `data/attendance.js`. All three come from the F3 SacTown Data sheet and are refreshed weekly by GitHub Actions (see below). Choosing it also sets the region name to "F3 SacTown".
 - **Custom Google Sheet**: the user enters a region name and pastes a Google Sheets link. The app reads the sheet straight from the browser through Google's `gviz/tq` CSV endpoint, which allows cross-origin reads, and re-reads it every 6 hours. The sheet must be shared as "Anyone with the link can view" and laid out like the SacTown sheet:
   - after the first load, **Sheet columns** shows each part with its tab name and a dropdown for each item, listing that tab's own column names. Best guesses come from the SacTown names and are preselected:
     - **PAX roster** (default tab "Roster"): PAX name*;
