@@ -125,6 +125,12 @@ function regionTotals(name) {
   const key = totals && Object.keys(totals).find(k => k.toLowerCase() === n);
   return key ? totals[key] : null;
 }
+/** The most recent post date in the region's attendance data ("YYYY-MM-DD"), or "" if there's none. */
+function regionLatestPost() {
+  let latest = "";
+  for (const pax of Object.values(regionAttendance())) for (const d of Object.values(pax)) if (d > latest) latest = d;
+  return latest;
+}
 function regionAttendance() {
   if (builtInRegion()?.key === "sactown") return window.F3_ATTENDANCE?.aos || {};
   return customCache()?.attendance || {};
@@ -858,6 +864,7 @@ function viewHome() {
   const statsNote = mine ? "" : regionKey() === "none" ? `<button class="linkish" data-go="#/settings?focus=region">Choose a region</button> to see your posts and Qs.`
     : !s.f3Name ? `<button class="linkish" data-go="#/settings?focus=f3Name">Set your nickname</button> to see your posts and Qs.`
     : `No posts found for “${esc(s.f3Name)}” in ${esc(s.regionName || "your region")}'s data. Check that your nickname matches the sheet.`;
+  const asOf = mine ? regionLatestPost() : "";
   const homeAo = aoName(s.homeAoId);
   const notice = state.program.notice;
   const isToday = next && next.date === todayISO();
@@ -927,6 +934,7 @@ function viewHome() {
           <div class="stat"><b>${userWorkouts.length}</b><span>Qs planned</span></div>
         </div>
         ${statsNote ? `<p class="muted stats-note">${statsNote}</p>` : ""}
+        ${asOf ? `<p class="muted stats-note">Posts and Qs as of ${esc(fmtDate(asOf, { month: "short", day: "numeric", year: "numeric" }))}, the latest post in ${esc(s.regionName || "your region")}'s sheet.</p>` : ""}
         <button class="stats-foot" data-go="${bbs[0] ? "#/backblast/" + bbs[0].id : "#/backblast/new"}">
           <span>Last backblast <b>${bbs[0] ? esc(fmtDate(bbs[0].date, { month: "short", day: "numeric", year: "numeric" })) : "—"}</b></span><span>›</span></button>
       </div>
