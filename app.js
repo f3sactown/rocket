@@ -432,15 +432,40 @@ function toast(msg) {
 /* ------------------------------------------------------------------ */
 /* Modals                                                              */
 /* ------------------------------------------------------------------ */
-function openModal(html, bind) {
+/* Pop-ups close from a × that stays pinned while the pop-up scrolls, a tap outside, Esc, or the phone's Back.
+ * Back works because each open pop-up adds a history entry that closing removes. */
+const openModals = [];
+let modalBackPending = null;  // a history.back() from closing a pop-up that hasn't landed yet
+window.addEventListener("popstate", () => {
+  if (modalBackPending) { modalBackPending(); return; }
+  const top = openModals[openModals.length - 1]; if (top) top(true);
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && openModals.length) openModals[openModals.length - 1](); });
+function openModal(html, bind, onClose) {
   const wrap = document.createElement("div");
   wrap.className = "modal-wrap";
-  wrap.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
+  wrap.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><button class="modal-x" data-close aria-label="Close">×</button>${html}</div>`;
   document.body.appendChild(wrap);
   document.body.style.overflow = "hidden";
-  const close = () => { wrap.remove(); if (!$(".modal-wrap")) document.body.style.overflow = ""; };
+  history.pushState({ modal: true }, "");
+  let open = true;
+  const close = (fromBack = false) => {
+    if (!open) return;
+    open = false;
+    openModals.splice(openModals.indexOf(close), 1);
+    wrap.remove(); if (!$(".modal-wrap")) document.body.style.overflow = "";
+    onClose?.();
+    window.dispatchEvent(new Event("modalclosed"));
+    if (!fromBack && history.state?.modal) {
+      const mine = () => { if (modalBackPending === mine) modalBackPending = null; };
+      modalBackPending = mine;
+      setTimeout(mine, 500);  // in case the browser never reports it
+      history.back();
+    }
+  };
+  openModals.push(close);
   wrap.addEventListener("click", e => { if (e.target === wrap) close(); });
-  $$("[data-close]", wrap).forEach(b => b.addEventListener("click", close));
+  $$("[data-close]", wrap).forEach(b => b.addEventListener("click", () => close()));
   bind?.(wrap, close);
   const first = $("input, textarea", wrap);
   if (first && !first.dataset.noautofocus) first.focus();
@@ -458,8 +483,8 @@ function confirmModal(message, okLabel = "Confirm", danger = true) {
       </div>`, (w, c) => {
       $("[data-no]", w).onclick = () => { done = true; c(); resolve(false); };
       $("[data-yes]", w).onclick = () => { done = true; c(); resolve(true); };
-    });
-    void close; void done;
+    }, () => { if (!done) { done = true; resolve(false); } });  // closed another way (×, outside, Esc, Back) = Cancel
+    void close;
   });
 }
 
@@ -807,7 +832,11 @@ function openMenu() {
   drawer.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) { close(); go(b.dataset.go); } });
   document.body.append(scrim, drawer);
 }
-function go(href) { if (location.hash === href) render(); else location.hash = href; }
+/** Navigate to a route. If a pop-up just closed, wait for its history step to land first, or it would undo this. */
+function go(href) {
+  if (modalBackPending) { setTimeout(() => go(href), 30); return; }
+  if (location.hash === href) render(); else location.hash = href;
+}
 
 document.addEventListener("click", e => {
   const g = e.target.closest("[data-go]");
@@ -1042,20 +1071,27 @@ function viewPlan(id, query) {
   const w = existing ? structuredClone(existing) : blankWorkout();
   if (query.get("date")) w.date = query.get("date");
   let persisted = !!existing;
+  let urlSet = !!existing;  // the address shows this item's id
 
   const persist = () => {
     w.updatedAt = nowIso();
     if (persisted) markEdited(w);
     const idx = state.workouts.findIndex(x => x.id === w.id);
     if (idx === -1) state.workouts.push(structuredClone(w)); else state.workouts[idx] = structuredClone(w);
-    if (active && !persisted && location.hash !== `#/plan/${w.id}`) history.replaceState(null, "", `#/plan/${w.id}`);
+    if (active && !urlSet && !openModals.length) {  // not while a pop-up holds a history entry
+      if (location.hash !== `#/plan/${w.id}`) history.replaceState(null, "", `#/plan/${w.id}`);
+      urlSet = true;
+    }
     persisted = true;
     save("workouts");
     const st = $("[data-savestate]"); if (st) st.textContent = "Draft saved";
   };
   const autosave = debounce(persist, 500);
   let active = true;
-  cleanup = () => { active = false; autosave.flush(); };
+  // Once a pop-up closes (and its history step has landed), put this item's id in the address if a save inside it couldn't.
+  const onModalClosed = () => setTimeout(() => { if (active && persisted && !urlSet) persist(); }, 600);
+  window.addEventListener("modalclosed", onModalClosed);
+  cleanup = () => { active = false; window.removeEventListener("modalclosed", onModalClosed); autosave.flush(); };
   const hasContent = x => [x.title, x.intro, x.warmup, x.mary, x.notes, x.thirdF, x.announcements, ...x.thangs.map(t => t.content)].some(v => (v || "").trim());
 
   const sectionHtml = (key, { lib = false, tpl = true, placeholder = "" } = {}) => `
@@ -1169,7 +1205,7 @@ function viewPlan(id, query) {
         close(); persist(); viewPlanRedraw();
       }));
   };
-  const viewPlanRedraw = () => { cleanup = null; location.hash === `#/plan/${w.id}` ? viewPlan(w.id, new URLSearchParams()) : (location.hash = `#/plan/${w.id}`); };
+  const viewPlanRedraw = () => { cleanup = null; location.hash === `#/plan/${w.id}` ? viewPlan(w.id, new URLSearchParams()) : go(`#/plan/${w.id}`); };
 }
 
 function openLibraryPicker(sectionLabel, onPick) {
@@ -1290,6 +1326,7 @@ function viewBackblast(id, query) {
   let bb = id && id !== "new" ? state.backblasts.find(b => b.id === id) : null;
   if (id && id !== "new" && !bb) { toast("Backblast not found"); return go("#/backblasts"); }
   let persisted = !!bb;
+  let urlSet = !!bb;  // the address shows this item's id
   if (!bb) {
     const w = query.get("w") ? state.workouts.find(x => x.id === query.get("w")) : null;
     bb = {
@@ -1304,12 +1341,18 @@ function viewBackblast(id, query) {
     bb.updatedAt = nowIso();
     const idx = state.backblasts.findIndex(x => x.id === bb.id);
     if (idx === -1) state.backblasts.push(structuredClone(bb)); else state.backblasts[idx] = structuredClone(bb);
-    if (active && !persisted && location.hash !== `#/backblast/${bb.id}`) history.replaceState(null, "", `#/backblast/${bb.id}`);
+    if (active && !urlSet && !openModals.length) {  // not while a pop-up holds a history entry
+      if (location.hash !== `#/backblast/${bb.id}`) history.replaceState(null, "", `#/backblast/${bb.id}`);
+      urlSet = true;
+    }
     persisted = true; save("backblasts");
   };
   const autosave = debounce(persist, 500);
   let active = true;
-  cleanup = () => { active = false; autosave.flush(); };
+  // Once a pop-up closes (and its history step has landed), put this item's id in the address if a save inside it couldn't.
+  const onModalClosed = () => setTimeout(() => { if (active && persisted && !urlSet) persist(); }, 600);
+  window.addEventListener("modalclosed", onModalClosed);
+  cleanup = () => { active = false; window.removeEventListener("modalclosed", onModalClosed); autosave.flush(); };
 
   /** Who has posted at this AO in the last 3 months, most recent first: the region's attendance
    *  records (data/attendance.js, matched by AO name) plus backblasts saved on this device. */
