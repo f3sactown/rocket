@@ -738,9 +738,17 @@ function refreshAuto(bb) {
   if (!bb.openingEdited) bb.opening = autoOpening(bb);
   if (!bb.detailsEdited) bb.details = autoDetails(bb);
 }
+/** Everyone who posted, as plain comma-separated names (no @), for tools that read attendance from the text. */
+function participantsLine(bb) {
+  return uniqNames([...bb.qs, ...bb.pax, ...bb.visitors, ...bb.fngs].map(n => String(n).replace(/@/g, "").trim())).join(", ");
+}
+/** The text that's copied or shared. The participants line goes a few lines below the rest;
+ *  it isn't shown on the backblast page. */
 function backblastText(bb) {
-  return [bb.opening, liveData(bb), bb.details, bb.cot ? `COT:\n${bb.cot}` : ""]
+  const body = [bb.opening, liveData(bb), bb.details, bb.cot ? `COT:\n${bb.cot}` : ""]
     .map(s => (s || "").trim()).filter(Boolean).join("\n\n");
+  const names = participantsLine(bb);
+  return names ? `${body}\n\n\n\n${names}` : body;
 }
 
 /* ------------------------------------------------------------------ */
