@@ -66,6 +66,8 @@ Settings → Import / Export (also in the menu).
 
 **Settings → Theme** offers **F3** (blue, the original look) and **FiA** (teal). Whenever the region name changes, by picking a region or typing a name, the theme switches to match: names containing "FiA" get FiA, everything else F3. The user can then pick either one. All accent colours, including the splash rocket, come from CSS variables in `styles.css`. `:root` holds F3's, and `:root[data-theme="fia"]` overrides them. A small script in `index.html` applies the saved theme before the page draws.
 
+A region name containing "FiA" also changes some wording. The backblast opening line says **ladies** instead of **HIM**: the default line switches when the name changes, and the word is swapped when the line is filled in. The home page title keeps the lowercase *i* in "FiA", even though the title is otherwise in capitals.
+
 ## Regions
 
 **Settings → Region** picks where the AOs, the PAX roster and recent attendance come from:

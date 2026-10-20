@@ -67,7 +67,15 @@ const THEMES = [
   { key: "fia", name: "FiA", desc: "Teal", swatch: "#5fd0c8" },
 ];
 /** The theme that suits a region name: FiA regions get the FiA theme, everything else F3. */
-function themeForRegion(name) { return /\bfia\b/i.test(String(name || "")) ? "fia" : "f3"; }
+function themeForRegion(name) { return isFiaName(name) ? "fia" : "f3"; }
+/** FiA regions are the ones whose name says FiA. They say "ladies" where F3 says "HIM". */
+function isFiaName(name) { return /\bfia\b/i.test(String(name || "")); }
+function isFiaRegion() { return isFiaName(state.settings.regionName); }
+const fiaWords = text => String(text).replace(/\bHIM\b/g, "ladies");
+/** Region name for display: in FiA names, "FiA" keeps its lowercase i even in all-caps headings. */
+function regionNameHtml(name) {
+  return esc(name).replace(/\bfia\b/gi, `F<span class="keep-case">i</span>A`);
+}
 function applyTheme() {
   const t = THEMES.some(x => x.key === state.settings.theme) ? state.settings.theme : "f3";
   if (t === "f3") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
@@ -76,6 +84,13 @@ function applyTheme() {
 function regionNameChanged() {
   const t = themeForRegion(state.settings.regionName);
   if (t !== state.settings.theme) { state.settings.theme = t; save("settings"); applyTheme(); }
+  // Swap the opening line's wording to suit the region: "ladies" for FiA, "HIM" for F3.
+  // When the app made the swap itself (openingSwapped), leaving FiA swaps it back.
+  const s = state.settings, cur = s.openingTemplate || DEFAULT_SETTINGS.openingTemplate;
+  let next = cur;
+  if (isFiaRegion()) { next = fiaWords(cur); if (next !== cur) s.openingSwapped = true; }
+  else if (s.openingSwapped) { next = cur.replace(/\bladies\b/g, "HIM"); s.openingSwapped = false; }
+  if (next !== s.openingTemplate || !isFiaRegion()) { s.openingTemplate = next; save("settings"); }
 }
 function themeCardHtml() {
   const cur = THEMES.some(x => x.key === state.settings.theme) ? state.settings.theme : "f3";
@@ -692,7 +707,8 @@ function workoutText(w, opts) {
 function bbCount(bb) { return bb.qs.length + bb.pax.length + bb.visitors.length + bb.fngs.length; }
 function autoOpening(bb) {
   const ao = aoById(bb.aoId);
-  return (state.settings.openingTemplate || DEFAULT_SETTINGS.openingTemplate)
+  const tpl = state.settings.openingTemplate || DEFAULT_SETTINGS.openingTemplate;
+  return (isFiaRegion() ? fiaWords(tpl) : tpl)
     .replaceAll("{count}", bbCount(bb))
     .replaceAll("{ao}", ao?.name || "the AO")
     .replaceAll("{why}", state.settings.defaultWhy || "get 1% better")
@@ -867,7 +883,7 @@ function viewHome() {
       <div class="home-head-left">
         ${s.logo ? `<img class="home-logo" src="${esc(s.logo)}" alt="${esc(s.regionName || "Region")} logo">` : ""}
         <div class="home-id">
-          <h1 class="region-title">${esc(s.regionName || DEFAULT_SETTINGS.regionName)}</h1>
+          <h1 class="region-title">${regionNameHtml(s.regionName || DEFAULT_SETTINGS.regionName)}</h1>
           <button class="greeting" data-go="#/settings">${greetingWord()}, ${esc(s.f3Name || "{PAX}")}<span class="chev">›</span></button>
           <div class="greeting-row"><span class="muted" style="font-size:14px">Keep showing up.</span>
             ${!regionNameSet() ? `<button class="pill" data-go="#/settings?focus=region" style="background:none;cursor:pointer">Choose region</button>`
@@ -1689,7 +1705,10 @@ function viewSettings(query) {
   const saveS = debounce(() => save("settings"), 300);
   $$("[data-s]").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => {
     s[el.dataset.s] = el.value; saveS();
-    if (el.dataset.s === "regionName") { regionNameChanged(); $("[data-theme-card]").innerHTML = themeCardHtml(); bindThemeCard(); }
+    if (el.dataset.s === "regionName") {
+      regionNameChanged(); $("[data-theme-card]").innerHTML = themeCardHtml(); bindThemeCard();
+      const ol = $('[data-s="openingTemplate"]'); if (ol && ol.value !== s.openingTemplate) ol.value = s.openingTemplate;
+    }
   }));
   const bindThemeCard = () => $$("[data-theme-pick]").forEach(el => el.onchange = () => {
     s.theme = el.dataset.themePick; save("settings"); applyTheme();
