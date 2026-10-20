@@ -174,8 +174,8 @@ async function sheetTab(id, tab, tq) {
   const text = await res.text();
   if (!res.ok || /^\s*</.test(text) || /google\.visualization\.Query/.test(text)) throw new Error("not-shared");
   const [head = [], ...rows] = parseCsv(text);
-  const cols = head.map(h => h.trim().toLowerCase());
-  return { cols, rows: rows.filter(r => r.some(c => c.trim())) };
+  const names = head.map(h => h.trim());
+  return { names, cols: names.map(h => h.toLowerCase()), rows: rows.filter(r => r.some(c => c.trim())) };
 }
 const colLetter = i => (i >= 26 ? colLetter(Math.floor(i / 26) - 1) : "") + String.fromCharCode(65 + (i % 26));
 function sheetDate(raw) {
@@ -187,61 +187,107 @@ function sheetDate(raw) {
 }
 const cleanName = s => String(s || "").replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim();
 
-/** Read a region sheet laid out like the F3 SacTown Data sheet: tabs "Roster" (F3 Name),
- *  "Master Data" (Post Date, AO Name, PAX Name) and "Sites" (AO Name, Day, Location, Time, Address, Retired).
- *  Each tab is optional; a missing tab just means no data of that kind. */
+/** What a custom region sheet can supply, and which columns each needs. The user picks the tab and,
+ *  for each field, which of that tab's columns holds it; `guess` lists header names tried automatically. */
+const SHEET_PARTS = [
+  { key: "roster", label: "PAX roster", tab: "Roster", fields: [
+    { key: "name", label: "PAX name", need: true, guess: ["f3 name", "pax name", "pax", "name", "nickname"] },
+  ] },
+  { key: "attendance", label: "Attendance", tab: "Master Data", hint: "One row per PAX per workout.", fields: [
+    { key: "date", label: "Date", need: true, guess: ["post date", "date", "workout date"] },
+    { key: "ao", label: "AO", need: true, guess: ["ao name", "ao", "site", "location"] },
+    { key: "pax", label: "PAX name", need: true, guess: ["pax name", "f3 name", "pax", "name"] },
+    { key: "postTotal", label: "Running post total", guess: ["post total", "posts total", "total posts"] },
+    { key: "qTotal", label: "Running Q total", guess: ["q total", "qs total", "total qs"] },
+    { key: "post", label: "Posted (1 or blank)", guess: ["post", "posted"] },
+    { key: "q", label: "Q'd (1 or blank)", guess: ["q", "is q", "qd"] },
+  ] },
+  { key: "sites", label: "AOs", tab: "Sites", fields: [
+    { key: "ao", label: "AO name", need: true, guess: ["ao name", "ao", "name", "site"] },
+    { key: "location", label: "Location", guess: ["location", "park"] },
+    { key: "address", label: "Address", guess: ["address"] },
+    { key: "day", label: "Day", guess: ["day", "days"] },
+    { key: "time", label: "Time", guess: ["time", "start time"] },
+    { key: "retired", label: "Retired (Y = skip)", guess: ["retired", "inactive"] },
+  ] },
+];
+/** The saved tab/column choices for the custom sheet: { roster: { tab, name }, attendance: { tab, date, … }, … }.
+ *  A field left unset is guessed; "" means "not used". */
+function sheetMap() {
+  const m = state.settings.customMap;
+  return m && typeof m === "object" ? m : (state.settings.customMap = {});
+}
+
+/** Read a region sheet: for each part, read its tab's headers, resolve the chosen (or guessed) columns,
+ *  then read the data. A tab that's missing, or lacks a needed column, just means no data of that kind. */
 async function readRegionSheet(id) {
-  const out = { sheetId: id, fetchedAt: nowIso(), aos: [], roster: [], attendance: {}, totals: {}, missing: [] };
-  const tryTab = async (tab, need, tq) => {
-    try {
-      const t = await sheetTab(id, tab, tq);
-      if (need.every(n => t.cols.includes(n))) return t;
-    } catch (e) { if (e.message === "not-shared") throw e; }
-    out.missing.push(tab); return null;
-  };
-  const roster = await tryTab("Roster", ["f3 name"]);
-  if (roster) {
-    const i = roster.cols.indexOf("f3 name");
-    out.roster = uniqNames(roster.rows.map(r => cleanName(r[i])).filter(n => n && keepPaxName(n))).sort((a, b) => a.localeCompare(b));
-  }
-  const sites = await tryTab("Sites", ["ao name"]);
-  if (sites) {
-    const c = n => sites.cols.indexOf(n), get = (r, n) => (c(n) >= 0 ? cleanName(r[c(n)]) : "");
-    out.aos = sites.rows.filter(r => get(r, "ao name") && !/^(y|yes|true)$/i.test(get(r, "retired"))).map(r => ({
-      id: `rg-${get(r, "ao name").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`,
-      name: get(r, "ao name"), location: get(r, "location"), address: get(r, "address"),
-      schedule: [get(r, "day"), get(r, "time")].filter(Boolean).join(" "),
-    }));
-  }
-  // Master Data can be long, so ask for the recent rows only (falls back to everything if the date column isn't a date).
-  const since = new Date(Date.now() - ATTENDANCE_KEEP_DAYS * 864e5).toISOString().slice(0, 10);
-  const head = await tryTab("Master Data", ["post date", "ao name", "pax name"], "limit 0");
-  if (head) {
-    const [d, a, p] = ["post date", "ao name", "pax name"].map(n => head.cols.indexOf(n));
-    let md;
-    try { md = await sheetTab(id, "Master Data", `select ${colLetter(d)},${colLetter(a)},${colLetter(p)} where ${colLetter(d)} >= date '${since}'`); md.idx = [0, 1, 2]; }
-    catch (e) { if (e.message === "not-shared") throw e; md = await sheetTab(id, "Master Data"); md.idx = [d, a, p]; }
-    for (const r of md.rows) {
-      const date = sheetDate(r[md.idx[0]]), ao = cleanName(r[md.idx[1]]), pax = cleanName(r[md.idx[2]]);
-      if (!date || date < since || !ao || !pax || !keepPaxName(pax)) continue;
-      const m = out.attendance[ao] ||= {};
-      if (!m[pax] || m[pax] < date) m[pax] = date;
+  const out = { sheetId: id, fetchedAt: nowIso(), aos: [], roster: [], attendance: {}, totals: {}, missing: [], headers: {}, cols: {}, unsure: {} };
+  const map = sheetMap();
+  // Google answers a tab name it doesn't know with the first tab, so note what that looks like to spot typos.
+  let fallback = "";
+  try { fallback = JSON.stringify((await sheetTab(id, "__rocket_no_such_tab__", "limit 0")).names); }
+  catch (e) { if (e.message === "not-shared") throw e; }
+  for (const part of SHEET_PARTS) {
+    const chosen = map[part.key] ||= {};
+    const tab = (chosen.tab ?? part.tab).trim();
+    if (!tab) continue;
+    let head;
+    try { head = await sheetTab(id, tab, "limit 0"); }
+    catch (e) { if (e.message === "not-shared") throw e; out.missing.push(`${tab} tab`); continue; }
+    out.headers[part.key] = head.names;
+    if (JSON.stringify(head.names) === fallback) out.unsure[part.key] = true;
+    const idx = {};
+    for (const f of part.fields) {
+      const pick = chosen[f.key];
+      const i = pick === "" ? -1 : pick != null ? head.cols.indexOf(pick.trim().toLowerCase()) : head.cols.findIndex(c => f.guess.includes(c));
+      if (i >= 0) idx[f.key] = i;
     }
-    // All-time totals per PAX for "My stats": the sheet's running "Post Total"/"Q Total" (highest value), else sum of "Post"/"Q".
-    const ci = n => head.cols.indexOf(n);
-    const [pt, qt, po, qo] = ["post total", "q total", "post", "q"].map(ci);
-    const agg = pt >= 0 && qt >= 0 ? `max(${colLetter(pt)}), max(${colLetter(qt)})` : po >= 0 && qo >= 0 ? `sum(${colLetter(po)}), sum(${colLetter(qo)})` : "";
-    if (agg) {
-      try {
-        const t = await sheetTab(id, "Master Data", `select ${colLetter(p)}, ${agg} where ${colLetter(p)} is not null group by ${colLetter(p)}`);
-        for (const r of t.rows) {
-          const pax = cleanName(r[0]), posts = Math.round(Number(r[1]) || 0), qs = Math.round(Number(r[2]) || 0);
-          if (pax && (posts || qs)) out.totals[pax] = [posts, qs];
-        }
-      } catch (e) { if (e.message === "not-shared") throw e; }
-    }
+    out.cols[part.key] = Object.fromEntries(Object.entries(idx).map(([k, i]) => [k, head.names[i]]));
+    const lacking = part.fields.filter(f => f.need && !(f.key in idx)).map(f => f.label);
+    if (lacking.length) { out.missing.push(`${part.label}: pick a ${lacking.join(" and ")} column`); continue; }
+    if (part.key === "roster") await readRosterPart(id, tab, idx, out);
+    if (part.key === "sites") await readSitesPart(id, tab, idx, out);
+    if (part.key === "attendance") await readAttendancePart(id, tab, idx, out);
   }
   return out;
+}
+async function readRosterPart(id, tab, idx, out) {
+  const t = await sheetTab(id, tab);
+  out.roster = uniqNames(t.rows.map(r => cleanName(r[idx.name])).filter(n => n && keepPaxName(n))).sort((a, b) => a.localeCompare(b));
+}
+async function readSitesPart(id, tab, idx, out) {
+  const t = await sheetTab(id, tab);
+  const get = (r, k) => (k in idx ? cleanName(r[idx[k]]) : "");
+  out.aos = t.rows.filter(r => get(r, "ao") && !/^(y|yes|true|x)$/i.test(get(r, "retired"))).map(r => ({
+    id: `rg-${get(r, "ao").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`,
+    name: get(r, "ao"), location: get(r, "location"), address: get(r, "address"),
+    schedule: [get(r, "day"), get(r, "time")].filter(Boolean).join(" "),
+  }));
+}
+async function readAttendancePart(id, tab, idx, out) {
+  // Attendance can be long, so ask for recent rows only (falls back to everything if the date column isn't a date).
+  const since = new Date(Date.now() - ATTENDANCE_KEEP_DAYS * 864e5).toISOString().slice(0, 10);
+  const [d, a, p] = [idx.date, idx.ao, idx.pax].map(colLetter);
+  let md, at;
+  try { md = await sheetTab(id, tab, `select ${d},${a},${p} where ${d} >= date '${since}'`); at = [0, 1, 2]; }
+  catch (e) { if (e.message === "not-shared") throw e; md = await sheetTab(id, tab); at = [idx.date, idx.ao, idx.pax]; }
+  for (const r of md.rows) {
+    const date = sheetDate(r[at[0]]), ao = cleanName(r[at[1]]), pax = cleanName(r[at[2]]);
+    if (!date || date < since || !ao || !pax || !keepPaxName(pax)) continue;
+    const m = out.attendance[ao] ||= {};
+    if (!m[pax] || m[pax] < date) m[pax] = date;
+  }
+  // All-time totals per PAX for "My stats": running post/Q totals (highest value), else the sum of posted/Q'd flags.
+  const agg = "postTotal" in idx && "qTotal" in idx ? `max(${colLetter(idx.postTotal)}), max(${colLetter(idx.qTotal)})`
+    : "post" in idx && "q" in idx ? `sum(${colLetter(idx.post)}), sum(${colLetter(idx.q)})` : "";
+  if (!agg) return;
+  try {
+    const t = await sheetTab(id, tab, `select ${p}, ${agg} where ${p} is not null group by ${p}`);
+    for (const r of t.rows) {
+      const pax = cleanName(r[0]), posts = Math.round(Number(r[1]) || 0), qs = Math.round(Number(r[2]) || 0);
+      if (pax && (posts || qs)) out.totals[pax] = [posts, qs];
+    }
+  } catch (e) { if (e.message === "not-shared") throw e; }
 }
 
 /** Re-read the custom sheet when it's due (or forced), then apply its AOs and roster. */
@@ -1469,7 +1515,27 @@ function regionCardHtml() {
   const status = key !== "custom" ? "" : !s.customSheetUrl ? "" : !id ? `<p class="hint" style="color:var(--danger)">That doesn't look like a Google Sheets link. It should contain /spreadsheets/d/…</p>`
     : c?.sheetId !== id ? `<p class="hint">Not loaded yet.</p>`
     : `<p class="hint" ${c.error ? `style="color:var(--danger)"` : ""}>${c.error ? esc(c.error) : `Loaded ${esc(fmtWhen(c.fetchedAt))}: ${c.aos.length} AO${c.aos.length === 1 ? "" : "s"}, ${c.roster.length} PAX, attendance at ${Object.keys(c.attendance).length} AO${Object.keys(c.attendance).length === 1 ? "" : "s"}.`}
-      ${!c.error && c.missing?.length ? ` No ${c.missing.map(esc).join(", ")} tab found.` : ""}</p>`;
+      ${!c.error && c.missing?.length ? ` Not loaded: ${c.missing.map(esc).join("; ")}.` : ""}</p>`;
+  const loaded = key === "custom" && id && c?.sheetId === id && !c.error && c.headers;
+  const columns = !loaded ? "" : `
+    <div class="map-block">
+      <div class="field-label" style="margin-top:6px">Sheet columns</div>
+      <p class="hint" style="margin-top:0">Pick the tab and the column that holds each item. Best guesses are filled in; leave an item "not used" if the sheet doesn't have it.</p>
+      ${SHEET_PARTS.map(part => {
+        const heads = c.headers[part.key], picked = c.cols?.[part.key] || {};
+        const tab = sheetMap()[part.key]?.tab ?? part.tab;
+        return `<div class="map-part">
+          <div class="map-row"><span><b>${esc(part.label)}</b> tab${part.hint ? `<br><span class="muted" style="font-size:12px">${esc(part.hint)}</span>` : ""}</span>
+            <input class="input" data-map-tab="${part.key}" value="${esc(tab)}" placeholder="Tab name (blank = not used)"></div>
+          ${!tab.trim() ? "" : !heads ? `<p class="hint" style="color:var(--danger);margin:0 0 8px">No tab named “${esc(tab)}” found.</p>`
+          : (c.unsure?.[part.key] ? `<p class="hint" style="color:#f2c46d;margin:0 0 8px">These are the first tab's columns. Google shows the first tab when it can't find one named “${esc(tab)}”, so check the name if they look wrong.</p>` : "") + part.fields.map(f => `<label class="map-row"><span>${esc(f.label)}${f.need ? ` <span style="color:var(--danger)">*</span>` : ""}</span>
+              <select class="input" data-map-part="${part.key}" data-map-field="${f.key}">
+                <option value="">${f.need ? "— pick a column —" : "Not used"}</option>
+                ${heads.filter(Boolean).map(h => `<option ${picked[f.key] === h ? "selected" : ""}>${esc(h)}</option>`).join("")}
+              </select></label>`).join("")}
+        </div>`;
+      }).join("")}
+    </div>`;
   return `
     <div class="field-label" style="color:var(--accent)">Region</div>
     <p class="muted" style="font-size:14px;margin:0 0 12px">Your region supplies the AOs, the PAX roster and who has been at each AO lately (shown first on backblasts).</p>
@@ -1480,7 +1546,8 @@ function regionCardHtml() {
       <label class="field"><span>Google Sheet link</span><input class="input" data-custom="customSheetUrl" value="${esc(s.customSheetUrl)}" placeholder="https://docs.google.com/spreadsheets/d/…" inputmode="url" autocomplete="off"></label>
       <div class="btn-row"><button class="btn sm accent" data-region-load>${c?.sheetId === id && !c?.error ? "Reload sheet" : "Load sheet"}</button></div>
       ${status}
-      <p class="hint">Lay the sheet out like the <a href="${REGIONS[0].sheet}" target="_blank" rel="noopener">F3 SacTown data sheet</a>: a <b>Roster</b> tab with an "F3 Name" column, a <b>Master Data</b> tab with "Post Date", "AO Name" and "PAX Name" (one row per PAX per workout), and a <b>Sites</b> tab with "AO Name", "Day", "Location", "Time", "Address" and "Retired". Any tab can be left out. Share it as “Anyone with the link” can view.</p>
+      ${columns}
+      <p class="hint">The sheet needs a tab of PAX names, a tab of attendance (one row per PAX per workout), and/or a tab of AOs. The <a href="${REGIONS[0].sheet}" target="_blank" rel="noopener">F3 SacTown data sheet</a> is an example. After loading, pick which tab and columns hold each item under <b>Sheet columns</b>. Share the sheet as “Anyone with the link” can view.</p>
     </div>` : ""}
     ${opt("none", "None", "No region data. Add your own AOs and PAX.")}
     <p class="hint">Switching region takes away the AOs and roster names the old region added. AOs you edited stay.</p>`;
@@ -1509,6 +1576,9 @@ function bindRegionCard(card) {
     toast(c && !c.error ? "Sheet loaded" : "Couldn't load the sheet");
     viewSettings();
   };
+  const remap = async (fn) => { fn(sheetMap()); save("settings"); await loadCustom(); };
+  $$("[data-map-field]", card).forEach(el => el.onchange = () => remap(m => { (m[el.dataset.mapPart] ||= {})[el.dataset.mapField] = el.value; }));
+  $$("[data-map-tab]", card).forEach(el => el.onchange = () => remap(m => { m[el.dataset.mapTab] = { tab: el.value.trim() }; }));
   const load = $("[data-region-load]", card);
   if (load) load.onclick = () => {
     const url = $('[data-custom="customSheetUrl"]', card).value.trim();

@@ -68,11 +68,12 @@ Settings → Import / Export (also in the menu).
 
 - **F3 SacTown**: AOs from `data/program.js`, the roster from `data/roster.js` and attendance from `data/attendance.js`. All three come from the F3 SacTown Data sheet and are refreshed weekly by GitHub Actions (see below). Choosing it also sets the region name to "F3 SacTown".
 - **Custom Google Sheet**: the user enters a region name and pastes a Google Sheets link. The app reads the sheet straight from the browser through Google's `gviz/tq` CSV endpoint, which allows cross-origin reads, and re-reads it every 6 hours. The sheet must be shared as "Anyone with the link can view" and laid out like the SacTown sheet:
-  - **Roster**: an "F3 Name" column;
-  - **Master Data**: "Post Date", "AO Name" and "PAX Name", one row per PAX per workout. Only the last 180 days are requested;
-  - **Sites**: "AO Name", "Day", "Location", "Time", "Address" and "Retired". Retired rows are skipped.
+  - after the first load, **Sheet columns** shows each part with its tab name and a dropdown for each item, listing that tab's own column names. Best guesses come from the SacTown names and are preselected:
+    - **PAX roster** (default tab "Roster"): PAX name*;
+    - **Attendance** (default tab "Master Data", one row per PAX per workout): date*, AO*, PAX name*, running post total, running Q total, and "posted" / "Q'd" flags as a fallback for the totals. Only the last 180 days of rows are requested;
+    - **AOs** (default tab "Sites"): AO name*, location, address, day, time and retired. Retired rows are skipped.
 
-  Any tab can be missing. The parentheses rule below applies to these names too.
+    Items marked * are required for that part. A blank tab name turns a part off. Google answers an unknown tab name with the first tab, so the app warns when a tab's columns match the first tab's. The choices are saved in `settings.customMap`, and the parentheses rule below applies to these names too.
 - **None** (the default for new installs): no region data. Installs from before regions existed are moved to F3 SacTown, since they already have its AOs and roster.
 
 Until a region name is set, by picking a region or typing one, the home page shows a **Choose region** button that opens Settings → Region. After that, it shows **Set your nickname** until the F3 name is filled in.
