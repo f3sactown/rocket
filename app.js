@@ -195,9 +195,14 @@ async function setRegion(next) {
   const built = REGIONS.find(r => r.key === next);
   if (built) s.regionName = built.name;
   else if (next === "custom" && s.customRegionName) s.regionName = s.customRegionName;
-  // A built-in region brings its logo; leaving it takes that logo away (a logo the user uploaded is replaced).
-  if (built?.logo) { s.logo = built.logo; s.logoFromRegion = built.key; s.logoOffered = true; }
-  else if (s.logoFromRegion) { s.logo = ""; s.logoFromRegion = ""; }
+  // A built-in region brings its logo. If there's already a different logo, ask which to use.
+  // Leaving a region takes its logo away.
+  if (s.logoFromRegion && s.logoFromRegion !== built?.key) { s.logo = ""; s.logoFromRegion = ""; }
+  if (built?.logo && s.logo !== built.logo) {
+    const useIt = !s.logo || await logoChoiceModal(built);
+    if (useIt) { s.logo = built.logo; s.logoFromRegion = built.key; }
+  }
+  if (built?.logo) s.logoOffered = true;
   save("settings");
   regionNameChanged();
   if (next === "sactown") { await syncProgram({ force: true }); state.program.notice = null; save("program"); }  // the region's AOs aren't an "app update"
@@ -473,6 +478,26 @@ function openModal(html, bind, onClose) {
   const first = $("input, textarea", wrap);
   if (first && !first.dataset.noautofocus) first.focus();
   return close;
+}
+/** Ask whether to swap the current logo for a region's default one. Resolves true to use the region's. */
+function logoChoiceModal(region) {
+  return new Promise(resolve => {
+    let done = false;
+    openModal(`
+      <h2>Use the ${esc(region.name)} logo?</h2>
+      <p class="muted">You already have a logo. Replace it with the ${esc(region.name)} logo, or keep the one you have?</p>
+      <div class="logo-choice">
+        <figure><img src="${esc(state.settings.logo)}" alt="Your current logo"><figcaption>Current</figcaption></figure>
+        <figure><img src="${esc(region.logo)}" alt="${esc(region.name)} logo"><figcaption>${esc(region.name)}</figcaption></figure>
+      </div>
+      <div class="btn-row" style="margin-top:18px;justify-content:flex-end">
+        <button class="btn" data-keep>Keep current</button>
+        <button class="btn primary" data-use>Use ${esc(region.name)} logo</button>
+      </div>`, (w, c) => {
+      $("[data-keep]", w).onclick = () => { done = true; c(); resolve(false); };
+      $("[data-use]", w).onclick = () => { done = true; c(); resolve(true); };
+    }, () => { if (!done) { done = true; resolve(false); } });  // closed another way = keep current
+  });
 }
 function confirmModal(message, okLabel = "Confirm", danger = true) {
   return new Promise(resolve => {
