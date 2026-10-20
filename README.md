@@ -62,6 +62,10 @@ Settings → Import / Export (also in the menu).
 - **Export**: tick any of Settings, PAX roster, AOs, Saved templates, Saved workouts and Backblasts, then download a `.json` file. Unedited program items are left out unless you tick that option.
 - **Import**: choose a file. The app lists what the file contains, and you tick what to bring in. Then pick **Merge** (adds new items and updates matching ones) or **Replace** (wipes the selected categories first).
 
+## Themes
+
+**Settings → Theme** offers **F3** (blue, the original look) and **FiA** (teal). Whenever the region name changes, by picking a region or typing a name, the theme switches to match: names containing "FiA" get FiA, everything else F3. The user can then pick either one. All accent colours, including the splash rocket, come from CSS variables in `styles.css`. `:root` holds F3's, and `:root[data-theme="fia"]` overrides them. A small script in `index.html` applies the saved theme before the page draws.
+
 ## Regions
 
 **Settings → Region** picks where the AOs, the PAX roster and recent attendance come from:

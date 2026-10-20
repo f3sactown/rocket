@@ -6,6 +6,10 @@
   <meta name="theme-color" content="#000000">
   <meta name="description" content="Plan F3 workouts, write backblasts, and browse the F3 Nation Exicon.">
   <title>F3 Q Planner</title>
+  <script>
+    // Apply the saved theme before anything draws, so the splash rocket is already the right colour.
+    try { var t = (JSON.parse(localStorage.getItem("f3qp:settings") || "{}") || {}).theme; if (t && t !== "f3") document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -28,13 +32,13 @@
         <defs>
           <linearGradient id="spFlame" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#ffffff"/>
-            <stop offset=".35" stop-color="#cfe6f7"/>
-            <stop offset=".7" stop-color="#8cc8f2"/>
-            <stop offset="1" stop-color="#8cc8f2" stop-opacity="0"/>
+            <stop offset=".35" style="stop-color:var(--accent-pale)"/>
+            <stop offset=".7" style="stop-color:var(--accent)"/>
+            <stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/>
           </linearGradient>
           <linearGradient id="spTrail" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#8cc8f2" stop-opacity=".55"/>
-            <stop offset="1" stop-color="#8cc8f2" stop-opacity="0"/>
+            <stop offset="0" style="stop-color:var(--accent);stop-opacity:.55"/>
+            <stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/>
           </linearGradient>
           <linearGradient id="spBody" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stop-color="#c5ccd4"/>
@@ -55,14 +59,14 @@
           <rect class="sp-trail" x="88" y="226" width="24" height="420" rx="12" fill="url(#spTrail)"/>
           <path class="sp-flame" d="M86 222 Q100 300 114 222 Z" fill="url(#spFlame)"/>
           <path class="sp-flame sp-flame-core" d="M93 222 Q100 262 107 222 Z" fill="#ffffff"/>
-          <path d="M72 186 L44 232 L44 246 L72 226 Z" fill="#2f5670" stroke="#8cc8f2" stroke-width="3" stroke-linejoin="round"/>
-          <path d="M128 186 L156 232 L156 246 L128 226 Z" fill="#2f5670" stroke="#8cc8f2" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M72 186 L44 232 L44 246 L72 226 Z" style="fill:var(--accent-deep);stroke:var(--accent)" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M128 186 L156 232 L156 246 L128 226 Z" style="fill:var(--accent-deep);stroke:var(--accent)" stroke-width="3" stroke-linejoin="round"/>
           <path d="M86 222 L114 222 L110 232 L90 232 Z" fill="#6b7178"/>
           <path d="M100 52 C120 74 128 104 128 136 L128 222 L72 222 L72 136 C72 104 80 74 100 52 Z" fill="url(#spBody)" stroke="#0b0d10" stroke-width="2"/>
-          <path d="M100 52 C112 65 119 80 123 96 L77 96 C81 80 88 65 100 52 Z" fill="#8cc8f2"/>
-          <circle cx="100" cy="134" r="15" fill="#0b1218" stroke="#2f5670" stroke-width="6"/>
-          <circle cx="95" cy="129" r="4" fill="#8cc8f2" opacity=".8"/>
-          <path d="M100 182 L100 222" stroke="#2f5670" stroke-width="10"/>
+          <path d="M100 52 C112 65 119 80 123 96 L77 96 C81 80 88 65 100 52 Z" style="fill:var(--accent)"/>
+          <circle cx="100" cy="134" r="15" style="fill:var(--accent-ink);stroke:var(--accent-deep)" stroke-width="6"/>
+          <circle cx="95" cy="129" r="4" style="fill:var(--accent)" opacity=".8"/>
+          <path d="M100 182 L100 222" style="stroke:var(--accent-deep)" stroke-width="10"/>
         </g>
       </svg>
       <svg class="sp-svg" viewBox="0 0 200 320" aria-hidden="true">
