@@ -51,7 +51,7 @@ Program items carry a **Program** badge in My Templates, AOs and the Planner, so
 
 In the Exicon library, F3 Nation Exicon entries carry a red **F3** badge and FiA Lexicon/Exicon entries a light green **FiA** badge. Program warm-up, thang and Mary templates also appear there with the **Program** badge, along with any entries in an optional `library` array in `data/program.js` (`{ id, name, text, kind: "exercise" | "thang", emphasis, equipment, tags }`). Under **Settings → Exicon library sources**, each user picks which of these sources (F3, FiA, Program) the Library shows (all of them by default), both on the Exicon page and in the planner's Library picker. To add a source, add an entry to `LIBRARY_SOURCES` in `app.js`; it starts out turned on for everyone.
 
-`templates[].section` must be one of: `intro`, `warmup`, `thang`, `mary`, `notes`, `cot`.
+`templates[].section` must be one of: `intro`, `warmup`, `thang`, `mary`, `notes`, `thirdF`, `announcements`, `cot`. Unedited program items that are dropped from the file are removed from users' lists on their next visit.
 Workouts follow this shape: `{ id, title, date, aoId, status, intro, warmup, thangs: [{title, content}], mary, notes, thirdF, announcements }`.
 AOs follow this shape: `{ id, name, location, address, schedule }`.
 
