@@ -857,7 +857,6 @@ function viewHome() {
   const up = upcomingWorkouts();
   const next = up[0];
   const others = up.slice(1, 4);
-  const bbs = [...state.backblasts].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   const userWorkouts = state.workouts.filter(w => w.source !== "program");
   // Posts and Qs come from the region's attendance data, looked up by the F3 name in Settings.
   const mine = regionTotals(s.f3Name);
@@ -926,7 +925,7 @@ function viewHome() {
       ${others.length ? `<div class="list">${others.map(workoutRow).join("")}</div>` : `
         <div class="card dashed"><h3>No other upcoming Qs</h3><p>Plan another when you're ready.</p>
           <div style="margin-top:8px"><button class="linkish" data-go="#/planner">View Planner</button></div></div>`}
-      <div class="label">My stats <button class="linkish" data-go="#/backblasts">Backblasts ›</button></div>
+      <div class="label">My stats</div>
       <div class="stats">
         <div class="stats-grid">
           <div class="stat"><b>${mine ? mine[0].toLocaleString() : "—"}</b><span>Total posts</span></div>
@@ -935,8 +934,6 @@ function viewHome() {
         </div>
         ${statsNote ? `<p class="muted stats-note">${statsNote}</p>` : ""}
         ${asOf ? `<p class="muted stats-note">Posts and Qs as of ${esc(fmtDate(asOf, { month: "short", day: "numeric", year: "numeric" }))}, the latest post in ${esc(s.regionName || "your region")}'s sheet.</p>` : ""}
-        <button class="stats-foot" data-go="${bbs[0] ? "#/backblast/" + bbs[0].id : "#/backblast/new"}">
-          <span>Last backblast <b>${bbs[0] ? esc(fmtDate(bbs[0].date, { month: "short", day: "numeric", year: "numeric" })) : "—"}</b></span><span>›</span></button>
       </div>
     </div>
     ${bottomNav("home")}`;
