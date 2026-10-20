@@ -451,3 +451,7 @@ textarea.input.short { min-height: 80px; }
 .logo-choice figure { margin: 0; border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; background: #08090b; }
 .logo-choice img { width: 100%; height: 110px; object-fit: contain; display: block; }
 .logo-choice figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+/* "+ Add Visiting PAX" / "+ Add FNG" under their lists */
+.add-person { display: block; width: 100%; margin-top: 10px; padding: 16px; font-family: var(--font-display); font-weight: 700; font-size: 17px; text-align: center; }
+.chips:empty + .add-person { margin-top: 0; }
