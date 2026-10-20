@@ -729,9 +729,10 @@ function liveData(bb) {
   if (loc) lines.push(loc);
   lines.push("", `Total Attendees: ${bbCount(bb)}`, "");
   lines.push(bb.qs.length > 1 ? `Qs (${bb.qs.length}):\n${list(bb.qs)}` : `Q: ${bb.qs.length ? at(bb.qs[0]) : "-"}`);
-  lines.push("", `PAX (${bb.pax.length}):\n${list(bb.pax)}`);
-  lines.push("", `Visiting PAX (${bb.visitors.length}):\n${list(bb.visitors)}`);
-  lines.push("", `FNGs (${bb.fngs.length}):\n${list(bb.fngs)}`);
+  // Sections with nobody in them are left out.
+  if (bb.pax.length) lines.push("", `PAX (${bb.pax.length}):\n${list(bb.pax)}`);
+  if (bb.visitors.length) lines.push("", `Visiting PAX (${bb.visitors.length}):\n${list(bb.visitors)}`);
+  if (bb.fngs.length) lines.push("", `FNGs (${bb.fngs.length}):\n${list(bb.fngs)}`);
   return lines.join("\n");
 }
 function refreshAuto(bb) {
