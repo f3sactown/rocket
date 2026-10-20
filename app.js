@@ -940,12 +940,20 @@ function viewHome() {
 function fitHomeLogo(img) {
   const sub = $(".home-id .greeting-row .muted");
   if (!img.isConnected || !sub) return;
+  img.style.transform = "";
   for (let i = 0; i < 4; i++) {
     const want = Math.round(sub.getBoundingClientRect().bottom - img.getBoundingClientRect().top);
     const h = Math.max(48, Math.min(want, 260));
     if (Math.abs(img.offsetHeight - h) < 1) break;
     img.style.height = h + "px";
   }
+  // Move the logo so the middle of the visible image lines up with the middle of the greeting's first line.
+  // (The image is centred in its box; a wide logo is scaled down to the box's width, so it's shorter than the box.)
+  const line = $(".home-id .greeting")?.getClientRects()[0];
+  if (!line) return;
+  const box = img.getBoundingClientRect();
+  const shift = Math.round(line.top + line.height / 2 - (box.top + box.height / 2));
+  if (shift) img.style.transform = `translateY(${shift}px)`;
 }
 
 /* ------------------------------------------------------------------ */
