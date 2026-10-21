@@ -555,7 +555,7 @@ function normalizeItem(coll, item) {
   }
   if (coll === "backblasts") {
     for (const k of ["qs", "pax", "visitors", "fngs"]) if (!Array.isArray(base[k])) base[k] = [];
-    for (const k of ["opening", "details", "cot", "date", "aoId", "workoutId"]) base[k] ??= "";
+    for (const k of ["opening", "details", "notes", "cot", "date", "aoId", "workoutId"]) base[k] ??= "";
   }
   base.createdAt ||= nowIso();
   base.updatedAt ||= base.createdAt;
@@ -933,7 +933,7 @@ function fngName(entry) { return String(entry).replace(/\s*\([^)]*\)\s*$/, "").t
 /** The text that's copied or shared. The participants line goes a few lines below the rest;
  *  it isn't shown on the backblast page. */
 function backblastText(bb) {
-  const body = [bb.opening, liveData(bb), bb.details, bb.cot ? `COT:\n${bb.cot}` : ""]
+  const body = [bb.opening, liveData(bb), bb.details, bb.notes ? `Notes:\n${bb.notes}` : "", bb.cot ? `COT:\n${bb.cot}` : ""]
     .map(s => (s || "").trim()).filter(Boolean).join("\n\n");
   const names = participantsLine(bb);
   return names ? `${body}\n\n\n\n${names}` : body;
@@ -1604,7 +1604,7 @@ function viewBackblast(id, query) {
     const w = query.get("w") ? state.workouts.find(x => x.id === query.get("w")) : null;
     bb = {
       id: uid("b"), workoutId: w?.id || "", date: w?.date || todayISO(), aoId: w?.aoId || state.settings.homeAoId || "",
-      qs: state.settings.f3Name ? [state.settings.f3Name] : [], pax: [], visitors: [], fngs: [], cot: "",
+      qs: state.settings.f3Name ? [state.settings.f3Name] : [], pax: [], visitors: [], fngs: [], notes: "", cot: "",
       openingEdited: false, detailsEdited: false, createdAt: nowIso(),
     };
     refreshAuto(bb);
@@ -1697,6 +1697,7 @@ function viewBackblast(id, query) {
         <div class="bb-block"><div class="field-label">Edit opening</div><textarea rows="2" data-edit="opening">${esc(bb.opening)}</textarea></div>
         <div class="bb-block"><div class="field-label live-dot">Live session data</div><div class="bb-live" data-live></div></div>
         <div class="bb-block"><div class="field-label">Edit workout details</div><textarea rows="10" data-edit="details" placeholder="What did you do? Pick a workout above to fill this in.">${esc(bb.details)}</textarea></div>
+        <div class="bb-block"><div class="field-label">Notes</div><textarea rows="3" data-edit="notes" placeholder="Anything else worth sharing…">${esc(bb.notes || "")}</textarea></div>
         <div class="bb-block"><div class="field-label">COT / Closing</div>
           <textarea rows="3" data-edit="cot" placeholder="Prayers, praises, moleskin…">${esc(bb.cot)}</textarea>
           <div class="section-tools"><button class="tiny-btn" data-cotsave>Save Section as Template</button><button class="tiny-btn" data-cottpl>Insert Saved Template</button></div></div>
@@ -1746,7 +1747,7 @@ function viewBackblast(id, query) {
   $$("[data-k]").forEach(el => el.addEventListener("change", () => { bb[el.dataset.k] = el.value; if (el.dataset.k === "workoutId") bb.detailsEdited = false; changed(); }));
   $$("[data-edit]").forEach(el => el.addEventListener("input", () => {
     const k = el.dataset.edit; bb[k] = el.value;
-    if (k !== "cot") bb[`${k}Edited`] = true;
+    if (k === "opening" || k === "details") bb[`${k}Edited`] = true;
     autosave();
   }));
   // PAX and Q / co-Q boxes: matches show as chips right under the box (the recent list stays put);
