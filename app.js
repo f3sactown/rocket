@@ -1676,7 +1676,8 @@ function viewBackblast(id, query) {
           <div><div class="field-label" style="color:var(--accent);margin:0">Session roster</div><div style="font-family:var(--font-display);font-weight:700;font-size:22px">ATTENDANCE</div></div>
           <span data-total style="color:var(--good);font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:.06em"></span></div>
         <div class="spacer"></div>
-        <input class="input" data-search type="search" placeholder="Search PAX… (Enter adds the top match or a new name)" autocomplete="off" enterkeyhint="done">
+        <input class="input" data-search type="search" placeholder="Add PAX… (type to search)" autocomplete="off" enterkeyhint="done">
+        <div class="q-matches" data-pmatches></div>
         <div class="spacer"></div>
         <div class="field-label">Q</div><div class="chips" data-list="qs"></div>
         <input class="input" data-addq type="search" placeholder="Add a Q / co-Q… (type to search)" autocomplete="off" enterkeyhint="done">
@@ -1719,21 +1720,6 @@ function viewBackblast(id, query) {
     const n = bbCount(bb);
     $("[data-total]").textContent = `${n} SELECTED`;
     const recent = recentAtAo();
-    // While the search box has text, the list shows every name that contains it (recent ones first).
-    const q = ($("[data-search]")?.value || "").trim();
-    if (q) {
-      const ql = q.toLowerCase();
-      const matches = uniqNames([...recent, ...state.roster]).filter(n => n.toLowerCase().includes(ql) && !inAny(n));
-      const exact = [...state.roster, ...recent].some(n => n.toLowerCase() === ql) || inAny(q);
-      $("[data-quick]").innerHTML = `
-        <div class="field-label" style="display:flex;justify-content:space-between">Matching “${esc(q)}” (${matches.length}) <button class="tiny-btn accent" data-search-clear>Clear</button></div>
-        ${matches.length ? `<div class="chips">${matches.map(r => `<button class="chip" data-quickadd="${esc(r)}">${esc(r)}</button>`).join("")}</div>`
-          : `<p class="muted" style="font-size:13px;margin:0 0 8px">No one on the roster matches.</p>`}
-        ${exact ? "" : `<div class="spacer"></div><button class="tiny-btn accent" data-quickadd="${esc(q)}">+ Add “${esc(q)}” as new PAX</button>`}`;
-      $("[data-live]").textContent = liveData(bb);
-      for (const k of ["opening", "details"]) { const el = $(`[data-edit="${k}"]`); if (document.activeElement !== el && el.value !== bb[k]) el.value = bb[k]; }
-      return;
-    }
     const rest = state.roster.filter(r => !inAny(r) && !recent.some(x => x.toLowerCase() === r.toLowerCase()));
     // With regulars listed, everyone else is found with the search box; without them, a first handful shows.
     const shown = recent.length ? [] : rest.slice(0, ROSTER_PREVIEW);
@@ -1763,49 +1749,39 @@ function viewBackblast(id, query) {
     if (k !== "cot") bb[`${k}Edited`] = true;
     autosave();
   }));
-  const search = $("[data-search]");
-  const drawSuggest = () => drawLists();  // the list below filters to what's typed
-  search.addEventListener("input", drawSuggest);
-  search.addEventListener("keydown", e => {
-    if (e.key !== "Enter") return;
-    e.preventDefault();
-    const q = search.value.trim().toLowerCase();
-    // An exact name, else the top match shown in the list (recent at this AO first).
-    const pool = uniqNames([...recentAtAo(), ...state.roster]);
-    const hit = pool.find(r => r.toLowerCase() === q) || pool.find(r => r.toLowerCase().includes(q) && !inAny(r));
-    addName("pax", hit && q ? hit : search.value); search.value = ""; drawSuggest();
-  });
-  $("[data-quick]").addEventListener("click", e => {
-    if (e.target.closest("[data-search-clear]")) { search.value = ""; drawLists(); }
-  });
-
-  // Q / co-Q: same search as PAX. Matches show as chips under the box; Enter adds the top match or a new name.
-  const qInput = $("[data-addq]"), qBox = $("[data-qmatches]");
-  const qPool = () => uniqNames([...bb.pax, ...recentAtAo(), ...state.roster]);
-  const drawQ = () => {
-    const q = qInput.value.trim(), ql = q.toLowerCase();
-    if (!q) { qBox.innerHTML = ""; return; }
-    const matches = qPool().filter(n => n.toLowerCase().includes(ql) && !bb.qs.some(x => x.toLowerCase() === n.toLowerCase()));
-    const exact = qPool().some(n => n.toLowerCase() === ql) || bb.qs.some(x => x.toLowerCase() === ql);
-    qBox.innerHTML = `<div class="chips">${matches.slice(0, 24).map(n => `<button class="chip" data-qadd="${esc(n)}">${esc(n)}</button>`).join("")}
-      ${exact ? "" : `<button class="chip" data-qadd="${esc(q)}">+ Add “${esc(q)}” as new</button>`}</div>
-      ${matches.length > 24 ? `<p class="muted" style="font-size:13px;margin:6px 0 0">${matches.length - 24} more. Keep typing.</p>` : ""}`;
+  // PAX and Q / co-Q boxes: matches show as chips right under the box (the recent list stays put);
+  // Enter adds the exact name, else the top match, else a new name.
+  const nameSearch = (input, box, pool, taken, pick) => {
+    const isTaken = n => taken().some(x => x.toLowerCase() === n.toLowerCase());
+    const draw = () => {
+      const q = input.value.trim(), ql = q.toLowerCase();
+      if (!q) { box.innerHTML = ""; return; }
+      const matches = pool().filter(n => n.toLowerCase().includes(ql) && !isTaken(n));
+      const exact = pool().some(n => n.toLowerCase() === ql) || isTaken(q);
+      box.innerHTML = `<div class="chips">${matches.slice(0, 24).map(n => `<button class="chip" data-pick="${esc(n)}">${esc(n)}</button>`).join("")}
+        ${exact ? "" : `<button class="chip" data-pick="${esc(q)}">+ Add “${esc(q)}” as new</button>`}</div>
+        ${matches.length > 24 ? `<p class="muted" style="font-size:13px;margin:6px 0 0">${matches.length - 24} more. Keep typing.</p>` : ""}`;
+    };
+    const add = name => { pick(name); input.value = ""; draw(); };
+    input.addEventListener("input", draw);
+    input.addEventListener("keydown", e => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const ql = input.value.trim().toLowerCase(); if (!ql) return;
+      const p = pool();
+      add(p.find(n => n.toLowerCase() === ql) || p.find(n => n.toLowerCase().includes(ql) && !isTaken(n)) || input.value.trim());
+    });
+    box.addEventListener("click", e => { const b = e.target.closest("[data-pick]"); if (b) { e.stopPropagation(); add(b.dataset.pick); } });
   };
-  const addQ = name => {
-    // A Q who's already checked in as PAX moves to Q.
-    const i = bb.pax.findIndex(x => x.toLowerCase() === name.toLowerCase());
-    if (i !== -1) bb.pax.splice(i, 1);
-    addName("qs", name); qInput.value = ""; drawQ();
-  };
-  qInput.addEventListener("input", drawQ);
-  qInput.addEventListener("keydown", e => {
-    if (e.key !== "Enter") return;
-    e.preventDefault();
-    const ql = qInput.value.trim().toLowerCase(); if (!ql) return;
-    const pool = qPool();
-    addQ(pool.find(n => n.toLowerCase() === ql) || pool.find(n => n.toLowerCase().includes(ql) && !bb.qs.some(x => x.toLowerCase() === n.toLowerCase())) || qInput.value.trim());
-  });
-  qBox.addEventListener("click", e => { const b = e.target.closest("[data-qadd]"); if (b) addQ(b.dataset.qadd); });
+  nameSearch($("[data-search]"), $("[data-pmatches]"), () => uniqNames([...recentAtAo(), ...state.roster]),
+    () => [...bb.qs, ...bb.pax, ...bb.visitors, ...bb.fngs], name => addName("pax", name));
+  // A Q who's already checked in as PAX moves to Q.
+  nameSearch($("[data-addq]"), $("[data-qmatches]"), () => uniqNames([...bb.pax, ...recentAtAo(), ...state.roster]),
+    () => bb.qs, name => {
+      const i = bb.pax.findIndex(x => x.toLowerCase() === name.toLowerCase());
+      if (i !== -1) bb.pax.splice(i, 1);
+      addName("qs", name);
+    });
   // Visiting PAX and FNGs are added through a small form: a name plus their home region / who EH'd them,
   // saved as "Name (extra)" so the backblast reads that way.
   const personForm = (key, title, nameLabel, extraLabel, extraPlaceholder) => openModal(`
