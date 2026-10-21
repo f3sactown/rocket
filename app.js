@@ -1018,7 +1018,7 @@ function render() {
   const routes = {
     home: viewHome, planner: viewPlanner, plan: () => viewPlan(id, query), workout: () => viewWorkout(id),
     run: () => viewRun(id), backblasts: viewBackblasts, backblast: () => viewBackblast(id, query),
-    library: viewLibrary, templates: viewTemplates, aos: viewAos, settings: () => viewSettings(query), data: viewData,
+    library: viewLibrary, templates: viewTemplates, aos: () => viewAos(query), settings: () => viewSettings(query), data: viewData,
   };
   (routes[r] || viewHome)();
   window.scrollTo(0, 0);
@@ -1211,9 +1211,12 @@ function viewPlanner() {
 /* ------------------------------------------------------------------ */
 /* Plan workout                                                        */
 /* ------------------------------------------------------------------ */
-function aoOptions(selected) {
-  return `<option value="">${state.aos.length ? "Select AO" : "No AOs yet — add in Settings › AOs"}</option>` +
-    state.aos.map(a => `<option value="${a.id}" ${a.id === selected ? "selected" : ""}>${esc(a.name)}</option>`).join("");
+/** AO <option>s in alphabetical order. With addNew, the list ends with "+ Add a new AO…" (value "__new"). */
+function aoOptions(selected, { addNew = false } = {}) {
+  const aos = [...state.aos].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  return `<option value="">${aos.length ? "Select AO" : addNew ? "No AOs yet" : "No AOs yet — add in Settings › AOs"}</option>` +
+    aos.map(a => `<option value="${a.id}" ${a.id === selected ? "selected" : ""}>${esc(a.name)}</option>`).join("") +
+    (addNew ? `<option value="__new">+ Add a new AO…</option>` : "");
 }
 function blankWorkout() {
   return normalizeItem("workouts", {
@@ -1271,7 +1274,7 @@ function viewPlan(id, query) {
       <div class="card">
         <div class="field-label">Workout details</div>
         <label class="field"><span>Date</span><input class="input" type="date" data-field="date" value="${esc(w.date)}"></label>
-        <label class="field"><span>AO</span><select class="input" data-field="aoId">${aoOptions(w.aoId)}</select></label>
+        <label class="field"><span>AO</span><select class="input" data-field="aoId">${aoOptions(w.aoId, { addNew: true })}</select></label>
         <label class="field" style="margin:0"><span>Workout title</span><input class="input" data-field="title" value="${esc(w.title)}" placeholder="Name your beatdown"></label>
       </div>
       ${sectionHtml("intro")}
@@ -1322,7 +1325,11 @@ function viewPlan(id, query) {
   const setField = (key, val) => { w[key] = val; const el = $(`[data-field="${key}"]`); if (el) el.value = val; autosave(); };
   const appendTo = (cur, text) => (cur || "").trim() ? `${cur.replace(/\s+$/, "")}\n\n${text}` : text;
 
-  $$("[data-field]").forEach(el => el.addEventListener(el.tagName === "SELECT" || el.type === "date" ? "change" : "input", () => { w[el.dataset.field] = el.value; autosave(); }));
+  $$("[data-field]").forEach(el => el.addEventListener(el.tagName === "SELECT" || el.type === "date" ? "change" : "input", () => {
+    // "+ Add a new AO…": save the plan, then open the AOs page's add form; the new AO comes back selected.
+    if (el.dataset.field === "aoId" && el.value === "__new") { el.value = w.aoId || ""; persist(); return go(`#/aos?add=1&plan=${w.id}`); }
+    w[el.dataset.field] = el.value; autosave();
+  }));
   thangsEl.addEventListener("input", e => {
     const box = e.target.closest(".thang"); const f = e.target.dataset.tfield;
     if (box && f) { w.thangs[+box.dataset.i][f] = e.target.value; autosave(); }
@@ -1877,7 +1884,7 @@ function viewTemplates() {
 /* ------------------------------------------------------------------ */
 /* AOs                                                                 */
 /* ------------------------------------------------------------------ */
-function editAoModal(ao) {
+function editAoModal(ao, onSaved) {
   openModal(`<h2>${ao ? "Edit AO" : "Add AO"}</h2><button class="tiny-btn modal-close" data-close>Close</button>
     <label class="field"><span>AO name</span><input class="input" data-f="name" value="${esc(ao?.name || "")}" placeholder="The Rock"></label>
     <label class="field"><span>Location</span><input class="input" data-f="location" value="${esc(ao?.location || "")}" placeholder="Granite Regional Park"></label>
@@ -1889,21 +1896,32 @@ function editAoModal(ao) {
       if (!vals.name) { toast("AO needs a name"); return; }
       if (ao) { const a = state.aos.find(x => x.id === ao.id); delete a.hashtag; Object.assign(a, vals, { updatedAt: nowIso() }); markEdited(a); }
       else state.aos.push({ id: uid("ao"), ...vals, source: "user", createdAt: nowIso(), updatedAt: nowIso() });
-      save("aos"); close(); viewAos();
+      save("aos"); close();
+      if (onSaved) onSaved(ao || state.aos[state.aos.length - 1]); else viewAos();
     });
 }
-function viewAos() {
-  app().innerHTML = `${topbar()}
+function viewAos(query) {
+  const fromPlan = query?.get("plan");  // came from a plan's "+ Add a new AO…"
+  app().innerHTML = `${topbar(fromPlan ? `#/plan/${fromPlan}` : "#/home")}
     <div class="page" style="padding-top:4px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
         <h1 class="page-title">AOs</h1><button class="btn accent sm" style="border-radius:12px;padding:10px 14px" data-add>+ Add AO</button></div>
       <p class="page-sub">Add your AOs once. They fill in the location line on every backblast.</p>
-      <div class="list">${state.aos.map(a => `<div class="row" style="cursor:default"><div class="grow">
+      <div class="list">${[...state.aos].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })).map(a => `<div class="row" style="cursor:default"><div class="grow">
           <div class="title">${esc(a.name)} ${a.id === state.settings.homeAoId ? `<span class="pill good">Home</span>` : ""}${isProgram(a) ? ` <span class="pill prog">Program</span>` : String(a.source || "").startsWith("region") ? ` <span class="pill prog">${esc(state.settings.regionName || "Region sheet")}</span>` : ""}</div>
           <div class="sub">${esc([a.location, a.schedule].filter(Boolean).join(" · ") || "No details")}</div></div>
           <button class="btn sm" data-edit="${a.id}">Edit</button><button class="btn sm danger" data-del="${a.id}">Delete</button></div>`).join("") || `<div class="empty">No AOs yet.</div>`}</div>
     </div>${bottomNav("")}`;
   $("[data-add]").onclick = () => editAoModal();
+  if (query?.get("add")) editAoModal(undefined, ao => {
+    // Back to the plan with the new AO picked.
+    const w = fromPlan && state.workouts.find(x => x.id === fromPlan);
+    // Swap this page's history entry for the destination (so Back doesn't reopen the form), once the form's own step has landed.
+    const to = w ? `#/plan/${w.id}` : "#/aos";
+    const finish = () => modalBackPending ? setTimeout(finish, 30) : (history.replaceState(null, "", to), render());
+    if (w) { w.aoId = ao.id; w.updatedAt = nowIso(); save("workouts"); }
+    toast(`Added ${ao.name}`); finish();
+  });
   $$("[data-edit]").forEach(b => b.onclick = () => editAoModal(state.aos.find(a => a.id === b.dataset.edit)));
   $$("[data-del]").forEach(b => b.onclick = async () => {
     const a = state.aos.find(x => x.id === b.dataset.del);
