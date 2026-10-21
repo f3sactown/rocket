@@ -1676,8 +1676,7 @@ function viewBackblast(id, query) {
           <div><div class="field-label" style="color:var(--accent);margin:0">Session roster</div><div style="font-family:var(--font-display);font-weight:700;font-size:22px">ATTENDANCE</div></div>
           <span data-total style="color:var(--good);font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:.06em"></span></div>
         <div class="spacer"></div>
-        <input class="input" data-search placeholder="Search PAX to add… (Enter adds a new name)" autocomplete="off">
-        <div data-suggest></div>
+        <input class="input" data-search type="search" placeholder="Search PAX… (Enter adds the top match or a new name)" autocomplete="off" enterkeyhint="done">
         <div class="spacer"></div>
         <div class="field-label">Q</div><div class="chips" data-list="qs"></div>
         <div class="inline-add"><input class="input" data-addq placeholder="Add a Q / co-Q"><button class="btn sm" data-addq-btn>Add</button></div>
@@ -1720,6 +1719,21 @@ function viewBackblast(id, query) {
     const n = bbCount(bb);
     $("[data-total]").textContent = `${n} SELECTED`;
     const recent = recentAtAo();
+    // While the search box has text, the list shows every name that contains it (recent ones first).
+    const q = ($("[data-search]")?.value || "").trim();
+    if (q) {
+      const ql = q.toLowerCase();
+      const matches = uniqNames([...recent, ...state.roster]).filter(n => n.toLowerCase().includes(ql) && !inAny(n));
+      const exact = [...state.roster, ...recent].some(n => n.toLowerCase() === ql) || inAny(q);
+      $("[data-quick]").innerHTML = `
+        <div class="field-label" style="display:flex;justify-content:space-between">Matching “${esc(q)}” (${matches.length}) <button class="tiny-btn accent" data-search-clear>Clear</button></div>
+        ${matches.length ? `<div class="chips">${matches.map(r => `<button class="chip" data-quickadd="${esc(r)}">${esc(r)}</button>`).join("")}</div>`
+          : `<p class="muted" style="font-size:13px;margin:0 0 8px">No one on the roster matches.</p>`}
+        ${exact ? "" : `<div class="spacer"></div><button class="tiny-btn accent" data-quickadd="${esc(q)}">+ Add “${esc(q)}” as new PAX</button>`}`;
+      $("[data-live]").textContent = liveData(bb);
+      for (const k of ["opening", "details"]) { const el = $(`[data-edit="${k}"]`); if (document.activeElement !== el && el.value !== bb[k]) el.value = bb[k]; }
+      return;
+    }
     const rest = state.roster.filter(r => !inAny(r) && !recent.some(x => x.toLowerCase() === r.toLowerCase()));
     const preview = recent.length ? 0 : ROSTER_PREVIEW;  // with regulars listed, the rest wait behind Show all
     const shown = showAllRoster ? rest : rest.slice(0, preview);
@@ -1750,24 +1764,20 @@ function viewBackblast(id, query) {
     autosave();
   }));
   const search = $("[data-search]");
-  const sug = $("[data-suggest]");
-  const drawSuggest = () => {
-    const q = search.value.trim().toLowerCase();
-    if (!q) { sug.innerHTML = ""; return; }
-    const hits = state.roster.filter(r => r.toLowerCase().includes(q) && !inAny(r)).slice(0, 8);
-    const exact = state.roster.some(r => r.toLowerCase() === q);
-    sug.innerHTML = `<div class="suggest">${hits.map(h => `<button data-sug="${esc(h)}">${esc(h)}</button>`).join("")}
-      ${exact ? "" : `<button data-sug="${esc(search.value.trim())}">+ Add “${esc(search.value.trim())}” as new PAX</button>`}</div>`;
-  };
+  const drawSuggest = () => drawLists();  // the list below filters to what's typed
   search.addEventListener("input", drawSuggest);
   search.addEventListener("keydown", e => {
     if (e.key !== "Enter") return;
     e.preventDefault();
     const q = search.value.trim().toLowerCase();
-    const hit = state.roster.find(r => r.toLowerCase() === q) || state.roster.find(r => r.toLowerCase().includes(q) && !inAny(r));
+    // An exact name, else the top match shown in the list (recent at this AO first).
+    const pool = uniqNames([...recentAtAo(), ...state.roster]);
+    const hit = pool.find(r => r.toLowerCase() === q) || pool.find(r => r.toLowerCase().includes(q) && !inAny(r));
     addName("pax", hit && q ? hit : search.value); search.value = ""; drawSuggest();
   });
-  sug.addEventListener("click", e => { const b = e.target.closest("[data-sug]"); if (b) { addName("pax", b.dataset.sug); search.value = ""; drawSuggest(); search.focus(); } });
+  $("[data-quick]").addEventListener("click", e => {
+    if (e.target.closest("[data-search-clear]")) { search.value = ""; drawLists(); }
+  });
   const wireInline = (inputSel, btnSel, key) => {
     const input = $(inputSel);
     const add = () => { addName(key, input.value); input.value = ""; input.focus(); };
