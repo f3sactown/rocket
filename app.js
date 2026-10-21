@@ -767,14 +767,111 @@ function thangLabel(t, i) {
   const def = `Thang ${i + 1}`;
   return !title || title === def ? def : `${def} — ${title}`;
 }
-function workoutSections(w, { includeNotes = true, includeTitle = true } = {}) {
+/* ------------------------------------------------------------------ */
+/* Workout timers (Warm-O-Rama, Thangs, Mary)                          */
+/* ------------------------------------------------------------------ */
+/** A timer: { id, type, minutes?, work?, rest?, rounds? } (work/rest in seconds). */
+const TIMER_TYPES = {
+  countdown: { name: "Countdown", hint: "Counts down, then beeps. For AMRAPs or \"work until time\"." },
+  stopwatch: { name: "Stopwatch", hint: "Counts up. For \"for time\" sets." },
+  interval: { name: "Intervals / Tabata", hint: "Work and rest, for a number of rounds. Beeps at each switch." },
+  emom: { name: "EMOM", hint: "Every minute on the minute, for a number of minutes. Beeps each minute." },
+};
+const mmss = sec => { sec = Math.max(0, Math.round(sec)); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`; };
+function timerSummary(t) {
+  if (t.type === "countdown") return `Countdown ${mmss((t.minutes || 0) * 60)}`;
+  if (t.type === "stopwatch") return "Stopwatch";
+  if (t.type === "interval") return `Intervals ${t.work}s on / ${t.rest}s off × ${t.rounds}`;
+  if (t.type === "emom") return `EMOM ${t.minutes} min`;
+  return "Timer";
+}
+/** Timers live on w.timers.warmup / w.timers.mary and on each thang's .timers. */
+function sectionTimers(w, owner, create = false) {
+  if (owner.startsWith("thang:")) {
+    const t = w.thangs[+owner.slice(6)];
+    if (!t) return [];
+    if (create && !Array.isArray(t.timers)) t.timers = [];
+    return t.timers || [];
+  }
+  if (create) { w.timers ||= {}; w.timers[owner] ||= []; }
+  return w.timers?.[owner] || [];
+}
+/** What a running timer shows at `elapsed` seconds: big time, a label, and whether it's finished. */
+function timerState(t, elapsed) {
+  if (t.type === "stopwatch") return { time: mmss(elapsed), label: "Elapsed", done: false, mark: Math.floor(elapsed) };
+  if (t.type === "countdown") {
+    const total = (t.minutes || 0) * 60, left = total - elapsed;
+    return { time: mmss(Math.ceil(left)), label: left <= 0 ? "Time!" : "Remaining", done: left <= 0, left, phaseKey: left <= 0 ? "end" : "c" };
+  }
+  if (t.type === "emom") {
+    const n = Math.max(1, t.minutes || 1), total = n * 60;
+    if (elapsed >= total) return { time: "0:00", label: "Done!", done: true, left: 0, phaseKey: `m${n}` };
+    const m = Math.floor(elapsed / 60), left = 60 - (elapsed - m * 60);
+    return { time: mmss(Math.ceil(left)), label: `Minute ${m + 1} of ${n}`, done: false, left, phaseKey: `m${m}` };
+  }
+  // Intervals: work, rest, work, rest… with no rest after the last round.
+  const work = Math.max(1, t.work || 20), rest = Math.max(0, t.rest ?? 10), rounds = Math.max(1, t.rounds || 8);
+  const total = rounds * (work + rest) - rest;
+  if (elapsed >= total) return { time: "0:00", label: "Done!", done: true, left: 0, phaseKey: "end" };
+  const r = Math.floor(elapsed / (work + rest)), pos = elapsed - r * (work + rest), working = pos < work;
+  const left = working ? work - pos : work + rest - pos;
+  return { time: mmss(Math.ceil(left)), label: `${working ? "WORK" : "REST"} · Round ${r + 1} of ${rounds}`, done: false, left, phase: working ? "work" : "rest", phaseKey: `${r}${working ? "w" : "r"}` };
+}
+
+/** Add or edit a timer in a pop-up. Calls onSave(timer) or onDelete(). */
+function timerModal(existing, onSave, onDelete) {
+  const t = existing ? { ...existing } : { id: uid("tm"), type: "countdown", minutes: 10, work: 20, rest: 10, rounds: 8 };
+  const num = (k, label, unit, min = 0) => `<label class="field"><span>${label}</span>
+    <div class="num-row"><input class="input" type="number" inputmode="numeric" min="${min}" data-t="${k}" value="${t[k] ?? ""}"><span class="muted">${unit}</span></div></label>`;
+  const fields = () => t.type === "countdown" ? num("minutes", "Length", "minutes", 1)
+    : t.type === "emom" ? num("minutes", "How many minutes", "minutes", 1)
+    : t.type === "interval" ? num("work", "Work", "seconds", 1) + num("rest", "Rest", "seconds") + num("rounds", "Rounds", "rounds", 1)
+    : `<p class="muted" style="margin:0 0 12px">Nothing to set. It counts up from 0:00 when you press Start.</p>`;
+  openModal(`<h2>${existing ? "Edit timer" : "Add timer"}</h2>
+    <div class="seg timer-types">${Object.entries(TIMER_TYPES).map(([k, v]) => `<button data-type="${k}" class="${t.type === k ? "on" : ""}">${esc(v.name)}</button>`).join("")}</div>
+    <p class="hint" data-type-hint>${esc(TIMER_TYPES[t.type].hint)}</p>
+    <div data-type-fields>${fields()}</div>
+    <div class="btn-row" style="justify-content:flex-end">
+      ${existing ? `<button class="btn danger" data-del style="margin-right:auto">Remove</button>` : ""}
+      <button class="btn" data-close>Cancel</button><button class="btn primary" data-save>${existing ? "Save" : "Add timer"}</button></div>`,
+    (m, close) => {
+      const read = () => $$("[data-t]", m).forEach(i => { t[i.dataset.t] = Math.max(+i.min || 0, Math.round(+i.value || 0)); });
+      $$("[data-type]", m).forEach(b => b.onclick = () => {
+        read(); t.type = b.dataset.type;
+        $$("[data-type]", m).forEach(x => x.classList.toggle("on", x === b));
+        $("[data-type-hint]", m).textContent = TIMER_TYPES[t.type].hint;
+        $("[data-type-fields]", m).innerHTML = fields();
+      });
+      $("[data-save]", m).onclick = () => { read(); close(); onSave(t); };
+      $("[data-del]", m)?.addEventListener("click", () => { close(); onDelete?.(); });
+    });
+}
+
+/* --- Sound: short pips before a switch, a long beep at the switch or the end --- */
+let audioCtx = null;
+function beep(ms = 180, freq = 880) {
+  if (state.settings.timerSound === false) return;
+  try {
+    audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.frequency.value = freq; o.type = "square"; g.gain.value = 0.12;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + ms / 1000);
+  } catch {}
+}
+function buzz(pattern) { try { navigator.vibrate?.(pattern); } catch {} }
+
+function workoutSections(w, { includeNotes = true, includeTitle = true, withTimers = false } = {}) {
   const parts = [];
   if (includeTitle) parts.push([null, `Title: ${w.title || "Untitled Workout"}`]);
-  const add = (label, txt) => { if ((txt || "").trim()) parts.push([label, txt.trim()]); };
+  // With withTimers, sections are [label, body, timers] and a section with only timers still shows.
+  const add = (label, txt, timers = []) => {
+    if ((txt || "").trim() || (withTimers && timers.length)) parts.push(withTimers ? [label, (txt || "").trim(), timers] : [label, txt.trim()]);
+  };
   add("Introduction", w.intro);
-  add("Warm-O-Rama", w.warmup);
-  (w.thangs || []).forEach((t, i) => add(thangLabel(t, i), t.content));
-  add("Mary / Finisher", w.mary);
+  add("Warm-O-Rama", w.warmup, w.timers?.warmup || []);
+  (w.thangs || []).forEach((t, i) => add(thangLabel(t, i), t.content, t.timers || []));
+  add("Mary / Finisher", w.mary, w.timers?.mary || []);
   if (includeNotes) add("Notes", w.notes);
   add(SECTION_LABELS.thirdF, w.thirdF);
   add("Announcements", w.announcements);
@@ -1149,10 +1246,15 @@ function viewPlan(id, query) {
   cleanup = () => { active = false; window.removeEventListener("modalclosed", onModalClosed); autosave.flush(); };
   const hasContent = x => [x.title, x.intro, x.warmup, x.mary, x.notes, x.thirdF, x.announcements, ...x.thangs.map(t => t.content)].some(v => (v || "").trim());
 
-  const sectionHtml = (key, { lib = false, tpl = true, placeholder = "" } = {}) => `
+  // Timers on the exercise sections: a chip per timer (tap to edit) and an "Add timer" button.
+  const timersInner = owner => `${sectionTimers(w, owner).map((t, i) => `<button class="chip timer-chip" data-timer-edit="${owner}" data-i="${i}">⏱ ${esc(timerSummary(t))}</button>`).join("")}
+    <button class="tiny-btn accent" data-timer-add="${owner}">+ Add timer</button>`;
+  const timersBlock = owner => `<div class="timer-row" data-timers="${owner}">${timersInner(owner)}</div>`;
+  const sectionHtml = (key, { lib = false, tpl = true, placeholder = "", timers = false } = {}) => `
     <div class="section">
       <div class="section-head"><span class="field-label">${SECTION_LABELS[key]}</span>${lib ? `<button class="chip-btn" data-lib="${key}">Library</button>` : ""}</div>
       <textarea class="input" data-field="${key}" placeholder="${esc(placeholder)}">${esc(w[key])}</textarea>
+      ${timers ? timersBlock(key) : ""}
       ${tpl ? `<div class="section-tools"><button class="tiny-btn" data-savetpl="${key}">Save Section as Template</button><button class="tiny-btn" data-instpl="${key}">Insert Saved Template</button></div>` : ""}
     </div>`;
 
@@ -1169,13 +1271,13 @@ function viewPlan(id, query) {
         <label class="field" style="margin:0"><span>Workout title</span><input class="input" data-field="title" value="${esc(w.title)}" placeholder="Name your beatdown"></label>
       </div>
       ${sectionHtml("intro")}
-      ${sectionHtml("warmup", { lib: true })}
+      ${sectionHtml("warmup", { lib: true, timers: true })}
       <div class="section">
         <div class="field-label">Thangs</div>
         <div data-thangs></div>
         <button class="add-thang" data-addthang>+ Add Thang</button>
       </div>
-      ${sectionHtml("mary", { lib: true })}
+      ${sectionHtml("mary", { lib: true, timers: true })}
       ${sectionHtml("notes", { placeholder: "Private notes for you — not included in the backblast" })}
       ${sectionHtml("thirdF", { placeholder: `${SECTION_LABELS.thirdF} discussion` })}
       ${sectionHtml("announcements", { placeholder: "Announcements for this BD…" })}
@@ -1194,11 +1296,23 @@ function viewPlan(id, query) {
           <button class="chip-btn" data-tlib>Library</button>
           ${w.thangs.length > 1 ? `<button class="chip-btn" style="color:var(--muted)" data-tremove>Remove</button>` : ""}</div>
         <textarea class="input" data-tfield="content" placeholder="Write this Thang…">${esc(t.content)}</textarea>
+        ${timersBlock(`thang:${i}`)}
         <div class="section-tools"><button class="tiny-btn" data-tsave>Save Thang</button><button class="tiny-btn" data-tins>Insert Saved Thang</button>
           ${i > 0 ? `<button class="tiny-btn" data-tup>Move up</button>` : ""}</div>
       </div>`).join("");
   };
   drawThangs();
+  // Adding / editing timers (warm-up, mary and each thang).
+  $(".page", app()).addEventListener("click", e => {
+    const add = e.target.closest("[data-timer-add]"), edit = e.target.closest("[data-timer-edit]");
+    if (!add && !edit) return;
+    e.stopPropagation();
+    const owner = (add || edit).dataset.timerAdd || (add || edit).dataset.timerEdit;
+    const redraw = () => { const box = $(`[data-timers="${owner}"]`); if (box) box.innerHTML = timersInner(owner); autosave(); };
+    if (add) return timerModal(null, t => { sectionTimers(w, owner, true).push(t); redraw(); toast("Timer added"); });
+    const list = sectionTimers(w, owner, true), i = +edit.dataset.i;
+    timerModal(list[i], t => { list[i] = t; redraw(); }, () => { list.splice(i, 1); redraw(); toast("Timer removed"); });
+  }, true);
 
   const setField = (key, val) => { w[key] = val; const el = $(`[data-field="${key}"]`); if (el) el.value = val; autosave(); };
   const appendTo = (cur, text) => (cur || "").trim() ? `${cur.replace(/\s+$/, "")}\n\n${text}` : text;
@@ -1256,7 +1370,7 @@ function viewPlan(id, query) {
       (m, close) => $$("[data-pick]", m).forEach(b => b.onclick = async () => {
         const src = state.workouts.find(x => x.id === b.dataset.pick);
         if (hasContent(w) && !(await confirmModal("This replaces what you've written in this plan.", "Copy workout"))) return;
-        Object.assign(w, { title: src.title, intro: src.intro, warmup: src.warmup, thangs: structuredClone(src.thangs), mary: src.mary, notes: src.notes, thirdF: src.thirdF, announcements: src.announcements });
+        Object.assign(w, { title: src.title, intro: src.intro, warmup: src.warmup, thangs: structuredClone(src.thangs), mary: src.mary, notes: src.notes, thirdF: src.thirdF, announcements: src.announcements, timers: structuredClone(src.timers || {}) });
         close(); persist(); viewPlanRedraw();
       }));
   };
@@ -1296,6 +1410,18 @@ function readSections(w, run = false) {
   return workoutSections(w, { includeTitle: false }).map(([label, body]) => `
     <div class="read-section"><h4>${esc(label)}</h4><div class="body">${run ? body.split("\n").map((l, i) => i === 0 ? `<span class="first">${esc(l)}</span>` : esc(l)).join("\n") : esc(body)}</div></div>`).join("")
     || `<div class="empty">Nothing planned yet.</div>`;
+}
+/** Run Workout sections: big text plus a live clock for each timer on the section. */
+function runSections(w) {
+  return `<div class="run-bar" data-run-bar hidden></div>` + (workoutSections(w, { includeTitle: false, withTimers: true }).map(([label, body, ts]) => `
+    <div class="read-section"><h4>${esc(label)}</h4>
+      ${body ? `<div class="body">${body.split("\n").map((l, i) => i === 0 ? `<span class="first">${esc(l)}</span>` : esc(l)).join("\n")}</div>` : ""}
+      ${(ts || []).map(t => `<div class="run-timer" data-run-timer="${t.id}">
+        <div class="rt-head">⏱ ${esc(timerSummary(t))}</div>
+        <div class="rt-time">0:00</div><div class="rt-label"></div>
+        <div class="btn-row"><button class="btn primary" data-rt-go="${t.id}">Start</button><button class="btn" data-rt-reset="${t.id}">Reset</button></div>
+      </div>`).join("")}
+    </div>`).join("") || `<div class="empty">Nothing planned yet.</div>`);
 }
 function viewWorkout(id) {
   const w = state.workouts.find(x => x.id === id);
@@ -1347,17 +1473,77 @@ function viewRun(id) {
         <div class="banner good">Running workout${w.aoId ? " at " + esc(aoName(w.aoId)) : ""}</div>
         <div class="field-label" style="margin-top:14px">Text size</div>
         <div class="seg">${["normal", "large", "xl"].map(s => `<button data-size="${s}" class="${state.settings.runTextSize === s ? "on" : ""}">${s === "xl" ? "XL" : s[0].toUpperCase() + s.slice(1)}</button>`).join("")}</div>
-        ${readSections(w, true)}
+        <label class="switch" style="margin-top:12px"><input type="checkbox" data-timer-sound ${state.settings.timerSound === false ? "" : "checked"}>
+          <span><b>Timer sound</b><br><span class="muted" style="font-size:13px">Beeps when a timer switches or ends. Phones also vibrate.</span></span></label>
+        ${runSections(w)}
         <div class="spacer"></div>
         <button class="btn light block" data-go="#/backblast/new?w=${w.id}">Finish &amp; Write Backblast</button>
         <div class="spacer"></div>
         <button class="btn accent block" data-go="#/plan/${w.id}">Edit Workout</button>
       </div>`;
     $$("[data-size]").forEach(b => b.onclick = () => { state.settings.runTextSize = b.dataset.size; save("settings"); const y = scrollY; draw(); scrollTo(0, y); });
+    $("[data-timer-sound]").onchange = e => { state.settings.timerSound = e.target.checked; save("settings"); if (e.target.checked) beep(120); };
+    timers.paint();
   };
+  // Running timers: { [id]: { acc (seconds before the current run), start (ms) or null, key, pip } }
+  const all = workoutSections(w, { includeTitle: false, withTimers: true }).flatMap(([label, , ts]) => (ts || []).map(t => ({ t, label })));
+  const timers = {
+    run: {}, last: null, tick: null,
+    elapsed(id) { const r = this.run[id]; return r ? r.acc + (r.start ? (Date.now() - r.start) / 1000 : 0) : 0; },
+    toggle(id) {
+      const r = this.run[id] ||= { acc: 0, start: null };
+      if (r.start) { r.acc = this.elapsed(id); r.start = null; }
+      else { if (r.done) { r.acc = 0; r.done = false; r.key = null; } r.start = Date.now(); this.last = id; beep(60, 660); }
+      this.ensureTick(); this.paint();
+    },
+    reset(id) { delete this.run[id]; this.paint(); },
+    ensureTick() {
+      const any = Object.values(this.run).some(r => r.start);
+      if (any && !this.tick) this.tick = setInterval(() => this.paint(), 200);
+      if (!any && this.tick) { clearInterval(this.tick); this.tick = null; }
+    },
+    paint() {
+      for (const { t, label } of all) {
+        const r = this.run[t.id], el = elapsed => timerState(t, elapsed);
+        const e = this.elapsed(t.id), st = el(e);
+        if (r?.start) {
+          // Pips in the last 3 seconds of a phase, a long beep when a phase changes or the timer ends.
+          if (st.left != null && st.left <= 3.05 && st.left > 0) { const s = Math.ceil(st.left); if (r.pip !== `${st.phaseKey}${s}`) { r.pip = `${st.phaseKey}${s}`; beep(90, 990); } }
+          if (r.key != null && st.phaseKey !== r.key) { beep(450, st.phase === "rest" ? 520 : 880); buzz(st.done ? [300, 120, 300] : 250); }
+          r.key = st.phaseKey;
+          if (st.done) { r.acc = e; r.start = null; r.done = true; }
+        }
+        const box = $(`[data-run-timer="${t.id}"]`);
+        if (box) {
+          $(".rt-time", box).textContent = st.time;
+          $(".rt-label", box).textContent = r || t.type !== "countdown" ? st.label : "Ready";
+          box.classList.toggle("running", !!r?.start); box.classList.toggle("done", !!st.done && !!r);
+          box.dataset.phase = st.phase || "";
+          $("[data-rt-go]", box).textContent = r?.start ? "Pause" : r?.done ? "Restart" : r ? "Resume" : "Start";
+        }
+      }
+      // The bar pinned at the top shows the most recently started timer while it runs.
+      const bar = $("[data-run-bar]");
+      const cur = all.find(x => x.t.id === this.last && this.run[x.t.id]?.start) || all.find(x => this.run[x.t.id]?.start);
+      if (bar) {
+        bar.hidden = !cur;
+        if (cur) {
+          const st = timerState(cur.t, this.elapsed(cur.t.id));
+          bar.dataset.phase = st.phase || "";
+          bar.innerHTML = `<span class="rb-name">${esc(cur.label)} · ${esc(st.label)}</span><b>${esc(st.time)}</b><button class="tiny-btn" data-rt-pause="${cur.t.id}">Pause</button>`;
+        }
+      }
+      this.ensureTick();
+    },
+  };
+  const onClick = e => {
+    const go = e.target.closest("[data-rt-go]"), rs = e.target.closest("[data-rt-reset]"), pz = e.target.closest("[data-rt-pause]");
+    if (go) timers.toggle(go.dataset.rtGo); else if (rs) timers.reset(rs.dataset.rtReset); else if (pz) timers.toggle(pz.dataset.rtPause);
+  };
+  app().addEventListener("click", onClick);
   draw();
   if ("wakeLock" in navigator) navigator.wakeLock.request("screen").then(l => (wakeLock = l)).catch(() => {});
-  cleanup = () => { wakeLock?.release?.().catch(() => {}); wakeLock = null; };
+  cleanup = () => { clearInterval(timers.tick); app().removeEventListener("click", onClick); wakeLock?.release?.().catch(() => {}); wakeLock = null; };
 }
 
 /* ------------------------------------------------------------------ */
