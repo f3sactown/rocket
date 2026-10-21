@@ -1,4 +1,4 @@
-/* F3 Q Planner — plan workouts, write backblasts, browse the Exicon.
+/* Rocket — plan workouts, write backblasts, browse the Exicon.
    Everything is stored in this browser (localStorage). No server needed. */
 "use strict";
 
@@ -555,7 +555,7 @@ function normalizeItem(coll, item) {
   }
   if (coll === "backblasts") {
     for (const k of ["qs", "pax", "visitors", "fngs"]) if (!Array.isArray(base[k])) base[k] = [];
-    for (const k of ["opening", "details", "cot", "date", "aoId", "workoutId"]) base[k] ??= "";
+    for (const k of ["opening", "details", "notes", "cot", "date", "aoId", "workoutId"]) base[k] ??= "";
   }
   base.createdAt ||= nowIso();
   base.updatedAt ||= base.createdAt;
@@ -933,7 +933,7 @@ function fngName(entry) { return String(entry).replace(/\s*\([^)]*\)\s*$/, "").t
 /** The text that's copied or shared. The participants line goes a few lines below the rest;
  *  it isn't shown on the backblast page. */
 function backblastText(bb) {
-  const body = [bb.opening, liveData(bb), bb.details, bb.cot ? `COT:\n${bb.cot}` : ""]
+  const body = [bb.opening, liveData(bb), bb.details, bb.notes ? `Notes:\n${bb.notes}` : "", bb.cot ? `COT:\n${bb.cot}` : ""]
     .map(s => (s || "").trim()).filter(Boolean).join("\n\n");
   const names = participantsLine(bb);
   return names ? `${body}\n\n\n\n${names}` : body;
@@ -1604,7 +1604,7 @@ function viewBackblast(id, query) {
     const w = query.get("w") ? state.workouts.find(x => x.id === query.get("w")) : null;
     bb = {
       id: uid("b"), workoutId: w?.id || "", date: w?.date || todayISO(), aoId: w?.aoId || state.settings.homeAoId || "",
-      qs: state.settings.f3Name ? [state.settings.f3Name] : [], pax: [], visitors: [], fngs: [], cot: "",
+      qs: state.settings.f3Name ? [state.settings.f3Name] : [], pax: [], visitors: [], fngs: [], notes: "", cot: "",
       openingEdited: false, detailsEdited: false, createdAt: nowIso(),
     };
     refreshAuto(bb);
@@ -1697,6 +1697,7 @@ function viewBackblast(id, query) {
         <div class="bb-block"><div class="field-label">Edit opening</div><textarea rows="2" data-edit="opening">${esc(bb.opening)}</textarea></div>
         <div class="bb-block"><div class="field-label live-dot">Live session data</div><div class="bb-live" data-live></div></div>
         <div class="bb-block"><div class="field-label">Edit workout details</div><textarea rows="10" data-edit="details" placeholder="What did you do? Pick a workout above to fill this in.">${esc(bb.details)}</textarea></div>
+        <div class="bb-block"><div class="field-label">Notes</div><textarea rows="3" data-edit="notes" placeholder="Anything else worth sharing…">${esc(bb.notes || "")}</textarea></div>
         <div class="bb-block"><div class="field-label">COT / Closing</div>
           <textarea rows="3" data-edit="cot" placeholder="Prayers, praises, moleskin…">${esc(bb.cot)}</textarea>
           <div class="section-tools"><button class="tiny-btn" data-cotsave>Save Section as Template</button><button class="tiny-btn" data-cottpl>Insert Saved Template</button></div></div>
@@ -1746,7 +1747,7 @@ function viewBackblast(id, query) {
   $$("[data-k]").forEach(el => el.addEventListener("change", () => { bb[el.dataset.k] = el.value; if (el.dataset.k === "workoutId") bb.detailsEdited = false; changed(); }));
   $$("[data-edit]").forEach(el => el.addEventListener("input", () => {
     const k = el.dataset.edit; bb[k] = el.value;
-    if (k !== "cot") bb[`${k}Edited`] = true;
+    if (k === "opening" || k === "details") bb[`${k}Edited`] = true;
     autosave();
   }));
   // PAX and Q / co-Q boxes: matches show as chips right under the box (the recent list stays put);
@@ -2221,7 +2222,7 @@ function viewData() {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `f3-q-planner-${keys.length === DATA_KINDS.length ? "backup" : keys.join("-")}-${todayISO()}.json`;
+    a.download = `rocket-${keys.length === DATA_KINDS.length ? "backup" : keys.join("-")}-${todayISO()}.json`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     toast("Backup downloaded");
@@ -2234,7 +2235,7 @@ function viewData() {
     let payload;
     try { payload = JSON.parse(await file.text()); } catch { box.innerHTML = `<p class="hint" style="color:var(--danger)">That file isn't valid JSON.</p>`; return; }
     const data = payload?.data;
-    if (payload?.app !== "f3-q-planner" || !data) { box.innerHTML = `<p class="hint" style="color:var(--danger)">That doesn't look like an F3 Q Planner export.</p>`; return; }
+    if (payload?.app !== "f3-q-planner" || !data) { box.innerHTML = `<p class="hint" style="color:var(--danger)">That doesn't look like a Rocket export.</p>`; return; }
     const present = DATA_KINDS.filter(k => data[k.key] !== undefined);
     box.innerHTML = `
       <p class="hint">Exported ${esc(payload.exportedAt ? new Date(payload.exportedAt).toLocaleString() : "")}. Choose what to bring in:</p>
