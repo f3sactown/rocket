@@ -2,7 +2,7 @@
 
 A trimmed-down take on [f3stoner/f3-app](https://github.com/f3stoner/f3-app) with only the parts a Q needs:
 
-- **Plan Workout**: date, AO, title, Introduction, Warm-O-Rama, any number of Thangs, Mary / Finisher, Notes, Third F, Announcements. It autosaves drafts and can save or insert section templates. You can also copy from an earlier workout. Warm-O-Rama, each Thang and Mary / Finisher can also carry timers (Countdown, Stopwatch, Intervals / Tabata or EMOM); they're saved with the workout but kept out of the backblast.
+- **Plan Workout**: date, AO, title, Introduction, Warm-O-Rama, any number of Thangs, Mary / Finisher, Notes, Announcements, Third F, Words of Wisdom. It autosaves drafts and can save or insert section templates. You can also copy from an earlier workout. Warm-O-Rama, each Thang and Mary / Finisher can also carry timers (Countdown, Stopwatch, Intervals / Tabata, EMOM or a Round counter); they're saved with the workout but kept out of the backblast.
 - **Exicon Library**: exercises and thangs from the F3 Nation Exicon and the FiA Lexicon/Exicon (refreshed weekly), with search plus emphasis, equipment and tag filters. Press **Library** on any section to drop an entry into your plan.
 - **Run Workout**: large-text view to read from at the AO, with Normal, Large and XL sizes. It keeps the screen awake while it's open. Timers added in the plan appear as large clocks with Start/Pause and Reset; while one runs, a bar pinned to the top keeps it in view.
 - **Backblast**: quick-tap attendance from your PAX roster, plus Q / co-Q, visiting PAX and FNGs. The opening line fills in automatically, and the workout details come from the plan. Your edits stay put while attendance updates. Then Share or Copy it to BAND, Slack or GroupMe.
@@ -51,7 +51,7 @@ Program items carry a **Program** badge in My Templates, AOs and the Planner, so
 
 In the Exicon library, F3 Nation Exicon entries carry a red **F3** badge and FiA Lexicon/Exicon entries a light green **FiA** badge. Program warm-up, thang and Mary templates also appear there with the **Program** badge, along with any entries in an optional `library` array in `data/program.js` (`{ id, name, text, kind: "exercise" | "thang", emphasis, equipment, tags }`). Under **Settings → Exicon library sources**, each user picks which of these sources (F3, FiA, Program) the Library shows (all of them by default), both on the Exicon page and in the planner's Library picker. To add a source, add an entry to `LIBRARY_SOURCES` in `app.js`; it starts out turned on for everyone.
 
-`templates[].section` must be one of: `intro`, `warmup`, `thang`, `mary`, `notes`, `thirdF`, `announcements`, `cot`. Unedited program items that are dropped from the file are removed from users' lists on their next visit.
+`templates[].section` must be one of: `intro`, `warmup`, `thang`, `mary`, `notes`, `announcements`, `thirdF`, `wisdom`, `cot`. Unedited program items that are dropped from the file are removed from users' lists on their next visit.
 Workouts follow this shape: `{ id, title, date, aoId, status, intro, warmup, thangs: [{title, content}], mary, notes, thirdF, announcements }`.
 AOs follow this shape: `{ id, name, location, address, schedule }`.
 

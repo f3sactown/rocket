@@ -550,7 +550,7 @@ function normalizeItem(coll, item) {
     Object.assign(base, {
       date: base.date || "", aoId: base.aoId || "", status: base.status || "final",
       intro: base.intro || "", warmup: base.warmup || "", thangs: base.thangs?.length ? base.thangs : [{ title: "Thang 1", content: "" }],
-      mary: base.mary || "", notes: base.notes || "", thirdF: base.thirdF || "", announcements: base.announcements || "",
+      mary: base.mary || "", notes: base.notes || "", thirdF: base.thirdF || "", announcements: base.announcements || "", wisdom: base.wisdom || "",
     });
   }
   if (coll === "backblasts") {
@@ -757,10 +757,10 @@ function bindLibraryBrowser(root, { onPick } = {}) {
 /* ------------------------------------------------------------------ */
 /* Workout text                                                        */
 /* ------------------------------------------------------------------ */
-const SECTION_LABELS = { intro: "Introduction", warmup: "Warm-O-Rama", thang: "Thang", mary: "Mary / Finisher", notes: "Notes", thirdF: "Third F", announcements: "Announcements", cot: "Backblast COT / Closing" };
+const SECTION_LABELS = { intro: "Introduction", warmup: "Warm-O-Rama", thang: "Thang", mary: "Mary / Finisher", notes: "Notes", thirdF: "Third F", announcements: "Announcements", wisdom: "Words of Wisdom", cot: "Backblast COT / Closing" };
 // FiA regions call the Third F section "Community".
 Object.defineProperty(SECTION_LABELS, "thirdF", { enumerable: true, get: () => (isFiaRegion() ? "Community" : "Third F") });
-const TEMPLATE_SECTIONS = ["intro", "warmup", "thang", "mary", "notes", "thirdF", "announcements", "cot"];
+const TEMPLATE_SECTIONS = ["intro", "warmup", "thang", "mary", "notes", "announcements", "thirdF", "wisdom", "cot"];
 
 function thangLabel(t, i) {
   const title = (t.title || "").trim();
@@ -776,6 +776,7 @@ const TIMER_TYPES = {
   stopwatch: { name: "Stopwatch", hint: "Counts up. For \"for time\" sets." },
   interval: { name: "Intervals / Tabata", hint: "Work and rest, for a number of rounds. Beeps at each switch." },
   emom: { name: "EMOM", hint: "Every minute on the minute, for a number of minutes. Beeps each minute." },
+  rounds: { name: "Round counter", hint: "Tap +1 each time the PAX finish a round. Set a goal, or leave it at 0 to just count." },
 };
 const mmss = sec => { sec = Math.max(0, Math.round(sec)); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`; };
 function timerSummary(t) {
@@ -783,6 +784,7 @@ function timerSummary(t) {
   if (t.type === "stopwatch") return "Stopwatch";
   if (t.type === "interval") return `Intervals ${t.work}s on / ${t.rest}s off × ${t.rounds}`;
   if (t.type === "emom") return `EMOM ${t.minutes} min`;
+  if (t.type === "rounds") return t.goal ? `Round counter · goal ${t.goal}` : "Round counter";
   return "Timer";
 }
 /** Timers live on w.timers.warmup / w.timers.mary and on each thang's .timers. */
@@ -820,12 +822,13 @@ function timerState(t, elapsed) {
 
 /** Add or edit a timer in a pop-up. Calls onSave(timer) or onDelete(). */
 function timerModal(existing, onSave, onDelete) {
-  const t = existing ? { ...existing } : { id: uid("tm"), type: "countdown", minutes: 10, work: 20, rest: 10, rounds: 8 };
+  const t = existing ? { ...existing } : { id: uid("tm"), type: "countdown", minutes: 10, work: 20, rest: 10, rounds: 8, goal: 0 };
   const num = (k, label, unit, min = 0) => `<label class="field"><span>${label}</span>
     <div class="num-row"><input class="input" type="number" inputmode="numeric" min="${min}" data-t="${k}" value="${t[k] ?? ""}"><span class="muted">${unit}</span></div></label>`;
   const fields = () => t.type === "countdown" ? num("minutes", "Length", "minutes", 1)
     : t.type === "emom" ? num("minutes", "How many minutes", "minutes", 1)
     : t.type === "interval" ? num("work", "Work", "seconds", 1) + num("rest", "Rest", "seconds") + num("rounds", "Rounds", "rounds", 1)
+    : t.type === "rounds" ? num("goal", "Goal", "rounds (0 = no goal)")
     : `<p class="muted" style="margin:0 0 12px">Nothing to set. It counts up from 0:00 when you press Start.</p>`;
   openModal(`<h2>${existing ? "Edit timer" : "Add timer"}</h2>
     <div class="seg timer-types">${Object.entries(TIMER_TYPES).map(([k, v]) => `<button data-type="${k}" class="${t.type === k ? "on" : ""}">${esc(v.name)}</button>`).join("")}</div>
@@ -873,8 +876,9 @@ function workoutSections(w, { includeNotes = true, includeTitle = true, withTime
   (w.thangs || []).forEach((t, i) => add(thangLabel(t, i), t.content, t.timers || []));
   add("Mary / Finisher", w.mary, w.timers?.mary || []);
   if (includeNotes) add("Notes", w.notes);
-  add(SECTION_LABELS.thirdF, w.thirdF);
   add("Announcements", w.announcements);
+  add(SECTION_LABELS.thirdF, w.thirdF);
+  add("Words of Wisdom", w.wisdom);
   return parts;
 }
 function workoutText(w, opts) {
@@ -1244,7 +1248,7 @@ function viewPlan(id, query) {
   const onModalClosed = () => setTimeout(() => { if (active && persisted && !urlSet) persist(); }, 600);
   window.addEventListener("modalclosed", onModalClosed);
   cleanup = () => { active = false; window.removeEventListener("modalclosed", onModalClosed); autosave.flush(); };
-  const hasContent = x => [x.title, x.intro, x.warmup, x.mary, x.notes, x.thirdF, x.announcements, ...x.thangs.map(t => t.content)].some(v => (v || "").trim());
+  const hasContent = x => [x.title, x.intro, x.warmup, x.mary, x.notes, x.thirdF, x.announcements, x.wisdom, ...x.thangs.map(t => t.content)].some(v => (v || "").trim());
 
   // Timers on the exercise sections: a chip per timer (tap to edit) and an "Add timer" button.
   const timersInner = owner => `${sectionTimers(w, owner).map((t, i) => `<button class="chip timer-chip" data-timer-edit="${owner}" data-i="${i}">⏱ ${esc(timerSummary(t))}</button>`).join("")}
@@ -1279,8 +1283,9 @@ function viewPlan(id, query) {
       </div>
       ${sectionHtml("mary", { lib: true, timers: true })}
       ${sectionHtml("notes", { placeholder: "Private notes for you — not included in the backblast" })}
-      ${sectionHtml("thirdF", { placeholder: `${SECTION_LABELS.thirdF} discussion` })}
       ${sectionHtml("announcements", { placeholder: "Announcements for this BD…" })}
+      ${sectionHtml("thirdF", { placeholder: `${SECTION_LABELS.thirdF} discussion` })}
+      ${sectionHtml("wisdom", { placeholder: "A quote, a thought, something to carry into the day…" })}
       <div class="sticky-actions">
         <button class="btn" data-preview>Preview</button>
         <button class="btn accent" data-savedraft>Save Draft</button>
@@ -1370,7 +1375,7 @@ function viewPlan(id, query) {
       (m, close) => $$("[data-pick]", m).forEach(b => b.onclick = async () => {
         const src = state.workouts.find(x => x.id === b.dataset.pick);
         if (hasContent(w) && !(await confirmModal("This replaces what you've written in this plan.", "Copy workout"))) return;
-        Object.assign(w, { title: src.title, intro: src.intro, warmup: src.warmup, thangs: structuredClone(src.thangs), mary: src.mary, notes: src.notes, thirdF: src.thirdF, announcements: src.announcements, timers: structuredClone(src.timers || {}) });
+        Object.assign(w, { title: src.title, intro: src.intro, warmup: src.warmup, thangs: structuredClone(src.thangs), mary: src.mary, notes: src.notes, thirdF: src.thirdF, announcements: src.announcements, wisdom: src.wisdom || "", timers: structuredClone(src.timers || {}) });
         close(); persist(); viewPlanRedraw();
       }));
   };
@@ -1418,8 +1423,10 @@ function runSections(w) {
       ${body ? `<div class="body">${body.split("\n").map((l, i) => i === 0 ? `<span class="first">${esc(l)}</span>` : esc(l)).join("\n")}</div>` : ""}
       ${(ts || []).map(t => `<div class="run-timer" data-run-timer="${t.id}">
         <div class="rt-head">⏱ ${esc(timerSummary(t))}</div>
-        <div class="rt-time">0:00</div><div class="rt-label"></div>
-        <div class="btn-row"><button class="btn primary" data-rt-go="${t.id}">Start</button><button class="btn" data-rt-reset="${t.id}">Reset</button></div>
+        <div class="rt-time">${t.type === "rounds" ? "0" : "0:00"}</div><div class="rt-label"></div>
+        <div class="btn-row">${t.type === "rounds"
+          ? `<button class="btn primary rt-plus" data-rt-plus="${t.id}">+1 Round</button><button class="btn" data-rt-minus="${t.id}">−1</button>`
+          : `<button class="btn primary" data-rt-go="${t.id}">Start</button>`}<button class="btn" data-rt-reset="${t.id}">Reset</button></div>
       </div>`).join("")}
     </div>`).join("") || `<div class="empty">Nothing planned yet.</div>`);
 }
@@ -1497,6 +1504,13 @@ function viewRun(id) {
       this.ensureTick(); this.paint();
     },
     reset(id) { delete this.run[id]; this.paint(); },
+    // Round counter: tap +1 / −1. Reaching the goal beeps long and vibrates.
+    bump(id, d) {
+      const t = all.find(x => x.t.id === id)?.t, r = this.run[id] ||= { acc: 0, start: null, count: 0 };
+      r.count = Math.max(0, (r.count || 0) + d);
+      if (d > 0) { if (t?.goal && r.count === t.goal) { beep(450, 880); buzz([300, 120, 300]); } else { beep(80, 760); buzz(40); } }
+      this.paint();
+    },
     ensureTick() {
       const any = Object.values(this.run).some(r => r.start);
       if (any && !this.tick) this.tick = setInterval(() => this.paint(), 200);
@@ -1504,6 +1518,15 @@ function viewRun(id) {
     },
     paint() {
       for (const { t, label } of all) {
+        if (t.type === "rounds") {
+          const box = $(`[data-run-timer="${t.id}"]`), c = this.run[t.id]?.count || 0;
+          if (box) {
+            $(".rt-time", box).textContent = t.goal ? `${c} / ${t.goal}` : String(c);
+            $(".rt-label", box).textContent = t.goal && c >= t.goal ? "Goal reached!" : c === 1 ? "Round done" : "Rounds done";
+            box.classList.toggle("done", !!t.goal && c >= t.goal);
+          }
+          continue;
+        }
         const r = this.run[t.id], el = elapsed => timerState(t, elapsed);
         const e = this.elapsed(t.id), st = el(e);
         if (r?.start) {
@@ -1538,7 +1561,9 @@ function viewRun(id) {
   };
   const onClick = e => {
     const go = e.target.closest("[data-rt-go]"), rs = e.target.closest("[data-rt-reset]"), pz = e.target.closest("[data-rt-pause]");
+    const plus = e.target.closest("[data-rt-plus]"), minus = e.target.closest("[data-rt-minus]");
     if (go) timers.toggle(go.dataset.rtGo); else if (rs) timers.reset(rs.dataset.rtReset); else if (pz) timers.toggle(pz.dataset.rtPause);
+    else if (plus) timers.bump(plus.dataset.rtPlus, 1); else if (minus) timers.bump(minus.dataset.rtMinus, -1);
   };
   app().addEventListener("click", onClick);
   draw();
