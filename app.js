@@ -1679,7 +1679,8 @@ function viewBackblast(id, query) {
         <input class="input" data-search type="search" placeholder="Search PAX… (Enter adds the top match or a new name)" autocomplete="off" enterkeyhint="done">
         <div class="spacer"></div>
         <div class="field-label">Q</div><div class="chips" data-list="qs"></div>
-        <div class="inline-add"><input class="input" data-addq placeholder="Add a Q / co-Q"><button class="btn sm" data-addq-btn>Add</button></div>
+        <input class="input" data-addq type="search" placeholder="Add a Q / co-Q… (type to search)" autocomplete="off" enterkeyhint="done">
+        <div class="q-matches" data-qmatches></div>
         <div class="field-label" style="margin-top:14px">PAX</div><div class="chips" data-list="pax"></div>
       </div>
       <div class="spacer"></div>
@@ -1710,7 +1711,6 @@ function viewBackblast(id, query) {
     </div>`;
 
   const ROSTER_PREVIEW = 30;
-  let showAllRoster = false;
   const drawLists = () => {
     for (const key of ["qs", "pax", "visitors", "fngs"]) {
       $(`[data-list="${key}"]`).innerHTML = bb[key].map((n, i) => `<button class="chip ${key === "qs" ? "q" : "on"}" data-rm="${key}" data-i="${i}">${key === "qs" ? "Q: " : ""}${esc(n)} <span class="x">×</span></button>`).join("")
@@ -1735,13 +1735,13 @@ function viewBackblast(id, query) {
       return;
     }
     const rest = state.roster.filter(r => !inAny(r) && !recent.some(x => x.toLowerCase() === r.toLowerCase()));
-    const preview = recent.length ? 0 : ROSTER_PREVIEW;  // with regulars listed, the rest wait behind Show all
-    const shown = showAllRoster ? rest : rest.slice(0, preview);
+    // With regulars listed, everyone else is found with the search box; without them, a first handful shows.
+    const shown = recent.length ? [] : rest.slice(0, ROSTER_PREVIEW);
     $("[data-quick]").innerHTML = `
       ${recent.length ? `<div class="field-label">At ${esc(aoName(bb.aoId))} in the last 3 months (${recent.length})</div><div class="chips">${recent.map(r => `<button class="chip" data-quickadd="${esc(r)}">${esc(r)}</button>`).join("")}</div><div class="spacer"></div>` : ""}
       <div class="field-label" style="display:flex;justify-content:space-between">PAX roster (${state.roster.length}) <button class="tiny-btn accent" data-go="#/settings">Edit roster</button></div>
       ${rest.length ? `${shown.length ? `<div class="chips">${shown.map(r => `<button class="chip" data-quickadd="${esc(r)}">${esc(r)}</button>`).join("")}</div><div class="spacer"></div>` : ""}
-        ${rest.length > preview ? `<button class="tiny-btn accent" data-roster-more>${showAllRoster ? "Show fewer" : `Show all ${rest.length}${recent.length ? " others" : ""}`}</button><span class="muted" style="font-size:13px"> · or search above</span>` : ""}`
+        ${rest.length > shown.length ? `<p class="muted" style="font-size:13px;margin:0">${recent.length ? "Anyone else: search above." : `Showing ${shown.length} of ${rest.length}. Search above to find anyone else.`}</p>` : ""}`
         : `<p class="muted" style="font-size:13px;margin:0">${state.roster.length ? "Everyone on the roster is checked in." : "Your roster is empty. Names you add here are saved to it for quick tap next time."}</p>`}`;
     $("[data-live]").textContent = liveData(bb);
     for (const k of ["opening", "details"]) { const el = $(`[data-edit="${k}"]`); if (document.activeElement !== el && el.value !== bb[k]) el.value = bb[k]; }
@@ -1778,13 +1778,34 @@ function viewBackblast(id, query) {
   $("[data-quick]").addEventListener("click", e => {
     if (e.target.closest("[data-search-clear]")) { search.value = ""; drawLists(); }
   });
-  const wireInline = (inputSel, btnSel, key) => {
-    const input = $(inputSel);
-    const add = () => { addName(key, input.value); input.value = ""; input.focus(); };
-    $(btnSel).onclick = add;
-    input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+
+  // Q / co-Q: same search as PAX. Matches show as chips under the box; Enter adds the top match or a new name.
+  const qInput = $("[data-addq]"), qBox = $("[data-qmatches]");
+  const qPool = () => uniqNames([...bb.pax, ...recentAtAo(), ...state.roster]);
+  const drawQ = () => {
+    const q = qInput.value.trim(), ql = q.toLowerCase();
+    if (!q) { qBox.innerHTML = ""; return; }
+    const matches = qPool().filter(n => n.toLowerCase().includes(ql) && !bb.qs.some(x => x.toLowerCase() === n.toLowerCase()));
+    const exact = qPool().some(n => n.toLowerCase() === ql) || bb.qs.some(x => x.toLowerCase() === ql);
+    qBox.innerHTML = `<div class="chips">${matches.slice(0, 24).map(n => `<button class="chip" data-qadd="${esc(n)}">${esc(n)}</button>`).join("")}
+      ${exact ? "" : `<button class="chip" data-qadd="${esc(q)}">+ Add “${esc(q)}” as new</button>`}</div>
+      ${matches.length > 24 ? `<p class="muted" style="font-size:13px;margin:6px 0 0">${matches.length - 24} more. Keep typing.</p>` : ""}`;
   };
-  wireInline("[data-addq]", "[data-addq-btn]", "qs");
+  const addQ = name => {
+    // A Q who's already checked in as PAX moves to Q.
+    const i = bb.pax.findIndex(x => x.toLowerCase() === name.toLowerCase());
+    if (i !== -1) bb.pax.splice(i, 1);
+    addName("qs", name); qInput.value = ""; drawQ();
+  };
+  qInput.addEventListener("input", drawQ);
+  qInput.addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const ql = qInput.value.trim().toLowerCase(); if (!ql) return;
+    const pool = qPool();
+    addQ(pool.find(n => n.toLowerCase() === ql) || pool.find(n => n.toLowerCase().includes(ql) && !bb.qs.some(x => x.toLowerCase() === n.toLowerCase())) || qInput.value.trim());
+  });
+  qBox.addEventListener("click", e => { const b = e.target.closest("[data-qadd]"); if (b) addQ(b.dataset.qadd); });
   // Visiting PAX and FNGs are added through a small form: a name plus their home region / who EH'd them,
   // saved as "Name (extra)" so the backblast reads that way.
   const personForm = (key, title, nameLabel, extraLabel, extraPlaceholder) => openModal(`
@@ -1809,7 +1830,6 @@ function viewBackblast(id, query) {
     if (rm) { bb[rm.dataset.rm].splice(+rm.dataset.i, 1); changed(); return; }
     const qa = e.target.closest("[data-quickadd]");
     if (qa) { addName("pax", qa.dataset.quickadd); return; }
-    if (e.target.closest("[data-roster-more]")) { showAllRoster = !showAllRoster; drawLists(); }
   });
   $("[data-cotsave]").onclick = () => saveTemplateModal("cot", bb.cot);
   $("[data-cottpl]").onclick = () => insertTemplateModal("cot", t => {
