@@ -1,6 +1,6 @@
 // Offline support. Network-first so app/program/library updates arrive as soon as
 // you're online; the cached copy is used at a gloomy AO with no signal.
-const CACHE = "f3qp-v33";
+const CACHE = "f3qp-v34";
 const SHELL = ["./", "index.html", "styles.css", "app.js", "data/library.js", "data/program.js", "data/roster.js", "data/attendance.js", "data/logos/f3-sactown.png", "data/logos/fia-sactown.png", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {

@@ -1469,7 +1469,7 @@ function viewBackblast(id, query) {
       <div class="card" data-quick></div>
       <div class="att-grid">
         <div class="card"><div class="field-label">Visiting PAX</div><div class="chips" data-list="visitors"></div>
-          <button class="btn accent add-person" data-addv-open>Add DR Visitor</button></div>
+          <button class="btn accent add-person" data-addv-open>Add Visitor</button></div>
         <div class="card"><div class="field-label">FNGs</div><div class="chips" data-list="fngs"></div>
           <button class="btn accent add-person" data-addf-open>Add FNG</button></div>
       </div>
@@ -1574,7 +1574,7 @@ function viewBackblast(id, query) {
       $("[data-person-add]", m).onclick = submit;
       [nameEl, extraEl].forEach(el => el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); el === nameEl ? extraEl.focus() : submit(); } }));
     });
-  $("[data-addv-open]").onclick = () => personForm("visitors", "Add DR Visitor", "PAX name", "Home region", "e.g. F3 Delta");
+  $("[data-addv-open]").onclick = () => personForm("visitors", "Add Visitor", "PAX name", "Home region", "e.g. South Fork");
   $("[data-addf-open]").onclick = () => personForm("fngs", "Add FNG", "FNG name", "Who EH'd them", "PAX name");
   $(".page", app()).addEventListener("click", e => {
     const rm = e.target.closest("[data-rm]");
