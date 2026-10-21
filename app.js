@@ -824,8 +824,11 @@ function refreshAuto(bb) {
 }
 /** Everyone who posted, as plain comma-separated names (no @), for tools that read attendance from the text. */
 function participantsLine(bb) {
-  return uniqNames([...bb.qs, ...bb.pax, ...bb.visitors, ...bb.fngs].map(n => String(n).replace(/@/g, "").trim())).join(", ");
+  // Visiting PAX keep their "(Home Region)"; FNGs are listed by their own name, without who EH'd them.
+  return uniqNames([...bb.qs, ...bb.pax, ...bb.visitors, ...bb.fngs.map(fngName)].map(n => String(n).replace(/@/g, "").trim())).join(", ");
 }
+/** An FNG entry is "Name (who EH'd them)"; this is just the name. */
+function fngName(entry) { return String(entry).replace(/\s*\([^)]*\)\s*$/, "").trim(); }
 /** The text that's copied or shared. The participants line goes a few lines below the rest;
  *  it isn't shown on the backblast page. */
 function backblastText(bb) {
@@ -1466,9 +1469,9 @@ function viewBackblast(id, query) {
       <div class="card" data-quick></div>
       <div class="att-grid">
         <div class="card"><div class="field-label">Visiting PAX</div><div class="chips" data-list="visitors"></div>
-          <div class="inline-add"><input class="input" data-addv placeholder="Name (Region)"><button class="btn sm" data-addv-btn>Add</button></div></div>
+          <button class="btn accent add-person" data-addv-open>Add Visitor</button></div>
         <div class="card"><div class="field-label">FNGs</div><div class="chips" data-list="fngs"></div>
-          <div class="inline-add"><input class="input" data-addf placeholder="New F3 name"><button class="btn sm" data-addf-btn>Add</button></div></div>
+          <button class="btn accent add-person" data-addf-open>Add FNG</button></div>
       </div>
       <div class="label">Backblast</div>
       <div class="list">
@@ -1494,7 +1497,7 @@ function viewBackblast(id, query) {
   const drawLists = () => {
     for (const key of ["qs", "pax", "visitors", "fngs"]) {
       $(`[data-list="${key}"]`).innerHTML = bb[key].map((n, i) => `<button class="chip ${key === "qs" ? "q" : "on"}" data-rm="${key}" data-i="${i}">${key === "qs" ? "Q: " : ""}${esc(n)} <span class="x">×</span></button>`).join("")
-        || `<span class="muted" style="font-size:13px">None</span>`;
+        || (key === "visitors" || key === "fngs" ? "" : `<span class="muted" style="font-size:13px">None</span>`);
     }
     const n = bbCount(bb);
     $("[data-total]").textContent = `${n} SELECTED`;
@@ -1517,7 +1520,8 @@ function viewBackblast(id, query) {
     if (!name) return;
     if (inAny(name)) { toast(`${name} is already checked in`); return; }
     bb[key].push(name);
-    if (key === "pax" || key === "fngs" || key === "qs") addToRoster([name]);
+    if (key === "pax" || key === "qs") addToRoster([name]);
+    if (key === "fngs") addToRoster([fngName(name)]);  // the roster gets the FNG's own name, without who EH'd them
     changed();
   };
 
@@ -1553,8 +1557,25 @@ function viewBackblast(id, query) {
     input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
   };
   wireInline("[data-addq]", "[data-addq-btn]", "qs");
-  wireInline("[data-addv]", "[data-addv-btn]", "visitors");
-  wireInline("[data-addf]", "[data-addf-btn]", "fngs");
+  // Visiting PAX and FNGs are added through a small form: a name plus their home region / who EH'd them,
+  // saved as "Name (extra)" so the backblast reads that way.
+  const personForm = (key, title, nameLabel, extraLabel, extraPlaceholder) => openModal(`
+    <h2>${esc(title)}</h2>
+    <label class="field"><span>${esc(nameLabel)}</span><input class="input" data-person-name autocomplete="off"></label>
+    <label class="field"><span>${esc(extraLabel)}</span><input class="input" data-person-extra autocomplete="off" placeholder="${esc(extraPlaceholder)}"></label>
+    <div class="btn-row" style="justify-content:flex-end"><button class="btn" data-close>Cancel</button><button class="btn primary" data-person-add>Add</button></div>`,
+    (m, close) => {
+      const nameEl = $("[data-person-name]", m), extraEl = $("[data-person-extra]", m);
+      const submit = () => {
+        const name = nameEl.value.trim().replace(/^@/, ""), extra = extraEl.value.trim().replace(/^\(|\)$/g, "");
+        if (!name) { toast(`Enter the ${nameLabel.toLowerCase()}`); nameEl.focus(); return; }
+        close(); addName(key, extra ? `${name} (${extra})` : name);
+      };
+      $("[data-person-add]", m).onclick = submit;
+      [nameEl, extraEl].forEach(el => el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); el === nameEl ? extraEl.focus() : submit(); } }));
+    });
+  $("[data-addv-open]").onclick = () => personForm("visitors", "Add Visitor", "PAX name", "Home region", "e.g. South Fork");
+  $("[data-addf-open]").onclick = () => personForm("fngs", "Add FNG", "FNG name", "Who EH'd them", "PAX name");
   $(".page", app()).addEventListener("click", e => {
     const rm = e.target.closest("[data-rm]");
     if (rm) { bb[rm.dataset.rm].splice(+rm.dataset.i, 1); changed(); return; }
