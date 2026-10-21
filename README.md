@@ -2,9 +2,10 @@
 
 A trimmed-down take on [f3stoner/f3-app](https://github.com/f3stoner/f3-app) with only the parts a Q needs:
 
-- **Plan Workout**: date, AO, title, Introduction, Warm-O-Rama, any number of Thangs, Mary / Finisher, Notes, Third F, Announcements. It autosaves drafts and can save or insert section templates. You can also copy from an earlier workout.
+- **Plan Workout**: Warm-O-Rama, each Thang and Mary / Finisher can carry timers: Countdown, Stopwatch, Intervals / Tabata (work, rest, rounds) or EMOM. They're saved with the workout but kept out of the backblast.
+- **Plan details**: date, AO, title, Introduction, Warm-O-Rama, any number of Thangs, Mary / Finisher, Notes, Third F, Announcements. It autosaves drafts and can save or insert section templates. You can also copy from an earlier workout.
 - **Exicon Library**: exercises and thangs from the F3 Nation Exicon and the FiA Lexicon/Exicon (refreshed weekly), with search plus emphasis, equipment and tag filters. Press **Library** on any section to drop an entry into your plan.
-- **Run Workout**: large-text view to read from at the AO, with Normal, Large and XL sizes. It keeps the screen awake while it's open.
+- **Run Workout**: large-text view to read from at the AO, with Normal, Large and XL sizes. It keeps the screen awake while it's open. Timers added in the plan appear as large clocks with Start/Pause and Reset; while one runs, a bar pinned to the top keeps it in view.
 - **Backblast**: quick-tap attendance from your PAX roster, plus Q / co-Q, visiting PAX and FNGs. The opening line fills in automatically, and the workout details come from the plan. Your edits stay put while attendance updates. Then Share or Copy it to BAND, Slack or GroupMe.
 - **My Templates**, **AOs**, **Settings**, **Import / Export**.
 

@@ -455,3 +455,24 @@ textarea.input.short { min-height: 80px; }
 /* "+ Add Visiting PAX" / "+ Add FNG" under their lists */
 .add-person { display: block; width: 100%; margin-top: 10px; padding: 16px; font-family: var(--font-display); font-weight: 700; font-size: 17px; text-align: center; }
 .chips:empty + .add-person { margin-top: 0; }
+
+/* Timers: planner chips, Run Workout clocks and the bar pinned while one runs */
+.timer-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.timer-chip { border-color: var(--accent-deep); color: var(--accent); }
+.timer-types { flex-wrap: wrap; }
+.num-row { display: flex; align-items: center; gap: 10px; }
+.num-row .input { max-width: 120px; }
+.run-timer { border: 1px solid var(--accent-deep); border-radius: 16px; padding: 14px 16px; margin-top: 12px; background: rgba(var(--accent-rgb), .05); text-align: center; }
+.run-timer .rt-head { font-size: 14px; color: var(--muted); text-align: left; }
+.run-timer .rt-time { font-family: var(--font-display); font-weight: 700; font-size: clamp(56px, 18vw, 96px); line-height: 1; margin: 8px 0 4px; font-variant-numeric: tabular-nums; }
+.run-timer .rt-label { font-family: var(--font-display); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); min-height: 1.2em; margin-bottom: 10px; }
+.run-timer .btn-row { justify-content: center; }
+.run-timer.running { border-color: var(--accent); }
+.run-timer[data-phase="rest"] .rt-time, .run-bar[data-phase="rest"] b { color: #f2c46d; }
+.run-timer[data-phase="rest"] .rt-label { color: #f2c46d; }
+.run-timer.done .rt-label { color: var(--good); }
+.run-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin: 10px -4px 0;
+  border: 1px solid var(--accent-deep); border-radius: 14px; background: rgba(6,8,10,.96); backdrop-filter: blur(6px); }
+.run-bar[hidden] { display: none; }
+.run-bar .rb-name { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.run-bar b { font-family: var(--font-display); font-size: 28px; font-variant-numeric: tabular-nums; color: var(--accent); }
