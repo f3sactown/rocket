@@ -1,6 +1,6 @@
 {
-  "name": "F3 Q Planner",
-  "short_name": "Q Planner",
+  "name": "Rocket",
+  "short_name": "Rocket",
   "description": "Plan F3 workouts, write backblasts, browse the Exicon.",
   "start_url": "./",
   "scope": "./",
