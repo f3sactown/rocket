@@ -677,11 +677,10 @@ function enabledLibrarySources() {
   const off = Array.isArray(state.settings.libraryHiddenSources) ? state.settings.libraryHiddenSources : [];
   return LIBRARY_SOURCES.map(x => x.key).filter(k => !off.includes(k));
 }
-function visibleLibraryItems() {
-  const on = enabledLibrarySources();
+function visibleLibraryItems(on = enabledLibrarySources()) {
   return libraryCache ? libraryCache.items.filter(it => on.includes(libSource(it))) : [];
 }
-function libSearchPlaceholder() { return `Search ${libraryCache ? visibleLibraryItems().length : ""} exercises & thangs…`; }
+function libSearchPlaceholder(on) { return `Search ${libraryCache ? visibleLibraryItems(on).length : ""} exercises & thangs…`; }
 function libTagLine(it) {
   return [it.kind === "thang" ? "thang" : "exercise", ...it.emphasis, ...it.tags.filter(t => t !== "routine")].slice(0, 5).join(" · ");
 }
@@ -695,6 +694,9 @@ function libraryBrowserHtml({ title = "", picker = false } = {}) {
     <select class="input" data-lib-kind>
       <option value="all">All</option><option value="exercise">Exercises</option><option value="thang">Thangs / routines</option>
     </select>
+    <div class="filter-group"><div class="field-label">Database</div>
+      <div class="chips">${LIBRARY_SOURCES.map(x => `<button class="chip ${enabledLibrarySources().includes(x.key) ? "on" : ""}" data-lib-src="${x.key}">${x.label}</button>`).join("")}</div>
+    </div>
     ${Object.entries(FILTERS).map(([g, vals]) => `
       <div class="filter-group"><div class="field-label">${g}</div>
         <div class="chips">${vals.map(v => `<button class="chip" data-lib-chip="${g}" data-v="${v}">${v.replace(/_/g, " ")}</button>`).join("")}</div>
@@ -702,20 +704,21 @@ function libraryBrowserHtml({ title = "", picker = false } = {}) {
     <div class="label"><span data-lib-count></span><button class="linkish" data-lib-clear>Clear filters</button></div>
     <div data-lib-list></div>
     <div class="more"><button class="btn sm hidden" data-lib-more>Show more</button></div>
-    <p class="hint">${enabledLibrarySources().length === LIBRARY_SOURCES.length ? "Showing all sources." : `Showing only: ${LIBRARY_SOURCES.filter(x => enabledLibrarySources().includes(x.key)).map(x => `<span class="pill ${x.pill}">${x.label}</span>`).join(" ")}.`}
-      ${picker ? "Tap a name to read it, + to add it." : `Tap a name to read it. <button class="linkish" data-go="#/settings">Change sources in Settings ›</button>`}</p>`;
+    <p class="hint">${picker ? "Tap a name to read it, + to add it." : "Tap a name to read it."}
+      The databases picked at first come from <button class="linkish" data-go="#/settings">Settings ›</button></p>`;
 }
 function bindLibraryBrowser(root, { onPick } = {}) {
-  const st = { q: "", kind: "all", picked: { emphasis: [], equipment: [], tags: [] }, limit: 60, open: new Set() };
+  const st = { q: "", kind: "all", sources: enabledLibrarySources(), picked: { emphasis: [], equipment: [], tags: [] }, limit: 60, open: new Set() };
   const listEl = $("[data-lib-list]", root);
   const draw = () => {
     if (!libraryCache) { listEl.innerHTML = `<div class="empty">Loading library…</div>`; return; }
-    if (!enabledLibrarySources().length) {
+    q.placeholder = libSearchPlaceholder(st.sources);
+    if (!st.sources.length) {
       $("[data-lib-count]", root).textContent = "0 matches";
-      listEl.innerHTML = `<div class="empty">No library sources are turned on. Pick at least one under Settings → Exicon library sources.</div>`;
+      listEl.innerHTML = `<div class="empty">No database is picked. Tap F3, FiA or Program above.</div>`;
       $("[data-lib-more]", root).classList.add("hidden"); return;
     }
-    const res = searchLibrary(visibleLibraryItems(), st);
+    const res = searchLibrary(visibleLibraryItems(st.sources), st);
     $("[data-lib-count]", root).textContent = `${res.length} match${res.length === 1 ? "" : "es"}`;
     listEl.innerHTML = res.slice(0, st.limit).map(it => `
       <div class="lib-item" data-id="${it.id}">
@@ -731,6 +734,12 @@ function bindLibraryBrowser(root, { onPick } = {}) {
   };
   const q = $("[data-lib-q]", root);
   q.addEventListener("input", debounce(() => { st.q = q.value; st.limit = 60; draw(); }, 120));
+  const drawSrcChips = () => $$("[data-lib-src]", root).forEach(b => b.classList.toggle("on", st.sources.includes(b.dataset.libSrc)));
+  $$("[data-lib-src]", root).forEach(b => b.addEventListener("click", () => {
+    const k = b.dataset.libSrc;
+    st.sources = st.sources.includes(k) ? st.sources.filter(x => x !== k) : LIBRARY_SOURCES.map(x => x.key).filter(x => x === k || st.sources.includes(x));
+    drawSrcChips(); st.limit = 60; draw();
+  }));
   $("[data-lib-kind]", root).addEventListener("change", e => { st.kind = e.target.value; st.limit = 60; draw(); });
   $$("[data-lib-chip]", root).forEach(b => b.addEventListener("click", () => {
     const arr = st.picked[b.dataset.libChip]; const v = b.dataset.v;
@@ -739,7 +748,8 @@ function bindLibraryBrowser(root, { onPick } = {}) {
   }));
   $("[data-lib-clear]", root).addEventListener("click", () => {
     Object.values(st.picked).forEach(a => a.splice(0)); st.q = ""; q.value = ""; st.kind = "all"; $("[data-lib-kind]", root).value = "all";
-    $$("[data-lib-chip]", root).forEach(b => b.classList.remove("on")); draw();
+    $$("[data-lib-chip]", root).forEach(b => b.classList.remove("on"));
+    st.sources = enabledLibrarySources(); drawSrcChips(); draw();
   });
   $("[data-lib-more]", root).addEventListener("click", () => { st.limit += 60; draw(); });
   listEl.addEventListener("click", e => {
@@ -750,7 +760,7 @@ function bindLibraryBrowser(root, { onPick } = {}) {
     if (e.target.closest("[data-toggle]")) { st.open.has(it.id) ? st.open.delete(it.id) : st.open.add(it.id); draw(); }
   });
   draw();
-  if (!libraryCache) loadLibrary().then(() => { q.placeholder = libSearchPlaceholder(); draw(); })
+  if (!libraryCache) loadLibrary().then(draw)
     .catch(() => { listEl.innerHTML = `<div class="empty">Couldn't load the library. Check your connection and reload.</div>`; });
 }
 
@@ -2074,8 +2084,8 @@ function viewSettings(query) {
         <p class="hint">One name per line. Used for quick-tap attendance on backblasts. New names you add on a backblast land here automatically.</p>
       </div>
       <div class="card">
-        <div class="field-label" style="color:var(--accent)">Exicon library sources</div>
-        <p class="muted" style="font-size:14px;margin:0 0 12px">Choose which exercises and thangs show up when you open the Exicon library or press Library while planning your Q. All sources are on to start.</p>
+        <div class="field-label" style="color:var(--accent)">Exicon library databases</div>
+        <p class="muted" style="font-size:14px;margin:0 0 12px">The databases picked when you open the Exicon library or press Library while planning your Q. You can change them there with the Database filter. All are on to start.</p>
         ${LIBRARY_SOURCES.map(x => `<label class="switch" style="margin-bottom:10px"><input type="checkbox" data-libsrc="${x.key}" ${enabledLibrarySources().includes(x.key) ? "checked" : ""}>
           <span><span class="pill ${x.pill}">${x.label}</span><br><span class="muted" style="font-size:13px">${x.desc}</span></span></label>`).join("")}
       </div>
