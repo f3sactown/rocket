@@ -37,7 +37,7 @@ const DEFAULT_SETTINGS = {
   theme: "",             // "f3" or "fia"; picked from the region name when that changes, and changeable after   // every source is on unless the user turns it off, including ones added later
 };
 
-const COLLECTIONS = ["aos", "templates", "workouts", "backblasts"];
+const COLLECTIONS = ["aos", "templates", "workouts", "backblasts", "exercises"];
 const state = {
   settings: { ...DEFAULT_SETTINGS, ...store.get("settings", {}) },
   roster: store.get("roster", []),
@@ -45,6 +45,7 @@ const state = {
   templates: store.get("templates", []),
   workouts: store.get("workouts", []),
   backblasts: store.get("backblasts", []),
+  exercises: store.get("exercises", []),  // exercises & thangs users added to the Exicon
   program: { version: "", removed: [], hashes: {}, notice: null, rosterAdded: [], ...store.get("program", {}) },
 };
 function save(...keys) { keys.forEach(k => store.set(k, state[k])); }
@@ -553,6 +554,10 @@ function normalizeItem(coll, item) {
       mary: base.mary || "", notes: base.notes || "", thirdF: base.thirdF || "", announcements: base.announcements || "", wisdom: base.wisdom || "",
     });
   }
+  if (coll === "exercises") {
+    Object.assign(base, { name: base.name || "", text: base.text || "", kind: base.kind === "thang" ? "thang" : "exercise", source: "user" });
+    for (const k of Object.keys(FILTERS)) base[k] = Array.isArray(base[k]) ? base[k] : [];
+  }
   if (coll === "backblasts") {
     for (const k of ["qs", "pax", "visitors", "fngs"]) if (!Array.isArray(base[k])) base[k] = [];
     for (const k of ["opening", "details", "notes", "cot", "date", "aoId", "workoutId"]) base[k] ??= "";
@@ -670,6 +675,7 @@ const LIBRARY_SOURCES = [
   { key: "f3", label: "F3", pill: "f3", desc: "Exercises and thangs from the F3 Nation Exicon." },
   { key: "fia", label: "FiA", pill: "fia", desc: "Exercises and routines from the FiA Lexicon/Exicon." },
   { key: "program", label: "Program", pill: "prog", desc: "Warm-ups, thangs and Mary that come with this app." },
+  { key: "user", label: "User", pill: "user", desc: "Exercises and thangs you added to the Exicon." },
 ];
 function libSource(it) { return isProgram(it) ? "program" : LIBRARY_SOURCES.some(x => x.key === it.source) ? it.source : "f3"; }
 function libSourcePill(it) { const src = LIBRARY_SOURCES.find(x => x.key === libSource(it)); return `<span class="pill ${src.pill}">${src.label}</span>`; }
@@ -677,8 +683,42 @@ function enabledLibrarySources() {
   const off = Array.isArray(state.settings.libraryHiddenSources) ? state.settings.libraryHiddenSources : [];
   return LIBRARY_SOURCES.map(x => x.key).filter(k => !off.includes(k));
 }
+/** The Exicon, FiA and program entries plus the ones users added. */
+function allLibraryItems() { return libraryCache ? [...libraryCache.items, ...state.exercises] : []; }
 function visibleLibraryItems(on = enabledLibrarySources()) {
-  return libraryCache ? libraryCache.items.filter(it => on.includes(libSource(it))) : [];
+  return allLibraryItems().filter(it => on.includes(libSource(it)));
+}
+/** Add or edit a user's own Exicon entry. Calls onSaved with the saved entry. */
+function exerciseFormModal(item, { name = "", onSaved } = {}) {
+  const it = item ? structuredClone(item) : { id: uid("u"), name, text: "", kind: "exercise", emphasis: [], equipment: [], tags: [] };
+  const group = g => `<div class="filter-group"><div class="field-label">${g}</div>
+    <div class="chips">${FILTERS[g].map(v => `<button type="button" class="chip ${it[g].includes(v) ? "on" : ""}" data-ex-chip="${g}" data-v="${v}">${v.replace(/_/g, " ")}</button>`).join("")}</div></div>`;
+  openModal(`<h2>${item ? "Edit exercise" : "Add to the Exicon"}</h2>
+    <label class="field"><span>Name</span><input class="input" data-ex="name" value="${esc(it.name)}" placeholder="e.g. Merkin Ladder" autocomplete="off"></label>
+    <label class="field"><span>Type</span><select class="input" data-ex="kind">
+      <option value="exercise" ${it.kind === "exercise" ? "selected" : ""}>Exercise</option><option value="thang" ${it.kind === "thang" ? "selected" : ""}>Thang / routine</option></select></label>
+    ${Object.keys(FILTERS).map(group).join("")}
+    <label class="field"><span>Description</span><textarea class="input" rows="6" data-ex="text" placeholder="How it's done, reps, cadence…">${esc(it.text)}</textarea></label>
+    <div class="btn-row" style="justify-content:flex-end">
+      ${item ? `<button class="btn danger" data-ex-del>Delete</button>` : ""}<button class="btn" data-close>Cancel</button><button class="btn primary" data-ex-save>Save</button></div>`,
+    (m, close) => {
+      $$("[data-ex-chip]", m).forEach(b => b.onclick = () => {
+        const arr = it[b.dataset.exChip], i = arr.indexOf(b.dataset.v);
+        i === -1 ? arr.push(b.dataset.v) : arr.splice(i, 1); b.classList.toggle("on", i === -1);
+      });
+      $("[data-ex-save]", m).onclick = () => {
+        it.name = $('[data-ex="name"]', m).value.trim(); it.kind = $('[data-ex="kind"]', m).value; it.text = $('[data-ex="text"]', m).value.trim();
+        if (!it.name) { toast("Give it a name first"); $('[data-ex="name"]', m).focus(); return; }
+        const saved = normalizeItem("exercises", { ...it, updatedAt: nowIso() });
+        const i = state.exercises.findIndex(x => x.id === saved.id);
+        if (i === -1) state.exercises.push(saved); else state.exercises[i] = saved;
+        save("exercises"); close(); toast(item ? "Exercise saved" : `Added ${saved.name} to the Exicon`); onSaved?.(saved);
+      };
+      $("[data-ex-del]", m)?.addEventListener("click", async () => {
+        if (!(await confirmModal(`Delete ${it.name} from the Exicon?`, "Delete"))) return;
+        state.exercises = state.exercises.filter(x => x.id !== it.id); save("exercises"); close(); toast("Exercise deleted"); onSaved?.(null);
+      });
+    });
 }
 function libSearchPlaceholder(on) { return `Search ${libraryCache ? visibleLibraryItems(on).length : ""} exercises & thangs…`; }
 function libTagLine(it) {
@@ -701,7 +741,7 @@ function libraryBrowserHtml({ title = "", picker = false } = {}) {
       <div class="filter-group"><div class="field-label">${g}</div>
         <div class="chips">${vals.map(v => `<button class="chip" data-lib-chip="${g}" data-v="${v}">${v.replace(/_/g, " ")}</button>`).join("")}</div>
       </div>`).join("")}
-    <div class="label"><span data-lib-count></span><button class="linkish" data-lib-clear>Clear filters</button></div>
+    <div class="label"><span data-lib-count></span><span><button class="linkish" data-lib-new>+ Add exercise</button> · <button class="linkish" data-lib-clear>Clear filters</button></span></div>
     <div data-lib-list></div>
     <div class="more"><button class="btn sm hidden" data-lib-more>Show more</button></div>
     <p class="hint">${picker ? "Tap a name to read it, + to add it." : "Tap a name to read it."}
@@ -728,8 +768,13 @@ function bindLibraryBrowser(root, { onPick } = {}) {
           ${onPick ? `<button class="round-btn" data-add title="Add">+</button>` : ""}
         </div>
         ${st.open.has(it.id) ? `<div class="lib-body">${esc(it.text || "No description.")}
-          <div class="btn-row">${onPick ? `<button class="btn sm accent" data-add>Add to workout</button>` : ""}<button class="btn sm" data-copy>Copy</button></div></div>` : ""}
+          <div class="btn-row">${onPick ? `<button class="btn sm accent" data-add>Add to workout</button>` : ""}<button class="btn sm" data-copy>Copy</button>${libSource(it) === "user" ? `<button class="btn sm" data-edit>Edit</button>` : ""}</div></div>` : ""}
       </div>`).join("") || `<div class="empty">Nothing matches. Try fewer filters.</div>`;
+    // Searching for something that isn't there (or not exactly): offer to add it.
+    const typed = st.q.trim();
+    if (typed && !res.some(it => it.name.toLowerCase() === typed.toLowerCase()))
+      listEl.insertAdjacentHTML("afterbegin", `<button class="row lib-new" data-lib-new="${esc(typed)}"><div class="grow"><div class="title">+ Add “${esc(typed)}” as a new exercise</div>
+        <div class="muted" style="font-size:13px">Name it, tag it and describe it. It shows with a <span class="pill user">User</span> badge.</div></div><span class="chev">›</span></button>`);
     $("[data-lib-more]", root).classList.toggle("hidden", res.length <= st.limit);
   };
   const q = $("[data-lib-q]", root);
@@ -752,11 +797,21 @@ function bindLibraryBrowser(root, { onPick } = {}) {
     st.sources = enabledLibrarySources(); drawSrcChips(); draw();
   });
   $("[data-lib-more]", root).addEventListener("click", () => { st.limit += 60; draw(); });
+  // "+ Add exercise": a new User entry, named from the search when there is one. It's shown (User turned on) once saved.
+  root.addEventListener("click", e => {
+    const b = e.target.closest("[data-lib-new]"); if (!b) return;
+    exerciseFormModal(null, { name: b.dataset.libNew || st.q.trim(), onSaved: saved => {
+      if (!saved) return draw();
+      if (!st.sources.includes("user")) { st.sources = [...st.sources, "user"]; drawSrcChips(); }
+      st.q = saved.name; q.value = saved.name; st.open.add(saved.id); st.limit = 60; draw();
+    } });
+  });
   listEl.addEventListener("click", e => {
     const item = e.target.closest(".lib-item"); if (!item) return;
-    const it = libraryCache.items.find(x => x.id === item.dataset.id);
+    const it = allLibraryItems().find(x => x.id === item.dataset.id);
     if (e.target.closest("[data-add]")) { e.stopPropagation(); onPick?.(it); return; }
     if (e.target.closest("[data-copy]")) { copyText(`${it.name}\n${it.text}`); return; }
+    if (e.target.closest("[data-edit]")) { exerciseFormModal(it, { onSaved: () => draw() }); return; }
     if (e.target.closest("[data-toggle]")) { st.open.has(it.id) ? st.open.delete(it.id) : st.open.add(it.id); draw(); }
   });
   draw();
@@ -2190,6 +2245,7 @@ const DATA_KINDS = [
   { key: "aos", label: "AOs", desc: "Locations and schedules" },
   { key: "templates", label: "Saved templates", desc: "Intro, warm-up, thang, Mary, notes, COT" },
   { key: "workouts", label: "Saved workouts", desc: "Plans and drafts" },
+  { key: "exercises", label: "My exercises", desc: "Exercises and thangs you added to the Exicon" },
   { key: "backblasts", label: "Backblasts", desc: "Attendance and backblast text" },
 ];
 function kindCount(key, data, includeProgram = true) {
