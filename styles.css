@@ -478,3 +478,5 @@ textarea.input.short { min-height: 80px; }
 .run-bar b { font-family: var(--font-display); font-size: 28px; font-variant-numeric: tabular-nums; color: var(--accent); }
 .run-timer .rt-plus { flex: 1; max-width: 220px; padding-top: 16px; padding-bottom: 16px; font-size: 18px; }
 .q-matches .chips { margin-top: 8px; }
+.pill.user { color: #d2b48c; border-color: rgba(210,180,140,.5); }
+.lib-new { margin-bottom: 8px; border-style: dashed; }
