@@ -1237,7 +1237,7 @@ function viewPlan(id, query) {
     if (persisted) markEdited(w);
     const idx = state.workouts.findIndex(x => x.id === w.id);
     if (idx === -1) state.workouts.push(structuredClone(w)); else state.workouts[idx] = structuredClone(w);
-    if (active && !urlSet && !openModals.length) {  // not while a pop-up holds a history entry
+    if (active && !urlSet && !openModals.length && !modalBackPending) {  // not while a pop-up holds (or is still leaving) a history entry
       if (location.hash !== `#/plan/${w.id}`) history.replaceState(null, "", `#/plan/${w.id}`);
       urlSet = true;
     }
@@ -1380,13 +1380,18 @@ function viewPlan(id, query) {
       <div class="list">${others.map(x => `<button class="row" data-pick="${x.id}"><div class="grow"><div class="eyebrow">${esc([x.date ? fmtDate(x.date) : "No date", aoName(x.aoId)].filter(Boolean).join(" · "))}</div>
         <div class="title">${esc(x.title || "Untitled Workout")}${isProgram(x) ? ` <span class="pill prog">Program</span>` : ""}</div></div><span class="chev">›</span></button>`).join("") || `<div class="empty">No other workouts saved yet.</div>`}</div>`,
       (m, close) => $$("[data-pick]", m).forEach(b => b.onclick = async () => {
-        const src = state.workouts.find(x => x.id === b.dataset.pick);
+        const src = normalizeItem("workouts", structuredClone(state.workouts.find(x => x.id === b.dataset.pick)));
         if (hasContent(w) && !(await confirmModal("This replaces what you've written in this plan.", "Copy workout"))) return;
-        Object.assign(w, { title: src.title, intro: src.intro, warmup: src.warmup, thangs: structuredClone(src.thangs), mary: src.mary, notes: src.notes, thirdF: src.thirdF, announcements: src.announcements, wisdom: src.wisdom || "", timers: structuredClone(src.timers || {}) });
-        close(); persist(); viewPlanRedraw();
+        Object.assign(w, { title: src.title || "", intro: src.intro, warmup: src.warmup, thangs: src.thangs, mary: src.mary, notes: src.notes,
+          thirdF: src.thirdF, announcements: src.announcements, wisdom: src.wisdom, timers: src.timers || {} });
+        close();
+        // Fill the page in place: re-rendering here would race the pop-up's history step and could reopen a blank plan.
+        for (const el of $$("[data-field]")) if (el.dataset.field !== "date" && el.dataset.field !== "aoId") el.value = w[el.dataset.field] ?? "";
+        drawThangs();
+        for (const key of ["warmup", "mary"]) { const box = $(`[data-timers="${key}"]`); if (box) box.innerHTML = timersInner(key); }
+        persist(); window.scrollTo(0, 0); toast(`Copied ${w.title || "workout"}`);
       }));
   };
-  const viewPlanRedraw = () => { cleanup = null; location.hash === `#/plan/${w.id}` ? viewPlan(w.id, new URLSearchParams()) : go(`#/plan/${w.id}`); };
 }
 
 function openLibraryPicker(sectionLabel, onPick) {
@@ -1614,7 +1619,7 @@ function viewBackblast(id, query) {
     bb.updatedAt = nowIso();
     const idx = state.backblasts.findIndex(x => x.id === bb.id);
     if (idx === -1) state.backblasts.push(structuredClone(bb)); else state.backblasts[idx] = structuredClone(bb);
-    if (active && !urlSet && !openModals.length) {  // not while a pop-up holds a history entry
+    if (active && !urlSet && !openModals.length && !modalBackPending) {  // not while a pop-up holds (or is still leaving) a history entry
       if (location.hash !== `#/backblast/${bb.id}`) history.replaceState(null, "", `#/backblast/${bb.id}`);
       urlSet = true;
     }
