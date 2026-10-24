@@ -822,8 +822,10 @@ function bindLibraryBrowser(root, { onPick } = {}) {
 /* ------------------------------------------------------------------ */
 /* Workout text                                                        */
 /* ------------------------------------------------------------------ */
-const SECTION_LABELS = { intro: "Introduction", warmup: "Warm-O-Rama", thang: "Thang", mary: "Mary / Finisher", notes: "Notes", thirdF: "Third F", announcements: "Announcements", wisdom: "Words of Wisdom", cot: "Backblast COT / Closing" };
+const SECTION_LABELS = { intro: "Introduction", warmup: "Warm-O-Rama", thang: "Thang", mary: "Mary / Finisher / Cooldown", notes: "Notes", thirdF: "Third F", announcements: "Announcements", wisdom: "Words of Wisdom", cot: "Backblast COT / Closing" };
 // FiA regions call the Third F section "Community".
+// The FiA theme calls the Warm-O-Rama a "Warm-up".
+Object.defineProperty(SECTION_LABELS, "warmup", { enumerable: true, get: () => (state.settings.theme === "fia" ? "Warm-up" : "Warm-O-Rama") });
 Object.defineProperty(SECTION_LABELS, "thirdF", { enumerable: true, get: () => (isFiaRegion() ? "Community" : "Third F") });
 const TEMPLATE_SECTIONS = ["intro", "warmup", "thang", "mary", "notes", "announcements", "thirdF", "wisdom", "cot"];
 
@@ -937,9 +939,9 @@ function workoutSections(w, { includeNotes = true, includeTitle = true, withTime
     if ((txt || "").trim() || (withTimers && timers.length)) parts.push(withTimers ? [label, (txt || "").trim(), timers] : [label, txt.trim()]);
   };
   add("Introduction", w.intro);
-  add("Warm-O-Rama", w.warmup, w.timers?.warmup || []);
+  add(SECTION_LABELS.warmup, w.warmup, w.timers?.warmup || []);
   (w.thangs || []).forEach((t, i) => add(thangLabel(t, i), t.content, t.timers || []));
-  add("Mary / Finisher", w.mary, w.timers?.mary || []);
+  add(SECTION_LABELS.mary, w.mary, w.timers?.mary || []);
   if (includeNotes) add("Notes", w.notes);
   add("Announcements", w.announcements);
   add(SECTION_LABELS.thirdF, w.thirdF);
