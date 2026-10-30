@@ -1,11 +1,9 @@
-import { backblast, user } from "@rocket/db/schema";
-import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AuthForm } from "@/components/auth-form";
 import { SignOutButton } from "@/components/sign-out-button";
-import { getSession } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { getUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 
 export default function Home() {
   return (
@@ -19,27 +17,23 @@ export default function Home() {
 }
 
 async function Dashboard() {
-  const session = await getSession();
-  if (!session) return <AuthForm />;
+  const user = await getUser();
+  if (!user) return <AuthForm />;
 
-  const backblasts = await db
-    .select({
-      id: backblast.id,
-      title: backblast.title,
-      date: backblast.date,
-      ao: backblast.ao,
-      author: user.name,
-    })
-    .from(backblast)
-    .innerJoin(user, eq(backblast.authorId, user.id))
-    .orderBy(desc(backblast.date), desc(backblast.createdAt))
+  const supabase = await createClient();
+  const { data: backblasts, error } = await supabase
+    .from("backblasts")
+    .select("id, title, date, ao, author:profiles(name)")
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(50);
+  if (error) throw new Error(error.message);
 
   return (
     <>
       <div className="flex items-center justify-between">
         <p>
-          Welcome, <strong>{session.user.name}</strong>
+          Welcome, <strong>{user.name}</strong>
         </p>
         <SignOutButton />
       </div>
@@ -62,7 +56,7 @@ async function Dashboard() {
               </Link>
               <span className="text-sm text-zinc-500">
                 {" "}
-                · {b.date} · {b.ao} · by {b.author}
+                · {b.date} · {b.ao} · by {b.author?.name}
               </span>
             </li>
           ))}

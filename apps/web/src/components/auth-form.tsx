@@ -2,12 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { authClient } from "@/lib/auth-client";
+import { createClient } from "@/lib/supabase/client";
 
 export function AuthForm() {
   const router = useRouter();
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
-  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<{
+    text: string;
+    error: boolean;
+  } | null>(null);
   const [pending, setPending] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -15,19 +18,35 @@ export function AuthForm() {
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email"));
     const password = String(form.get("password"));
+    const supabase = createClient();
     setPending(true);
-    setError(null);
-    const { error } =
-      mode === "sign-up"
-        ? await authClient.signUp.email({
-            email,
-            password,
-            name: String(form.get("name")),
-          })
-        : await authClient.signIn.email({ email, password });
-    setPending(false);
-    if (error) setError(error.message ?? "Something went wrong");
-    else router.refresh();
+    setMessage(null);
+
+    if (mode === "sign-up") {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name: String(form.get("name")).trim() },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      setPending(false);
+      if (error) return setMessage({ text: error.message, error: true });
+      if (!data.session)
+        return setMessage({
+          text: "Check your email to confirm your account.",
+          error: false,
+        });
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      setPending(false);
+      if (error) return setMessage({ text: error.message, error: true });
+    }
+    router.refresh();
   }
 
   return (
@@ -53,7 +72,13 @@ export function AuthForm() {
         placeholder="Password"
         className="input"
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {message && (
+        <p
+          className={`text-sm ${message.error ? "text-red-600" : "text-green-600"}`}
+        >
+          {message.text}
+        </p>
+      )}
       <button type="submit" disabled={pending} className="btn">
         {pending ? "…" : mode === "sign-in" ? "Sign in" : "Sign up"}
       </button>

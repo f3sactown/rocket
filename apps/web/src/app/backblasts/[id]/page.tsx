@@ -1,12 +1,10 @@
 import { formatBackblast } from "@rocket/core";
-import { backblast } from "@rocket/db/schema";
-import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { requireUser } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -34,7 +32,12 @@ async function BackblastDetail({
   const { id } = await params;
   if (!UUID.test(id)) notFound();
 
-  const [row] = await db.select().from(backblast).where(eq(backblast.id, id));
+  const supabase = await createClient();
+  const { data: row } = await supabase
+    .from("backblasts")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
   if (!row) notFound();
 
   const text = formatBackblast({

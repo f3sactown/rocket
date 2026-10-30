@@ -1,27 +1,26 @@
-import { account, session, user, verification } from "@rocket/db/schema";
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { nextCookies } from "better-auth/next-js";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { db } from "./db";
+import { createClient } from "./supabase/server";
 
-export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: "pg",
-    schema: { user, session, account, verification },
-  }),
-  emailAndPassword: { enabled: true },
-  plugins: [nextCookies()],
-});
+export interface CurrentUser {
+  id: string;
+  name: string;
+}
 
-export async function getSession() {
-  return auth.api.getSession({ headers: await headers() });
+/** The signed-in user, or null. */
+export async function getUser(): Promise<CurrentUser | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data) return null;
+  const { sub, email, user_metadata } = data.claims;
+  return {
+    id: sub,
+    name: (user_metadata?.name as string | undefined) || email || "PAX",
+  };
 }
 
 /** Returns the signed-in user, or redirects to the home page to sign in. */
-export async function requireUser() {
-  const session = await getSession();
-  if (!session) redirect("/");
-  return session.user;
+export async function requireUser(): Promise<CurrentUser> {
+  const user = await getUser();
+  if (!user) redirect("/");
+  return user;
 }
