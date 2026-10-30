@@ -81,6 +81,11 @@ The URL and publishable key are designed to be public; row-level security protec
 Never commit or expose the **secret / service-role key** — it bypasses row-level security.
 `.env` files are git-ignored.
 
+## Versions and releases
+
+Rocket is in **alpha** (`0.1.0-alpha.N`). Versions and the [changelog](CHANGELOG.md) are managed
+automatically from commit messages; see [RELEASING.md](RELEASING.md).
+
 ## License
 
 [GPL-3.0](LICENSE)

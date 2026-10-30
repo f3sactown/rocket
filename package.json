@@ -1,5 +1,6 @@
 {
   "name": "rocket",
+  "version": "0.1.0-alpha.0",
   "private": true,
   "description": "A suite of tools for F3 PAX, starting with a backblast builder.",
   "license": "GPL-3.0-only",
