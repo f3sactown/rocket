@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -17,15 +17,21 @@ export const metadata: Metadata = {
   description: "Tools for F3 PAX, starting with backblasts.",
 };
 
+export const viewport: Viewport = {
+  themeColor: "#070a10",
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        {children}
-        <footer className="px-4 py-6 text-center text-xs text-zinc-500">
+      <body className="flex min-h-full flex-col">
+        <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:py-16">
+          {children}
+        </main>
+        <footer className="px-4 pb-8 text-center font-mono text-xs text-muted">
           Rocket v{process.env.NEXT_PUBLIC_APP_VERSION}
         </footer>
       </body>

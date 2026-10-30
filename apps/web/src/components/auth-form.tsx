@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ArrowIcon } from "./icons";
 
 export function AuthForm() {
   const router = useRouter();
@@ -50,41 +51,60 @@ export function AuthForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex w-full max-w-sm flex-col gap-3">
-      <h2 className="text-xl font-semibold">
-        {mode === "sign-in" ? "Sign in" : "Create an account"}
-      </h2>
-      {mode === "sign-up" && (
-        <input name="name" required placeholder="F3 name" className="input" />
-      )}
-      <input
-        name="email"
-        type="email"
-        required
-        placeholder="Email"
-        className="input"
-      />
-      <input
-        name="password"
-        type="password"
-        required
-        minLength={8}
-        placeholder="Password"
-        className="input"
-      />
-      {message && (
-        <p
-          className={`text-sm ${message.error ? "text-red-600" : "text-green-600"}`}
-        >
-          {message.text}
-        </p>
-      )}
-      <button type="submit" disabled={pending} className="btn">
-        {pending ? "…" : mode === "sign-in" ? "Sign in" : "Sign up"}
+    <form onSubmit={onSubmit} className="card">
+      <header className="flex items-start justify-between gap-4">
+        <h1 className="card-title">Rocket</h1>
+        <span className="status mt-2">
+          {mode === "sign-in" ? "Sign in" : "Sign up"}
+        </span>
+      </header>
+
+      <div className="panel flex flex-col gap-4">
+        {mode === "sign-up" && (
+          <label className="label flex flex-col gap-1.5">
+            F3 name
+            <input name="name" required className="input" />
+          </label>
+        )}
+        <label className="label flex flex-col gap-1.5">
+          Email
+          <input
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            className="input"
+          />
+        </label>
+        <label className="label flex flex-col gap-1.5">
+          Password
+          <input
+            name="password"
+            type="password"
+            required
+            minLength={8}
+            autoComplete={
+              mode === "sign-in" ? "current-password" : "new-password"
+            }
+            className="input"
+          />
+        </label>
+        {message && (
+          <p
+            className={`text-sm ${message.error ? "text-accent" : "text-ink-soft"}`}
+          >
+            {message.text}
+          </p>
+        )}
+      </div>
+
+      <button type="submit" disabled={pending} className="btn w-full">
+        <ArrowIcon />
+        {pending ? "…" : mode === "sign-in" ? "Sign in" : "Create account"}
       </button>
       <button
         type="button"
-        className="text-sm underline"
+        className="link -mt-2 self-center"
         onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
       >
         {mode === "sign-in"

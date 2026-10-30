@@ -1,35 +1,103 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Night-studio theme: deep navy surfaces, soft borders, warm red accent. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-night: #070a10;
+  --color-surface: #11151d;
+  --color-surface-raised: #181d26;
+  --color-panel: #090c12;
+  --color-line: rgb(255 255 255 / 0.07);
+  --color-line-strong: rgb(255 255 255 / 0.12);
+  --color-ink: #ece7df;
+  --color-ink-soft: #b8bcc4;
+  --color-muted: #7c828d;
+  --color-accent: #ef6b62;
+  --color-accent-soft: rgb(239 107 98 / 0.14);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  color: var(--color-ink);
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgb(22 40 60 / 0.55), transparent 60%),
+    radial-gradient(
+      100% 70% at 100% 100%,
+      rgb(18 34 52 / 0.5),
+      transparent 60%
+    ),
+    var(--color-night);
+  background-attachment: fixed;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--color-accent-soft);
 }
 
 @layer components {
-  .input {
-    @apply rounded-md border border-zinc-300 bg-transparent px-3 py-2 font-normal dark:border-zinc-700;
+  /* Raised card, like the outer "Tonight" panel. */
+  .card {
+    @apply flex flex-col gap-6 rounded-[28px] border border-line p-6 sm:p-8;
+    background: linear-gradient(
+      180deg,
+      var(--color-surface-raised),
+      var(--color-surface)
+    );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.04),
+      0 30px 60px -20px rgb(0 0 0 / 0.6);
   }
+
+  /* Recessed panel inside a card, like the mixer well. */
+  .panel {
+    @apply rounded-[20px] border border-white/[0.03] bg-panel p-5;
+    box-shadow: inset 0 2px 12px rgb(0 0 0 / 0.5);
+  }
+
+  .card-title {
+    @apply text-3xl font-semibold tracking-tight text-ink;
+  }
+
+  .label {
+    @apply text-sm font-medium text-ink-soft;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-line bg-panel px-3.5 py-2.5 text-ink placeholder:text-muted;
+    @apply transition-colors outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent-soft;
+    color-scheme: dark;
+  }
+
+  /* Pill button, like "Listen". */
   .btn {
-    @apply rounded-md bg-foreground px-4 py-2 font-medium text-background hover:opacity-90 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-3 rounded-full border border-line-strong px-8 py-3.5;
+    @apply text-lg font-medium text-ink transition hover:border-white/20 hover:brightness-125 disabled:opacity-50;
+    background: linear-gradient(180deg, #1c212b, #12161d);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 10px 24px -10px rgb(0 0 0 / 0.7);
+  }
+
+  .btn-icon {
+    @apply text-accent;
+  }
+
+  .link {
+    @apply text-sm text-muted transition-colors hover:text-ink;
+  }
+
+  /* Small status dot with label, like "● Sample mix". */
+  .status {
+    @apply inline-flex items-center gap-2 text-sm text-ink-soft;
+  }
+  .status::before {
+    content: "";
+    @apply size-2 rounded-full bg-accent;
+    box-shadow: 0 0 10px var(--color-accent);
   }
 }

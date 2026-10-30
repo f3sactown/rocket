@@ -7,7 +7,7 @@ export function SignOutButton() {
   const router = useRouter();
   return (
     <button
-      className="text-sm underline"
+      className="link"
       onClick={async () => {
         await createClient().auth.signOut();
         router.refresh();
