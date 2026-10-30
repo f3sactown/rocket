@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { requireUser } from "@/lib/auth";
+import { fromRow } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -40,17 +41,14 @@ async function BackblastDetail({
     .maybeSingle();
   if (!row) notFound();
 
-  const backblast = {
-    ...row,
-    warmup: row.warmup ?? undefined,
-    thang: row.thang ?? undefined,
-    moleskin: row.moleskin ?? undefined,
-  };
+  const backblast = fromRow(row);
   const text = formatBackblast(backblast);
+  const count = (kind: string) =>
+    backblast.attendees.filter((a) => a.kind === kind).length;
   const stats = [
-    { label: "Head count", value: paxCount(backblast) },
-    { label: "PAX", value: row.pax.length },
-    { label: "FNGs", value: row.fngs.length },
+    { label: "Count-o-rama", value: paxCount(backblast) },
+    { label: "FNGs", value: count("fng") },
+    { label: "Visitors", value: count("visitor") },
   ];
 
   return (

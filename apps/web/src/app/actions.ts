@@ -2,17 +2,24 @@
 
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { parseAttendees } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/server";
+import type { Json } from "@/lib/supabase/database.types";
 
-function names(value: FormDataEntryValue | null): string[] {
-  return String(value ?? "")
-    .split(/[,\n]/)
-    .map((name) => name.trim())
-    .filter(Boolean);
+function required(form: FormData, key: string): string {
+  return String(form.get(key) ?? "").trim();
 }
 
-function optional(value: FormDataEntryValue | null): string | null {
-  return String(value ?? "").trim() || null;
+function optional(form: FormData, key: string): string | null {
+  return String(form.get(key) ?? "").trim() || null;
+}
+
+function attendees(form: FormData) {
+  try {
+    return parseAttendees(JSON.parse(String(form.get("attendees") ?? "[]")));
+  } catch {
+    return [];
+  }
 }
 
 export async function createBackblast(form: FormData) {
@@ -22,15 +29,18 @@ export async function createBackblast(form: FormData) {
     .from("backblasts")
     .insert({
       author_id: user.id,
-      title: String(form.get("title")).trim(),
-      date: String(form.get("date")),
-      ao: String(form.get("ao")).trim(),
-      q: String(form.get("q")).trim(),
-      pax: names(form.get("pax")),
-      fngs: names(form.get("fngs")),
-      warmup: optional(form.get("warmup")),
-      thang: optional(form.get("thang")),
-      moleskin: optional(form.get("moleskin")),
+      title: required(form, "title"),
+      date: required(form, "date"),
+      ao: required(form, "ao"),
+      q: required(form, "q"),
+      introduction: optional(form, "introduction"),
+      warmup: optional(form, "warmup"),
+      thang: optional(form, "thang"),
+      attendees: attendees(form) as unknown as Json,
+      announcements: optional(form, "announcements"),
+      words_of_wisdom: optional(form, "wordsOfWisdom"),
+      third_f: optional(form, "thirdF"),
+      second_f: optional(form, "secondF"),
     })
     .select("id")
     .single();
