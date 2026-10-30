@@ -39,3 +39,35 @@ export function CopyIcon() {
     </svg>
   );
 }
+
+export function SaveIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden
+    >
+      <path d="M2.5 3.5a1 1 0 0 1 1-1h7.6l2.4 2.4v7.6a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z" />
+      <path d="M5 2.5v3h5v-3M5 13.5V9.5h6v4" />
+    </svg>
+  );
+}
+
+export function TemplatesIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden
+    >
+      <rect x="2.5" y="5" width="11" height="8.5" rx="1.5" />
+      <path d="M4.5 3h7M6 1.5h4" />
+    </svg>
+  );
+}

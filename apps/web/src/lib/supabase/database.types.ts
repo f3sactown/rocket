@@ -64,6 +64,38 @@ export type Database = {
           },
         ];
       };
+      section_templates: {
+        Row: {
+          id: string;
+          owner_id: string;
+          section: string;
+          name: string;
+          body: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          owner_id?: string;
+          section: string;
+          name: string;
+          body: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["section_templates"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "section_templates_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };

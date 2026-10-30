@@ -2,99 +2,136 @@
 
 import {
   DEFAULT_INTRODUCTION,
+  attendeeLabel,
   formatBackblast,
   paxCount,
-  type Attendee,
   type Backblast,
 } from "@rocket/core";
 import { useState } from "react";
+import { parseAttendees } from "@/lib/backblast";
 import { AttendanceInput } from "./attendance-input";
 import { ArrowIcon } from "./icons";
+import {
+  SectionTemplates,
+  type BuiltInTemplate,
+  type SectionTemplate,
+} from "./section-templates";
 
-const SECTIONS = [
+type TextKey =
+  | "introduction"
+  | "warmup"
+  | "thang"
+  | "announcements"
+  | "wordsOfWisdom"
+  | "thirdF"
+  | "secondF";
+
+interface TextSection {
+  name: TextKey;
+  label: string;
+  hint: string;
+  rows: number;
+  builtIns?: BuiltInTemplate[];
+}
+
+const OPENING_SECTIONS: TextSection[] = [
   {
     name: "introduction",
     label: "Introduction",
-    hint: "Mission statement, core principles, disclaimer and credo",
-    rows: 8,
+    hint: "The preamble to include the mission statement, core principles, disclaimer, and credo",
+    rows: 6,
+    builtIns: [{ name: "F3 standard", body: DEFAULT_INTRODUCTION }],
   },
   {
     name: "warmup",
     label: "Warm-o-rama",
-    hint: "Stretches and warm-up for the muscle groups you'll use",
+    hint: "Stretches and warm-up to target muscle groups the PAX will be using during the workout",
     rows: 4,
   },
-  { name: "thang", label: "The Thang", hint: "The workout", rows: 8 },
-] as const;
+  { name: "thang", label: "The Thang", hint: "The actual workout", rows: 8 },
+];
 
-const CLOSING_SECTIONS = [
+const CLOSING_SECTIONS: TextSection[] = [
   {
     name: "announcements",
     label: "Announcements",
-    hint: "Anything beyond the site Q's usual announcements",
-    rows: 3,
+    hint: "The site Q will have the normal announcements, this is a place for any other announcements that need to be said",
+    rows: 4,
   },
   {
     name: "wordsOfWisdom",
     label: "Words of Wisdom",
-    hint: "Wisdom to bestow on the PAX today",
+    hint: "The wisdom you'd like to bestow onto the PAX this day",
     rows: 3,
   },
   {
     name: "thirdF",
     label: "Third F",
-    hint: "Prayer requests, special intentions or praises",
+    hint: "Prayer requests, special intentions, or praises",
     rows: 3,
   },
   { name: "secondF", label: "Second F", hint: "Usually coffee", rows: 2 },
-] as const;
+];
 
-type TextKey =
-  (typeof SECTIONS)[number]["name"] | (typeof CLOSING_SECTIONS)[number]["name"];
+function attendeesPreview(body: string): string {
+  try {
+    return parseAttendees(JSON.parse(body)).map(attendeeLabel).join(", ");
+  } catch {
+    return "";
+  }
+}
 
 export function BackblastForm({
   action,
+  userId,
   defaultQ,
+  initialTemplates,
 }: {
   action: (form: FormData) => Promise<void>;
+  userId: string;
   defaultQ: string;
+  initialTemplates: SectionTemplate[];
 }) {
   const [backblast, setBackblast] = useState<Backblast>({
     title: "",
     date: "",
     ao: "",
     q: defaultQ,
-    introduction: DEFAULT_INTRODUCTION,
     attendees: [],
   });
+  const [templates, setTemplates] = useState(initialTemplates);
   const [showPreview, setShowPreview] = useState(false);
 
   const set = <K extends keyof Backblast>(key: K, value: Backblast[K]) =>
     setBackblast((current) => ({ ...current, [key]: value }));
 
-  const textArea = ({
-    name,
-    label,
-    hint,
-    rows,
-  }: {
-    name: TextKey;
-    label: string;
-    hint: string;
-    rows: number;
-  }) => (
-    <label key={name} className="label flex flex-col gap-1.5">
-      <span>
-        {label} <span className="font-normal text-muted">· {hint}</span>
-      </span>
+  const textSection = ({ name, label, hint, rows, builtIns }: TextSection) => (
+    <div key={name} className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-2">
+        <label htmlFor={name} className="label min-w-0 flex-1 pt-1">
+          {label}
+        </label>
+        <SectionTemplates
+          userId={userId}
+          section={name}
+          label={label}
+          body={backblast[name] ?? ""}
+          templates={templates}
+          builtIns={builtIns}
+          onLoad={(body) => set(name, body)}
+          onTemplatesChange={setTemplates}
+        />
+      </div>
       <textarea
+        id={name}
         name={name}
         rows={rows}
+        placeholder={hint}
         value={backblast[name] ?? ""}
         onChange={(e) => set(name, e.target.value)}
         className="input"
       />
-    </label>
+    </div>
   );
 
   return (
@@ -150,25 +187,45 @@ export function BackblastForm({
         </div>
       </div>
 
-      <div className="panel flex flex-col gap-4">{SECTIONS.map(textArea)}</div>
+      <div className="panel flex flex-col gap-5">
+        {OPENING_SECTIONS.map(textSection)}
+      </div>
 
       <div className="panel flex flex-col gap-3">
-        <div className="flex items-baseline justify-between">
-          <span className="label">Name-o-rama</span>
-          <span className="text-sm text-ink-soft">
-            Count-o-rama{" "}
-            <span className="ml-1 font-mono text-lg text-ink">
-              {paxCount(backblast)}
+        <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-2">
+          <span className="label min-w-0 flex-1 pt-1">
+            Name-o-rama{" "}
+            <span
+              className="font-normal text-muted"
+              title="The total attendance"
+            >
+              · Count-o-rama{" "}
+              <span className="ml-0.5 font-mono text-base text-ink">
+                {paxCount(backblast)}
+              </span>
             </span>
           </span>
+          <SectionTemplates
+            userId={userId}
+            section="attendees"
+            label="Name-o-rama"
+            body={JSON.stringify(backblast.attendees)}
+            preview={attendeesPreview}
+            templates={templates}
+            onLoad={(body) =>
+              set("attendees", parseAttendees(JSON.parse(body)))
+            }
+            onTemplatesChange={setTemplates}
+          />
         </div>
         <p className="text-sm text-muted">
-          The Q is counted automatically. Mark visitors with their home region,
-          FNGs with who invited them, and 2.0s.
+          The names of the PAX who attended. The Q is counted automatically.
+          Mark visitors with their home region, FNGs with who invited them, and
+          2.0s.
         </p>
         <AttendanceInput
           value={backblast.attendees}
-          onChange={(a: Attendee[]) => set("attendees", a)}
+          onChange={(a) => set("attendees", a)}
         />
         <input
           type="hidden"
@@ -177,8 +234,8 @@ export function BackblastForm({
         />
       </div>
 
-      <div className="panel flex flex-col gap-4">
-        {CLOSING_SECTIONS.map(textArea)}
+      <div className="panel flex flex-col gap-5">
+        {CLOSING_SECTIONS.map(textSection)}
       </div>
 
       <div className="flex flex-col gap-3">
