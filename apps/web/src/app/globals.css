@@ -133,14 +133,14 @@ body::before {
 @layer components {
   /* Raised card, like the outer "Tonight" panel. */
   .card {
-    @apply flex flex-col gap-6 rounded-[28px] border border-line p-6 sm:p-8;
+    @apply flex flex-col gap-5 rounded-[22px] border border-line px-4 py-5 sm:gap-6 sm:rounded-[28px] sm:p-8;
     background: linear-gradient(180deg, var(--surface-raised), var(--surface));
     box-shadow: var(--card-shadow);
   }
 
   /* Recessed panel inside a card, like the mixer well. */
   .panel {
-    @apply rounded-[20px] border border-line bg-panel p-5;
+    @apply rounded-[16px] border border-line bg-panel p-4 sm:rounded-[20px] sm:p-5;
     box-shadow: var(--panel-shadow);
   }
 

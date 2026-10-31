@@ -39,7 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="flex min-h-full flex-col">
-        <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:py-16">
+        <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-2 py-6 sm:gap-6 sm:px-4 sm:py-16">
           <AuthProvider>{children}</AuthProvider>
         </main>
         <footer className="flex flex-col items-center gap-3 px-4 pb-8">

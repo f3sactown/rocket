@@ -7,7 +7,7 @@ import {
   type Backblast,
 } from "@rocket/core";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { CopyButton } from "@/components/copy-button";
@@ -30,7 +30,9 @@ export default function BackblastPage() {
 }
 
 function BackblastDetail({ user }: { user: CurrentUser }) {
+  const router = useRouter();
   const id = useSearchParams().get("id");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [result, setResult] = useState<{
     backblast: Backblast | null;
     authorId?: string;
@@ -107,6 +109,26 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
           Edit backblast
         </Link>
       )}
+      {result.authorId === user.id && (
+        <button
+          type="button"
+          onClick={async () => {
+            if (!confirm("Delete this backblast? This can't be undone."))
+              return;
+            setDeleteError(null);
+            const { error } = await createClient()
+              .from("backblasts")
+              .delete()
+              .eq("id", id!);
+            if (error) setDeleteError(error.message);
+            else router.push("/");
+          }}
+          className="link -mt-1 self-center hover:text-accent"
+        >
+          Delete backblast
+        </button>
+      )}
+      {deleteError && <p className="text-sm text-accent">{deleteError}</p>}
     </article>
   );
 }
