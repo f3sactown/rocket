@@ -1,18 +1,41 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { THEME_STORAGE_KEY, type ThemePreference } from "@/lib/theme";
+import {
+  ACCENT_STORAGE_KEY,
+  ACCENTS,
+  THEME_STORAGE_KEY,
+  type Accent,
+  type ThemePreference,
+} from "@/lib/theme";
 
-const CHANGE_EVENT = "rocket-theme-change";
+const CHANGE_EVENT = "rocket-appearance-change";
 const lightQuery = () => window.matchMedia("(prefers-color-scheme: light)");
 
-function readPreference(): ThemePreference {
-  try {
-    const value = localStorage.getItem(THEME_STORAGE_KEY);
-    return value === "light" || value === "dark" ? value : "system";
-  } catch {
-    return "system";
-  }
+/** A per-device preference in localStorage; storing the default removes the key. */
+function storedPreference<T extends string>(
+  key: string,
+  allowed: readonly T[],
+  fallback: T,
+) {
+  const read = (): T => {
+    try {
+      const value = localStorage.getItem(key) as T | null;
+      return value && allowed.includes(value) ? value : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+  const write = (value: T) => {
+    try {
+      if (value === fallback) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+    } catch {
+      // Storage unavailable (e.g. private mode); the choice still applies to this page.
+    }
+    window.dispatchEvent(new Event(CHANGE_EVENT));
+  };
+  return { read, write };
 }
 
 function subscribe(onChange: () => void) {
@@ -24,15 +47,16 @@ function subscribe(onChange: () => void) {
   };
 }
 
-function setPreference(preference: ThemePreference) {
-  try {
-    if (preference === "system") localStorage.removeItem(THEME_STORAGE_KEY);
-    else localStorage.setItem(THEME_STORAGE_KEY, preference);
-  } catch {
-    // Storage unavailable (e.g. private mode); the choice still applies to this page.
-  }
-  window.dispatchEvent(new Event(CHANGE_EVENT));
-}
+const themePreference = storedPreference<ThemePreference>(
+  THEME_STORAGE_KEY,
+  ["light", "dark", "system"],
+  "system",
+);
+const accentPreference = storedPreference<Accent>(
+  ACCENT_STORAGE_KEY,
+  ACCENTS.map((a) => a.value),
+  "f3",
+);
 
 const OPTIONS: {
   value: ThemePreference;
@@ -95,7 +119,7 @@ const OPTIONS: {
 export function ThemeSwitcher() {
   const preference = useSyncExternalStore(
     subscribe,
-    readPreference,
+    themePreference.read,
     () => "system" as const,
   );
 
@@ -128,7 +152,7 @@ export function ThemeSwitcher() {
             type="button"
             role="radio"
             aria-checked={selected}
-            onClick={() => setPreference(option.value)}
+            onClick={() => themePreference.write(option.value)}
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
               selected
                 ? "bg-surface-raised text-ink shadow-sm [&_svg]:text-accent"
@@ -136,6 +160,55 @@ export function ThemeSwitcher() {
             }`}
           >
             {option.icon}
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Accent color swatches, remembered per device. */
+export function AccentPicker() {
+  const accent = useSyncExternalStore(
+    subscribe,
+    accentPreference.read,
+    () => "f3" as const,
+  );
+
+  useEffect(() => {
+    if (accent === "f3") delete document.documentElement.dataset.accent;
+    else document.documentElement.dataset.accent = accent;
+  }, [accent]);
+
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Accent color"
+      className="flex flex-wrap gap-2"
+    >
+      {ACCENTS.map((option) => {
+        const selected = accent === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => accentPreference.write(option.value)}
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+              selected
+                ? "border-accent bg-accent-soft text-ink"
+                : "border-line text-ink-soft hover:border-line-strong hover:text-ink"
+            }`}
+          >
+            <span
+              className="size-3.5 rounded-full"
+              style={{
+                background: option.swatch,
+                boxShadow: `0 0 8px ${option.swatch}`,
+              }}
+            />
             {option.label}
           </button>
         );

@@ -71,3 +71,34 @@ export function TemplatesIcon() {
     </svg>
   );
 }
+
+export function GearIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden
+    >
+      <circle cx="8" cy="8" r="2.2" />
+      <path d="M8 1.5v1.8M8 12.7v1.8M14.5 8h-1.8M3.3 8H1.5M12.6 3.4l-1.3 1.3M4.7 11.3l-1.3 1.3M12.6 12.6l-1.3-1.3M4.7 4.7 3.4 3.4" />
+    </svg>
+  );
+}
+
+export function PencilIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="btn-icon size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden
+    >
+      <path d="M11 2.5l2.5 2.5L5.5 13H3v-2.5z" />
+    </svg>
+  );
+}
