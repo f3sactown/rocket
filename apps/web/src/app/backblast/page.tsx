@@ -69,9 +69,9 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
   const count = (kind: string) =>
     backblast.attendees.filter((a) => a.kind === kind).length;
   const stats = [
-    { label: "Count-o-rama", value: paxCount(backblast) },
+    { label: "PAX", value: paxCount(backblast) },
     { label: "FNGs", value: count("fng") },
-    { label: "Visitors", value: count("visitor") },
+    { label: "Downrange", value: count("visitor") },
   ];
 
   return (

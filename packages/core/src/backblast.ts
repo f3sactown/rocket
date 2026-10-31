@@ -4,7 +4,7 @@ export type AttendeeKind = "pax" | "visitor" | "fng" | "2.0";
 export interface Attendee {
   name: string;
   kind: AttendeeKind;
-  /** Home region, for visitors. */
+  /** Home region, for downrange PAX (visiting from another region). */
   region?: string;
   /** The PAX who invited them, for FNGs. */
   invitedBy?: string;
@@ -135,13 +135,17 @@ export function mention(name: string): string {
   return trimmed.startsWith("@") ? trimmed : `@${trimmed}`;
 }
 
-/** An attendee in the Event Data lists, e.g. "@Dingo (South Fork)" or "@Ellie (invited by @Casper)". */
+/**
+ * An attendee in the Event Data lists, e.g. "@Dingo (South Fork)", "@Ellie (invited by @Casper)"
+ * or "@Little Casper (2.0)".
+ */
 function attendeeMention(attendee: Attendee): string {
   const name = mention(attendee.name);
   if (attendee.kind === "visitor" && attendee.region?.trim())
     return `${name} (${attendee.region.trim()})`;
   if (attendee.kind === "fng" && attendee.invitedBy?.trim())
     return `${name} (invited by ${mention(attendee.invitedBy)})`;
+  if (attendee.kind === "2.0") return `${name} (2.0)`;
   return name;
 }
 
@@ -178,7 +182,7 @@ function eventData(backblast: Backblast): string {
     total > 0 && `Total Attendees: ${total}`,
     q && `Q: ${mention(q)}`,
     group("PAX", "pax"),
-    group("Visiting PAX", "visitor"),
+    group("Downrange PAX", "visitor"),
     group("FNGs", "fng"),
     group("2.0s", "2.0"),
   );
@@ -204,7 +208,7 @@ export function backblastParts(backblast: Backblast): BackblastPart[] {
     {
       title: "Workout Details",
       text: blocks(
-        backblast.title.trim(),
+        backblast.title.trim() && `Title: ${backblast.title.trim()}`,
         labeled("Introduction", backblast.introduction),
         labeled("Warm-o-rama", backblast.warmup),
         labeled("The Thang", backblast.thang),
