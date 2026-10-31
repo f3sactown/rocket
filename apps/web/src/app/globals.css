@@ -1,62 +1,112 @@
 @import "tailwindcss";
 
-/* Night-studio theme: deep navy surfaces, soft borders, warm red accent. */
+/*
+ * Night-studio theme with a warm red accent, in dark and light.
+ * <html data-theme> holds the resolved theme ("light" or "dark"); it's set before first paint by
+ * the script in layout.tsx and kept up to date by the theme switcher, following the OS by default.
+ */
+:root {
+  color-scheme: dark;
+  --night: #070a10;
+  --surface: #11151d;
+  --surface-raised: #181d26;
+  --panel: #090c12;
+  --line: rgb(255 255 255 / 0.07);
+  --line-strong: rgb(255 255 255 / 0.12);
+  --hover: rgb(255 255 255 / 0.03);
+  --ink: #ece7df;
+  --ink-soft: #b8bcc4;
+  --muted: #7c828d;
+  --accent: #ef6b62;
+  --accent-soft: rgb(239 107 98 / 0.14);
+  --glow-1: rgb(22 40 60 / 0.55);
+  --glow-2: rgb(18 34 52 / 0.5);
+  --card-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.04), 0 30px 60px -20px rgb(0 0 0 / 0.6);
+  --panel-shadow: inset 0 2px 12px rgb(0 0 0 / 0.5);
+  --btn-top: #1c212b;
+  --btn-bottom: #12161d;
+  --btn-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06), 0 10px 24px -10px rgb(0 0 0 / 0.7);
+}
+
+/* Light: the same layering as soft paper and ink, with a deeper red for contrast on white. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --night: #eceef2;
+  --surface: #f7f8fa;
+  --surface-raised: #ffffff;
+  --panel: #eef0f4;
+  --line: rgb(15 23 42 / 0.08);
+  --line-strong: rgb(15 23 42 / 0.14);
+  --hover: rgb(15 23 42 / 0.04);
+  --ink: #171b23;
+  --ink-soft: #464e5b;
+  --muted: #6b7280;
+  --accent: #d6443a;
+  --accent-soft: rgb(214 68 58 / 0.12);
+  --glow-1: rgb(196 214 238 / 0.6);
+  --glow-2: rgb(214 224 240 / 0.6);
+  --card-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.8), 0 24px 50px -24px rgb(15 23 42 / 0.25);
+  --panel-shadow: inset 0 1px 4px rgb(15 23 42 / 0.07);
+  --btn-top: #ffffff;
+  --btn-bottom: #f0f2f5;
+  --btn-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9), 0 8px 20px -10px rgb(15 23 42 / 0.3);
+}
+
 @theme inline {
-  --color-night: #070a10;
-  --color-surface: #11151d;
-  --color-surface-raised: #181d26;
-  --color-panel: #090c12;
-  --color-line: rgb(255 255 255 / 0.07);
-  --color-line-strong: rgb(255 255 255 / 0.12);
-  --color-ink: #ece7df;
-  --color-ink-soft: #b8bcc4;
-  --color-muted: #7c828d;
-  --color-accent: #ef6b62;
-  --color-accent-soft: rgb(239 107 98 / 0.14);
+  --color-night: var(--night);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-hover: var(--hover);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-:root {
-  color-scheme: dark;
-}
-
 body {
-  color: var(--color-ink);
-  background:
-    radial-gradient(120% 80% at 0% 0%, rgb(22 40 60 / 0.55), transparent 60%),
-    radial-gradient(
-      100% 70% at 100% 100%,
-      rgb(18 34 52 / 0.5),
-      transparent 60%
-    ),
-    var(--color-night);
-  background-attachment: fixed;
+  color: var(--ink);
+  background: var(--night);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+/* Soft glow behind everything, pinned to the viewport (works on iOS, unlike background-attachment). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 0% 0%, var(--glow-1), transparent 60%),
+    radial-gradient(100% 70% at 100% 100%, var(--glow-2), transparent 60%);
+}
+
 ::selection {
-  background: var(--color-accent-soft);
+  background: var(--accent-soft);
 }
 
 @layer components {
   /* Raised card, like the outer "Tonight" panel. */
   .card {
     @apply flex flex-col gap-6 rounded-[28px] border border-line p-6 sm:p-8;
-    background: linear-gradient(
-      180deg,
-      var(--color-surface-raised),
-      var(--color-surface)
-    );
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.04),
-      0 30px 60px -20px rgb(0 0 0 / 0.6);
+    background: linear-gradient(180deg, var(--surface-raised), var(--surface));
+    box-shadow: var(--card-shadow);
   }
 
   /* Recessed panel inside a card, like the mixer well. */
   .panel {
-    @apply rounded-[20px] border border-white/[0.03] bg-panel p-5;
-    box-shadow: inset 0 2px 12px rgb(0 0 0 / 0.5);
+    @apply rounded-[20px] border border-line bg-panel p-5;
+    box-shadow: var(--panel-shadow);
   }
 
   .card-title {
@@ -70,17 +120,14 @@ body {
   .input {
     @apply w-full rounded-xl border border-line bg-panel px-3.5 py-2.5 text-ink placeholder:text-muted;
     @apply transition-colors outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent-soft;
-    color-scheme: dark;
   }
 
   /* Pill button, like "Listen". */
   .btn {
     @apply inline-flex items-center justify-center gap-3 rounded-full border border-line-strong px-8 py-3.5;
-    @apply text-lg font-medium text-ink transition hover:border-white/20 hover:brightness-125 disabled:opacity-50;
-    background: linear-gradient(180deg, #1c212b, #12161d);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.06),
-      0 10px 24px -10px rgb(0 0 0 / 0.7);
+    @apply text-lg font-medium text-ink transition hover:border-accent/40 disabled:opacity-50;
+    background: linear-gradient(180deg, var(--btn-top), var(--btn-bottom));
+    box-shadow: var(--btn-shadow);
   }
 
   .btn-icon {
@@ -98,6 +145,6 @@ body {
   .status::before {
     content: "";
     @apply size-2 rounded-full bg-accent;
-    box-shadow: 0 0 10px var(--color-accent);
+    box-shadow: 0 0 10px var(--accent);
   }
 }

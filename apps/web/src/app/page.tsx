@@ -68,7 +68,7 @@ function Dashboard({ user }: { user: CurrentUser }) {
               <li key={d.id}>
                 <Link
                   href={`/backblasts/edit?id=${d.id}`}
-                  className="group flex items-center gap-4 rounded-xl px-3 py-3.5 transition-colors hover:bg-white/[0.02]"
+                  className="group flex items-center gap-4 rounded-xl px-3 py-3.5 transition-colors hover:bg-hover"
                 >
                   <span className="h-8 w-0.5 rounded-full bg-accent shadow-[0_0_8px_var(--color-accent)]" />
                   <span className="flex min-w-0 flex-1 flex-col">
@@ -101,7 +101,7 @@ function Dashboard({ user }: { user: CurrentUser }) {
               <li key={b.id}>
                 <Link
                   href={`/backblast?id=${b.id}`}
-                  className="group flex items-center gap-4 rounded-xl px-3 py-3.5 transition-colors hover:bg-white/[0.02]"
+                  className="group flex items-center gap-4 rounded-xl px-3 py-3.5 transition-colors hover:bg-hover"
                 >
                   <span className="h-8 w-0.5 rounded-full bg-line-strong transition-colors group-hover:bg-accent group-hover:shadow-[0_0_8px_var(--color-accent)]" />
                   <span className="flex min-w-0 flex-1 flex-col">
