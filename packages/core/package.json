@@ -1,6 +1,6 @@
 {
   "name": "@rocket/core",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "description": "Shared F3 domain types and logic used across Rocket apps.",
   "type": "module",
