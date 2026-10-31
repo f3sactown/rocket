@@ -3,7 +3,7 @@
 import {
   DEFAULT_INTRODUCTION,
   attendeeLabel,
-  formatBackblast,
+  backblastParts,
   paxCount,
   type Backblast,
 } from "@rocket/core";
@@ -43,7 +43,7 @@ const STEPS: Step[] = [
   {
     kind: "basics",
     title: "Basics",
-    hint: "The title, date, AO and Q for this beatdown.",
+    hint: "The title, date, AO, address and Q for this beatdown.",
   },
   {
     kind: "text",
@@ -96,7 +96,7 @@ const STEPS: Step[] = [
   {
     kind: "review",
     title: "Review",
-    hint: "This is exactly what gets copied to Slack. Tap a section to change it.",
+    hint: "What gets copied, split into its three parts here for checking (the copied text has no headings). Tap a section to change it.",
   },
 ];
 
@@ -320,6 +320,15 @@ export function BackblastForm({
               />
             </label>
             <label className="label flex flex-col gap-1.5">
+              Address
+              <input
+                value={backblast.address ?? ""}
+                onChange={(e) => set("address", e.target.value)}
+                placeholder="Oki Park - 2715 Wissemann Dr, Sacramento, CA 95826"
+                className="input text-base"
+              />
+            </label>
+            <label className="label flex flex-col gap-1.5">
               Q
               <input
                 value={backblast.q}
@@ -371,9 +380,19 @@ export function BackblastForm({
                 );
               })}
             </ul>
-            <pre className="overflow-x-auto rounded-xl border border-line p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
-              {formatBackblast(backblast)}
-            </pre>
+            {backblastParts(backblast).map((part) => (
+              <section
+                key={part.title}
+                className="overflow-hidden rounded-xl border border-line"
+              >
+                <h3 className="border-b border-line bg-hover px-4 py-2 text-xs font-semibold tracking-wider text-ink-soft uppercase">
+                  {part.title}
+                </h3>
+                <pre className="overflow-x-auto p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
+                  {part.text}
+                </pre>
+              </section>
+            ))}
           </>
         )}
       </div>

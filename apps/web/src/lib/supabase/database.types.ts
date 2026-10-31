@@ -23,6 +23,7 @@ export type Database = {
           title: string;
           date: string | null;
           ao: string;
+          address: string | null;
           q: string;
           introduction: string | null;
           warmup: string | null;
@@ -42,6 +43,7 @@ export type Database = {
           title?: string;
           date?: string | null;
           ao?: string;
+          address?: string | null;
           q?: string;
           introduction?: string | null;
           warmup?: string | null;
