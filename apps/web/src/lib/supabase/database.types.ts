@@ -21,7 +21,7 @@ export type Database = {
           id: string;
           author_id: string;
           title: string;
-          date: string;
+          date: string | null;
           ao: string;
           q: string;
           introduction: string | null;
@@ -33,15 +33,16 @@ export type Database = {
           third_f: string | null;
           second_f: string | null;
           created_at: string;
+          status: "draft" | "published";
           updated_at: string;
         };
         Insert: {
           id?: string;
           author_id?: string;
-          title: string;
-          date: string;
-          ao: string;
-          q: string;
+          title?: string;
+          date?: string | null;
+          ao?: string;
+          q?: string;
           introduction?: string | null;
           warmup?: string | null;
           thang?: string | null;
@@ -51,6 +52,7 @@ export type Database = {
           third_f?: string | null;
           second_f?: string | null;
           created_at?: string;
+          status?: "draft" | "published";
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["backblasts"]["Insert"]>;
