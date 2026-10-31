@@ -41,3 +41,23 @@ export function fromRow(row: BackblastRow): Backblast {
     secondF: row.second_f ?? undefined,
   };
 }
+
+export function toInsert(
+  backblast: Backblast,
+): Database["public"]["Tables"]["backblasts"]["Insert"] {
+  const text = (value: string | undefined) => value?.trim() || null;
+  return {
+    title: backblast.title.trim(),
+    date: backblast.date,
+    ao: backblast.ao.trim(),
+    q: backblast.q.trim(),
+    introduction: text(backblast.introduction),
+    warmup: text(backblast.warmup),
+    thang: text(backblast.thang),
+    attendees: parseAttendees(backblast.attendees) as unknown as Json,
+    announcements: text(backblast.announcements),
+    words_of_wisdom: text(backblast.wordsOfWisdom),
+    third_f: text(backblast.thirdF),
+    second_f: text(backblast.secondF),
+  };
+}
