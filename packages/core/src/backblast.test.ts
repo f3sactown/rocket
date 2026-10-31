@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   attendeeLabel,
+  formatDate,
   formatBackblast,
   paxCount,
   type Backblast,
@@ -60,6 +61,23 @@ describe("paxCount", () => {
   });
 });
 
+describe("formatDate", () => {
+  it("writes the date out with an ordinal day", () => {
+    expect(formatDate("2026-10-31")).toBe("October 31st, 2026");
+    expect(formatDate("2026-01-02")).toBe("January 2nd, 2026");
+    expect(formatDate("2026-03-03")).toBe("March 3rd, 2026");
+    expect(formatDate("2026-11-11")).toBe("November 11th, 2026");
+    expect(formatDate("2026-12-12")).toBe("December 12th, 2026");
+    expect(formatDate("2026-05-22")).toBe("May 22nd, 2026");
+    expect(formatDate("2026-07-23")).toBe("July 23rd, 2026");
+  });
+
+  it("leaves anything else alone", () => {
+    expect(formatDate("")).toBe("");
+    expect(formatDate("tomorrow")).toBe("tomorrow");
+  });
+});
+
 describe("formatBackblast", () => {
   const text = formatBackblast({
     ...base,
@@ -67,29 +85,31 @@ describe("formatBackblast", () => {
     secondF: "Coffee",
   });
 
-  it("lists every section in order", () => {
-    const headings = [...text.matchAll(/^\*([^*]+):\*$/gm)].map(
+  it("lists only the sections that have content, in order, without asterisks", () => {
+    const headings = [...text.matchAll(/^([^:\n]+):$/gm)].map(
       (match) => match[1],
     );
     expect(headings).toEqual([
-      "Introduction",
-      "Warm-o-rama",
       "The Thang",
       "Count-o-rama",
       "Name-o-rama",
-      "Announcements",
-      "Words of Wisdom",
-      "Third F",
       "Second F",
     ]);
+    expect(text).not.toContain("*");
+    expect(text).not.toContain("None");
   });
 
-  it("fills in attendance and section bodies", () => {
-    expect(text).toContain("*Count-o-rama:*\n5");
-    expect(text).toContain(
-      "*Name-o-rama:*\nSparky, Tinman, Huggies (South Fork), Rookie (FNG, invited by Tinman), Little Sparky (2.0)",
+  it("writes the header with a written-out date and no Q line", () => {
+    expect(text.split("\n\n")[0]).toBe(
+      "Backblast: Hills for days\nDate: October 30th, 2026\nAO: The Grove",
     );
-    expect(text).toContain("*The Thang:*\n11s on the hill");
-    expect(text).toContain("*Announcements:*\nNone");
+  });
+
+  it("puts the Q in the Name-o-rama", () => {
+    expect(text).toContain("Count-o-rama:\n5");
+    expect(text).toContain(
+      "Name-o-rama:\nSparky (Q), Tinman, Huggies (South Fork), Rookie (FNG, invited by Tinman), Little Sparky (2.0)",
+    );
+    expect(text).toContain("The Thang:\n11s on the hill");
   });
 });

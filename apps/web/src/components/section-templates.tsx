@@ -2,17 +2,33 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { SaveIcon, TemplatesIcon } from "./icons";
+import { SaveIcon, StarIcon, TemplatesIcon } from "./icons";
 
 export interface SectionTemplate {
   id: string;
   section: string;
   name: string;
   body: string;
+  /** Pre-fills this section in new backblasts. At most one per section. */
+  is_default: boolean;
 }
 
+/** The columns the app reads for a template. */
+export const TEMPLATE_COLUMNS = "id, section, name, body, is_default";
+
+/**
+ * Sections that are usually the same each time, so a saved template can be their default.
+ * (Warm-o-rama, The Thang, Announcements and Words of Wisdom change every beatdown.)
+ */
+export const DEFAULTABLE_SECTIONS = [
+  "introduction",
+  "attendees",
+  "thirdF",
+  "secondF",
+];
+
 /** Templates that ship with the app, offered alongside the user's own. */
-export type BuiltInTemplate = Omit<SectionTemplate, "id" | "section">;
+export type BuiltInTemplate = Pick<SectionTemplate, "name" | "body">;
 
 /** Save and load buttons for one backblast section, with their inline panels. */
 export function SectionTemplates({
@@ -63,7 +79,7 @@ export function SectionTemplates({
         { owner_id: userId, section, name: trimmed, body },
         { onConflict: "owner_id,section,name" },
       )
-      .select("id, section, name, body")
+      .select(TEMPLATE_COLUMNS)
       .single();
     setBusy(false);
     if (error) return setError(error.message);
@@ -81,6 +97,34 @@ export function SectionTemplates({
       return;
     onLoad(template.body);
     setMode(null);
+  }
+
+  /** Makes a template this section's default, or stops it being the default. */
+  async function toggleDefault(template: SectionTemplate) {
+    const supabase = createClient();
+    const makeDefault = !template.is_default;
+    // Clear the current default first: only one template per section can be the default.
+    const { error: clearError } = await supabase
+      .from("section_templates")
+      .update({ is_default: false })
+      .eq("owner_id", userId)
+      .eq("section", section)
+      .eq("is_default", true);
+    if (clearError) return setError(clearError.message);
+    if (makeDefault) {
+      const { error } = await supabase
+        .from("section_templates")
+        .update({ is_default: true })
+        .eq("id", template.id);
+      if (error) return setError(error.message);
+    }
+    onTemplatesChange((all) =>
+      all.map((t) =>
+        t.section === section
+          ? { ...t, is_default: makeDefault && t.id === template.id }
+          : t,
+      ),
+    );
   }
 
   async function remove(template: SectionTemplate) {
@@ -155,6 +199,11 @@ export function SectionTemplates({
             </p>
           ) : (
             <ul className="flex flex-col gap-1">
+              {DEFAULTABLE_SECTIONS.includes(section) && mine.length > 0 && (
+                <li className="px-2 pb-1 text-xs text-muted">
+                  Star a template to fill it in on every new backblast.
+                </li>
+              )}
               {builtIns.map((t) => (
                 <TemplateRow
                   key={t.name}
@@ -171,6 +220,12 @@ export function SectionTemplates({
                   preview={summarize(t.body)}
                   onLoad={() => load(t)}
                   onDelete={() => remove(t)}
+                  isDefault={t.is_default}
+                  onToggleDefault={
+                    DEFAULTABLE_SECTIONS.includes(section)
+                      ? () => toggleDefault(t)
+                      : undefined
+                  }
                 />
               ))}
             </ul>
@@ -218,12 +273,16 @@ function TemplateRow({
   preview,
   onLoad,
   onDelete,
+  isDefault,
+  onToggleDefault,
 }: {
   name: string;
   tag?: string;
   preview: string;
   onLoad: () => void;
   onDelete?: () => void;
+  isDefault?: boolean;
+  onToggleDefault?: () => void;
 }) {
   return (
     <li className="flex items-center gap-2">
@@ -235,9 +294,30 @@ function TemplateRow({
         <span className="flex items-center gap-2 font-medium text-ink">
           {name}
           {tag && <span className="text-xs font-normal text-muted">{tag}</span>}
+          {isDefault && (
+            <span className="text-xs font-normal text-accent">Default</span>
+          )}
         </span>
         <span className="truncate text-muted">{preview || "—"}</span>
       </button>
+      {onToggleDefault && (
+        <button
+          type="button"
+          aria-label={
+            isDefault
+              ? `Stop using ${name} as the default`
+              : `Make ${name} the default`
+          }
+          title={isDefault ? "Default for new backblasts" : "Make default"}
+          aria-pressed={isDefault}
+          onClick={onToggleDefault}
+          className={`rounded-lg p-1.5 transition-colors ${
+            isDefault ? "text-accent" : "text-muted hover:text-accent"
+          }`}
+        >
+          <StarIcon filled={isDefault} />
+        </button>
+      )}
       {onDelete && (
         <button
           type="button"
