@@ -81,21 +81,65 @@ export function paxCount(backblast: Backblast): number {
   return attendance(backblast).length;
 }
 
-/** Render a backblast as plain text, ready to paste into Slack. */
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function ordinal(day: number): string {
+  if (day % 100 >= 11 && day % 100 <= 13) return `${day}th`;
+  return `${day}${["th", "st", "nd", "rd"][day % 10] ?? "th"}`;
+}
+
+/** A YYYY-MM-DD date written out, e.g. "October 31st, 2026". Other input is returned as is. */
+export function formatDate(date: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date.trim());
+  const month = match ? MONTHS[Number(match[2]) - 1] : undefined;
+  const day = match ? Number(match[3]) : 0;
+  if (!match || !month || day < 1 || day > 31) return date;
+  return `${month} ${ordinal(day)}, ${match[1]}`;
+}
+
+/** The Name-o-rama line: everyone who posted, with the Q first and marked "(Q)". */
+export function nameORama(backblast: Backblast): string {
+  const q = backblast.q.trim().toLowerCase();
+  return attendance(backblast)
+    .map((attendee) =>
+      q && attendee.name.trim().toLowerCase() === q
+        ? `${attendeeLabel(attendee)} (Q)`
+        : attendeeLabel(attendee),
+    )
+    .join(", ");
+}
+
+/** Render a backblast as plain text, ready to paste into Slack. Empty sections are left out. */
 export function formatBackblast(backblast: Backblast): string {
   const header = [
-    `*Backblast: ${backblast.title.trim()}*`,
-    `*Date:* ${backblast.date}`,
-    `*AO:* ${backblast.ao.trim()}`,
-    `*Q:* ${backblast.q.trim()}`,
-  ].join("\n");
+    ["Backblast", backblast.title.trim()],
+    ["Date", formatDate(backblast.date)],
+    ["AO", backblast.ao.trim()],
+  ]
+    .filter(([, value]) => value)
+    .map(([label, value]) => `${label}: ${value}`)
+    .join("\n");
 
+  const count = paxCount(backblast);
   const sections: [string, string | undefined][] = [
     ["Introduction", backblast.introduction],
     ["Warm-o-rama", backblast.warmup],
     ["The Thang", backblast.thang],
-    ["Count-o-rama", String(paxCount(backblast))],
-    ["Name-o-rama", attendance(backblast).map(attendeeLabel).join(", ")],
+    ["Count-o-rama", count ? String(count) : undefined],
+    ["Name-o-rama", nameORama(backblast)],
     ["Announcements", backblast.announcements],
     ["Words of Wisdom", backblast.wordsOfWisdom],
     ["Third F", backblast.thirdF],
@@ -104,8 +148,10 @@ export function formatBackblast(backblast: Backblast): string {
 
   return [
     header,
-    ...sections.map(
-      ([heading, body]) => `*${heading}:*\n${body?.trim() || "None"}`,
-    ),
-  ].join("\n\n");
+    ...sections
+      .filter(([, body]) => body?.trim())
+      .map(([heading, body]) => `${heading}:\n${body!.trim()}`),
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }

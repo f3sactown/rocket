@@ -1,6 +1,11 @@
 "use client";
 
-import { formatBackblast, paxCount, type Backblast } from "@rocket/core";
+import {
+  formatBackblast,
+  formatDate,
+  paxCount,
+  type Backblast,
+} from "@rocket/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -88,7 +93,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
 
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-ink">Q: {backblast.q}</span>
-        <span className="font-mono text-ink-soft">{backblast.date}</span>
+        <span className="text-ink-soft">{formatDate(backblast.date)}</span>
       </div>
 
       <pre className="panel overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">

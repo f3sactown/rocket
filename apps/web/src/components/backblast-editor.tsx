@@ -3,11 +3,36 @@
 import type { Backblast } from "@rocket/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toInsert } from "@/lib/backblast";
+import { parseAttendees, toInsert } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/client";
 import type { CurrentUser } from "./auth-provider";
 import { BackblastForm } from "./backblast-form";
-import type { SectionTemplate } from "./section-templates";
+import { TEMPLATE_COLUMNS, type SectionTemplate } from "./section-templates";
+
+/** Fills in each section that has a default template. */
+function withDefaults(
+  backblast: Backblast,
+  templates: SectionTemplate[],
+): Backblast {
+  const filled = { ...backblast };
+  for (const template of templates) {
+    if (!template.is_default) continue;
+    if (template.section === "attendees") {
+      try {
+        filled.attendees = parseAttendees(JSON.parse(template.body));
+      } catch {
+        // Ignore a malformed roster rather than blocking the form.
+      }
+    } else if (
+      template.section === "introduction" ||
+      template.section === "thirdF" ||
+      template.section === "secondF"
+    ) {
+      filled[template.section] = template.body;
+    }
+  }
+  return filled;
+}
 
 /** How long to wait after the last edit before saving the draft. */
 const AUTOSAVE_DELAY_MS = 800;
@@ -42,22 +67,35 @@ export function BackblastEditor({
   initial: Backblast;
 }) {
   const router = useRouter();
-  const [templates, setTemplates] = useState<SectionTemplate[] | null>(null);
+  const [loaded, setLoaded] = useState<{
+    templates: SectionTemplate[];
+    start: Backblast;
+  } | null>(null);
   const [saveState, setSaveState] = useState<SaveState>(
     published ? "published" : draftId ? "saved" : "new",
   );
   const id = useRef(draftId ?? null);
   const latest = useRef(initial);
+  // The starting content; later renders may pass a new object, but the form keeps its own state.
+  const initialRef = useRef(initial);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     createClient()
       .from("section_templates")
-      .select("id, section, name, body")
+      .select(TEMPLATE_COLUMNS)
       .order("name")
-      .then(({ data }) => setTemplates(data ?? []));
-  }, []);
+      .then(({ data }) => {
+        const templates = data ?? [];
+        // A new backblast starts with the user's default templates filled in.
+        const start = draftId
+          ? initialRef.current
+          : withDefaults(initialRef.current, templates);
+        latest.current = start;
+        setLoaded({ templates, start });
+      });
+  }, [draftId]);
 
   /** Writes the latest content, one save at a time so a new draft is only created once. */
   const persist = useCallback(
@@ -132,7 +170,7 @@ export function BackblastEditor({
     router.push("/");
   }
 
-  if (!templates) return <div className="card h-96 animate-pulse" />;
+  if (!loaded) return <div className="card h-96 animate-pulse" />;
 
   return (
     <BackblastForm
@@ -141,9 +179,9 @@ export function BackblastEditor({
       }
       status={STATUS_LABELS[saveState]}
       saveLabel={published ? "Save changes" : "Save backblast"}
-      initial={initial}
+      initial={loaded.start}
       userId={user.id}
-      initialTemplates={templates}
+      initialTemplates={loaded.templates}
       onChange={onChange}
       onSave={async (backblast) => {
         if (timer.current) clearTimeout(timer.current);
