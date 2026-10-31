@@ -4,8 +4,9 @@ import { formatBackblast, paxCount, type Backblast } from "@rocket/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { SignedIn } from "@/components/auth-provider";
+import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { CopyButton } from "@/components/copy-button";
+import { PencilIcon } from "@/components/icons";
 import { fromRow } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/client";
 
@@ -17,16 +18,17 @@ export default function BackblastPage() {
         ← All backblasts
       </Link>
       <Suspense fallback={<div className="card h-96 animate-pulse" />}>
-        <SignedIn>{() => <BackblastDetail />}</SignedIn>
+        <SignedIn>{(user) => <BackblastDetail user={user} />}</SignedIn>
       </Suspense>
     </>
   );
 }
 
-function BackblastDetail() {
+function BackblastDetail({ user }: { user: CurrentUser }) {
   const id = useSearchParams().get("id");
   const [result, setResult] = useState<{
     backblast: Backblast | null;
+    authorId?: string;
     error?: string;
   } | null>(null);
 
@@ -38,7 +40,11 @@ function BackblastDetail() {
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) =>
-        setResult({ backblast: data && fromRow(data), error: error?.message }),
+        setResult({
+          backblast: data && fromRow(data),
+          authorId: data?.author_id,
+          error: error?.message,
+        }),
       );
   }, [id]);
 
@@ -90,6 +96,12 @@ function BackblastDetail() {
       </pre>
 
       <CopyButton text={text} />
+      {result.authorId === user.id && (
+        <Link href={`/backblasts/edit?id=${id}`} className="btn -mt-2 w-full">
+          <PencilIcon />
+          Edit backblast
+        </Link>
+      )}
     </article>
   );
 }

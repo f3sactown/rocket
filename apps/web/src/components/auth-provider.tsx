@@ -6,8 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 import { AuthForm } from "./auth-form";
 
 export interface CurrentUser {
+  /** Permanent unique account ID; all of a user's data is tied to this, never to their name. */
   id: string;
   name: string;
+  email: string;
 }
 
 const AuthContext = createContext<{
@@ -21,7 +23,11 @@ const AuthContext = createContext<{
 function toCurrentUser(user: User | undefined): CurrentUser | null {
   if (!user) return null;
   const name = user.user_metadata?.name as string | undefined;
-  return { id: user.id, name: name || user.email || "PAX" };
+  return {
+    id: user.id,
+    name: name || user.email || "PAX",
+    email: user.email ?? "",
+  };
 }
 
 /** Tracks the signed-in Supabase user for the whole app. */

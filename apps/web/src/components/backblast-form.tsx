@@ -84,6 +84,7 @@ function attendeesPreview(body: string): string {
 export function BackblastForm({
   heading,
   status,
+  saveLabel,
   initial,
   onChange,
   onSave,
@@ -94,13 +95,14 @@ export function BackblastForm({
   heading: string;
   /** Short save state shown in the header, e.g. "Draft saved". */
   status: string;
+  saveLabel: string;
   initial: Backblast;
   /** Called after every edit, with the whole backblast. */
   onChange: (backblast: Backblast) => void;
   /** Publishes the backblast; returns an error message on failure. */
   onSave: (backblast: Backblast) => Promise<string | void>;
-  /** Throws away the draft. */
-  onDiscard: () => void;
+  /** Throws away the draft; omitted when there's no draft to discard. */
+  onDiscard?: () => void;
   userId: string;
   initialTemplates: SectionTemplate[];
 }) {
@@ -278,17 +280,20 @@ export function BackblastForm({
       {error && <p className="text-sm text-accent">{error}</p>}
       <button type="submit" disabled={saving} className="btn w-full">
         <ArrowIcon />
-        {saving ? "Saving…" : "Save backblast"}
+        {saving ? "Saving…" : saveLabel}
       </button>
-      <button
-        type="button"
-        onClick={() => {
-          if (confirm("Discard this draft? This can't be undone.")) onDiscard();
-        }}
-        className="link -mt-2 self-center"
-      >
-        Discard draft
-      </button>
+      {onDiscard && (
+        <button
+          type="button"
+          onClick={() => {
+            if (confirm("Discard this draft? This can't be undone."))
+              onDiscard();
+          }}
+          className="link -mt-2 self-center"
+        >
+          Discard draft
+        </button>
+      )}
     </form>
   );
 }

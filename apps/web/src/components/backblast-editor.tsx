@@ -12,33 +12,39 @@ import type { SectionTemplate } from "./section-templates";
 /** How long to wait after the last edit before saving the draft. */
 const AUTOSAVE_DELAY_MS = 800;
 
-type SaveState = "new" | "saving" | "saved" | "error";
+type SaveState = "new" | "saving" | "saved" | "error" | "published" | "unsaved";
 
 const STATUS_LABELS: Record<SaveState, string> = {
   new: "Draft",
   saving: "Saving…",
   saved: "Draft saved",
   error: "Not saved",
+  published: "Published",
+  unsaved: "Unsaved changes",
 };
 
 /**
- * Edits a backblast draft, saving it to Supabase as you type. The draft is created on the first
- * edit, and "Save backblast" publishes it.
+ * Edits a backblast. Drafts save to Supabase as you type (a new one is created on the first edit)
+ * and "Save backblast" publishes them. A published backblast only changes when you save, so
+ * readers never see half-finished edits.
  */
 export function BackblastEditor({
   user,
   draftId,
+  published = false,
   initial,
 }: {
   user: CurrentUser;
-  /** The draft being edited, or undefined for a new backblast. */
+  /** The backblast being edited, or undefined for a new one. */
   draftId?: string;
+  /** Whether the backblast being edited is already published. */
+  published?: boolean;
   initial: Backblast;
 }) {
   const router = useRouter();
   const [templates, setTemplates] = useState<SectionTemplate[] | null>(null);
   const [saveState, setSaveState] = useState<SaveState>(
-    draftId ? "saved" : "new",
+    published ? "published" : draftId ? "saved" : "new",
   );
   const id = useRef(draftId ?? null);
   const latest = useRef(initial);
@@ -98,11 +104,12 @@ export function BackblastEditor({
   const onChange = useCallback(
     (backblast: Backblast) => {
       latest.current = backblast;
+      if (published) return setSaveState("unsaved");
       setSaveState("saving");
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(saveDraft, AUTOSAVE_DELAY_MS);
     },
-    [saveDraft],
+    [saveDraft, published],
   );
 
   // Don't lose the last edits when leaving the page before the autosave fires.
@@ -116,12 +123,24 @@ export function BackblastEditor({
     [persist],
   );
 
+  async function discard() {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    await queue.current;
+    if (id.current)
+      await createClient().from("backblasts").delete().eq("id", id.current);
+    router.push("/");
+  }
+
   if (!templates) return <div className="card h-96 animate-pulse" />;
 
   return (
     <BackblastForm
-      heading={draftId ? "Edit draft" : "New backblast"}
+      heading={
+        published ? "Edit backblast" : draftId ? "Edit draft" : "New backblast"
+      }
       status={STATUS_LABELS[saveState]}
+      saveLabel={published ? "Save changes" : "Save backblast"}
       initial={initial}
       userId={user.id}
       initialTemplates={templates}
@@ -140,14 +159,7 @@ export function BackblastEditor({
         }
         router.push(`/backblast?id=${id.current}`);
       }}
-      onDiscard={async () => {
-        if (timer.current) clearTimeout(timer.current);
-        timer.current = null;
-        await queue.current;
-        if (id.current)
-          await createClient().from("backblasts").delete().eq("id", id.current);
-        router.push("/");
-      }}
+      onDiscard={published ? undefined : discard}
     />
   );
 }
