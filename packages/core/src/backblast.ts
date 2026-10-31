@@ -16,6 +16,8 @@ export interface Backblast {
   /** Workout date in YYYY-MM-DD form. */
   date: string;
   ao: string;
+  /** Where the AO meets, e.g. "Oki Park - 2715 Wissemann Dr, Sacramento, CA 95826". */
+  address?: string;
   q: string;
   introduction?: string;
   warmup?: string;
@@ -110,48 +112,120 @@ export function formatDate(date: string): string {
   return `${month} ${ordinal(day)}, ${match[1]}`;
 }
 
-/** The Name-o-rama line: everyone who posted, with the Q first and marked "(Q)". */
-export function nameORama(backblast: Backblast): string {
-  const q = backblast.q.trim().toLowerCase();
-  return attendance(backblast)
-    .map((attendee) =>
-      q && attendee.name.trim().toLowerCase() === q
-        ? `${attendeeLabel(attendee)} (Q)`
-        : attendeeLabel(attendee),
-    )
-    .join(", ");
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** A YYYY-MM-DD date in short form, e.g. "Wed, Oct 14, 2026". Other input is returned as is. */
+export function formatShortDate(date: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date.trim());
+  if (!match) return date;
+  const [year, month, day] = [
+    Number(match[1]),
+    Number(match[2]),
+    Number(match[3]),
+  ];
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== day)
+    return date;
+  return `${DAYS[parsed.getUTCDay()]}, ${MONTHS[month - 1].slice(0, 3)} ${day}, ${year}`;
 }
 
-/** Render a backblast as plain text, ready to paste into Slack. Empty sections are left out. */
-export function formatBackblast(backblast: Backblast): string {
-  const header = [
-    ["Backblast", backblast.title.trim()],
-    ["Date", formatDate(backblast.date)],
-    ["AO", backblast.ao.trim()],
-  ]
-    .filter(([, value]) => value)
-    .map(([label, value]) => `${label}: ${value}`)
-    .join("\n");
+/** A name as a Slack mention, e.g. "@Casper". */
+export function mention(name: string): string {
+  const trimmed = name.trim();
+  return trimmed.startsWith("@") ? trimmed : `@${trimmed}`;
+}
 
-  const count = paxCount(backblast);
-  const sections: [string, string | undefined][] = [
-    ["Introduction", backblast.introduction],
-    ["Warm-o-rama", backblast.warmup],
-    ["The Thang", backblast.thang],
-    ["Count-o-rama", count ? String(count) : undefined],
-    ["Name-o-rama", nameORama(backblast)],
-    ["Announcements", backblast.announcements],
-    ["Words of Wisdom", backblast.wordsOfWisdom],
-    ["Third F", backblast.thirdF],
-    ["Second F", backblast.secondF],
-  ];
+/** An attendee in the Event Data lists, e.g. "@Dingo (South Fork)" or "@Ellie (invited by @Casper)". */
+function attendeeMention(attendee: Attendee): string {
+  const name = mention(attendee.name);
+  if (attendee.kind === "visitor" && attendee.region?.trim())
+    return `${name} (${attendee.region.trim()})`;
+  if (attendee.kind === "fng" && attendee.invitedBy?.trim())
+    return `${name} (invited by ${mention(attendee.invitedBy)})`;
+  return name;
+}
 
-  return [
-    header,
-    ...sections
-      .filter(([, body]) => body?.trim())
-      .map(([heading, body]) => `${heading}:\n${body!.trim()}`),
+/** Joins the non-empty blocks of a part with blank lines. */
+function blocks(...parts: (string | false | undefined)[]): string {
+  return parts.filter((part) => part && part.trim()).join("\n\n");
+}
+
+/** Event Data: AO and date, address, attendance, the Q, and the PAX grouped by kind. */
+function eventData(backblast: Backblast): string {
+  const q = backblast.q.trim();
+  const others = attendance(backblast).filter(
+    (attendee) => !q || attendee.name.trim().toLowerCase() !== q.toLowerCase(),
+  );
+  const group = (title: string, kind: AttendeeKind) => {
+    const people = others.filter((attendee) => attendee.kind === kind);
+    return (
+      people.length > 0 &&
+      `${title} (${people.length}):\n${people.map(attendeeMention).join("\n")}`
+    );
+  };
+  const where = [
+    [backblast.ao.trim(), formatShortDate(backblast.date)]
+      .filter(Boolean)
+      .join(" - "),
+    backblast.address?.trim(),
   ]
     .filter(Boolean)
+    .join("\n");
+  const total = paxCount(backblast);
+
+  return blocks(
+    where,
+    total > 0 && `Total Attendees: ${total}`,
+    q && `Q: ${mention(q)}`,
+    group("PAX", "pax"),
+    group("Visiting PAX", "visitor"),
+    group("FNGs", "fng"),
+    group("2.0s", "2.0"),
+  );
+}
+
+/** A labeled block, or nothing when the text is blank. */
+function labeled(label: string, text: string | undefined): string | false {
+  return Boolean(text?.trim()) && `${label}:\n${text!.trim()}`;
+}
+
+export interface BackblastPart {
+  title: "Event Data" | "Workout Details" | "COT / Closing";
+  text: string;
+}
+
+/**
+ * The backblast's text in its three parts, leaving out blank sections and parts with nothing in
+ * them. The review screen shows each part on its own; the copied text joins them.
+ */
+export function backblastParts(backblast: Backblast): BackblastPart[] {
+  const parts: BackblastPart[] = [
+    { title: "Event Data", text: eventData(backblast) },
+    {
+      title: "Workout Details",
+      text: blocks(
+        backblast.title.trim(),
+        labeled("Introduction", backblast.introduction),
+        labeled("Warm-o-rama", backblast.warmup),
+        labeled("The Thang", backblast.thang),
+      ),
+    },
+    {
+      title: "COT / Closing",
+      text: blocks(
+        labeled("Announcements", backblast.announcements),
+        labeled("Words of Wisdom", backblast.wordsOfWisdom),
+        labeled("Third F", backblast.thirdF),
+        labeled("Second F", backblast.secondF),
+      ),
+    },
+  ];
+  return parts.filter((part) => part.text);
+}
+
+/** Render a backblast as plain text, ready to paste into Slack. */
+export function formatBackblast(backblast: Backblast): string {
+  return backblastParts(backblast)
+    .map((part) => part.text)
     .join("\n\n");
 }

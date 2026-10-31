@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   attendeeLabel,
+  backblastParts,
   formatDate,
   formatBackblast,
+  formatShortDate,
   paxCount,
   type Backblast,
 } from "./backblast";
@@ -78,38 +80,106 @@ describe("formatDate", () => {
   });
 });
 
+describe("formatShortDate", () => {
+  it("writes the weekday, month and day", () => {
+    expect(formatShortDate("2026-10-14")).toBe("Wed, Oct 14, 2026");
+    expect(formatShortDate("2026-10-31")).toBe("Sat, Oct 31, 2026");
+  });
+
+  it("leaves anything else alone", () => {
+    expect(formatShortDate("")).toBe("");
+    expect(formatShortDate("2026-02-30")).toBe("2026-02-30");
+  });
+});
+
 describe("formatBackblast", () => {
-  const text = formatBackblast({
-    ...base,
+  const talko: Backblast = {
+    title: "Hills for days",
+    date: "2026-10-14",
+    ao: "Talko Tuesday",
+    address: "Oki Park - 2715 Wissemann Dr, Sacramento, CA 95826",
+    q: "Casper",
+    attendees: [
+      ...["Samantha", "Trench", "Tupperware", "Scooper", "Righty"].map(
+        (name) => ({
+          name,
+          kind: "pax" as const,
+        }),
+      ),
+      { name: "Dingo", kind: "visitor" },
+      { name: "Ellie", kind: "fng" },
+    ],
     thang: "  11s on the hill  ",
     secondF: "Coffee",
-  });
+  };
+  const text = formatBackblast(talko);
+  const parts = backblastParts(talko).map((part) => part.text);
 
-  it("lists only the sections that have content, in order, without asterisks", () => {
-    const headings = [...text.matchAll(/^([^:\n]+):$/gm)].map(
-      (match) => match[1],
-    );
-    expect(headings).toEqual([
-      "The Thang",
-      "Count-o-rama",
-      "Name-o-rama",
-      "Second F",
+  it("splits into Event Data, Workout Details and COT / Closing for the review screen", () => {
+    expect(backblastParts(talko).map((part) => part.title)).toEqual([
+      "Event Data",
+      "Workout Details",
+      "COT / Closing",
     ]);
-    expect(text).not.toContain("*");
-    expect(text).not.toContain("None");
   });
 
-  it("writes the header with a written-out date and no Q line", () => {
-    expect(text.split("\n\n")[0]).toBe(
-      "Backblast: Hills for days\nDate: October 30th, 2026\nAO: The Grove",
+  it("copies the parts as plain text with no headings or markup", () => {
+    expect(text).toBe(parts.join("\n\n"));
+    expect(text).not.toMatch(/Event Data|Workout Details|COT \/ Closing|[*•━]/);
+  });
+
+  it("writes Event Data in the region's format", () => {
+    expect(parts[0].trim()).toBe(
+      [
+        "Talko Tuesday - Wed, Oct 14, 2026",
+        "Oki Park - 2715 Wissemann Dr, Sacramento, CA 95826",
+        "",
+        "Total Attendees: 8",
+        "",
+        "Q: @Casper",
+        "",
+        "PAX (5):",
+        "@Samantha",
+        "@Trench",
+        "@Tupperware",
+        "@Scooper",
+        "@Righty",
+        "",
+        "Visiting PAX (1):",
+        "@Dingo",
+        "",
+        "FNGs (1):",
+        "@Ellie",
+      ].join("\n"),
     );
   });
 
-  it("puts the Q in the Name-o-rama", () => {
-    expect(text).toContain("Count-o-rama:\n5");
-    expect(text).toContain(
-      "Name-o-rama:\nSparky (Q), Tinman, Huggies (South Fork), Rookie (FNG, invited by Tinman), Little Sparky (2.0)",
+  it("adds home regions, who invited FNGs, and 2.0s when given", () => {
+    const detailed = formatBackblast({
+      ...talko,
+      attendees: [
+        { name: "Dingo", kind: "visitor", region: "South Fork" },
+        { name: "Ellie", kind: "fng", invitedBy: "Casper" },
+        { name: "Little Casper", kind: "2.0" },
+      ],
+    });
+    expect(detailed).toContain("Visiting PAX (1):\n@Dingo (South Fork)");
+    expect(detailed).toContain("FNGs (1):\n@Ellie (invited by @Casper)");
+    expect(detailed).toContain("2.0s (1):\n@Little Casper");
+    expect(detailed).not.toContain("PAX (0)");
+  });
+
+  it("puts the title and workout in Workout Details and leaves out blank sections", () => {
+    expect(parts[1].trim()).toBe(
+      "Hills for days\n\nThe Thang:\n11s on the hill",
     );
-    expect(text).toContain("The Thang:\n11s on the hill");
+    expect(parts[2].trim()).toBe("Second F:\nCoffee");
+  });
+
+  it("leaves out a part with nothing in it", () => {
+    const titles = backblastParts({ ...talko, secondF: undefined }).map(
+      (part) => part.title,
+    );
+    expect(titles).toEqual(["Event Data", "Workout Details"]);
   });
 });
