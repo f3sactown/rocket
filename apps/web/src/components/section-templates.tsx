@@ -117,7 +117,7 @@ export function SectionTemplates({
       </span>
 
       {mode && (
-        <div className="order-last basis-full rounded-xl border border-line bg-surface p-3 text-sm">
+        <div className="order-last min-w-0 basis-full rounded-xl border border-line bg-surface p-3 text-sm">
           {mode === "save" ? (
             <div className="flex gap-2">
               <input
@@ -230,7 +230,7 @@ function TemplateRow({
       <button
         type="button"
         onClick={onLoad}
-        className="flex min-w-0 flex-1 flex-col rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/[0.04]"
+        className="flex min-w-0 flex-1 flex-col rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-hover"
       >
         <span className="flex items-center gap-2 font-medium text-ink">
           {name}
