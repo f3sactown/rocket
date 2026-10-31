@@ -10,9 +10,16 @@ import { createClient } from "@/lib/supabase/client";
 interface ListItem {
   id: string;
   title: string;
-  date: string;
+  date: string | null;
   ao: string;
   author: { name: string } | null;
+}
+
+interface Draft {
+  id: string;
+  title: string;
+  date: string | null;
+  ao: string;
 }
 
 export default function Home() {
@@ -21,12 +28,22 @@ export default function Home() {
 
 function Dashboard({ user }: { user: CurrentUser }) {
   const [backblasts, setBackblasts] = useState<ListItem[] | null>(null);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    createClient()
+    const supabase = createClient();
+    supabase
+      .from("backblasts")
+      .select("id, title, date, ao")
+      .eq("status", "draft")
+      .eq("author_id", user.id)
+      .order("updated_at", { ascending: false })
+      .then(({ data }) => setDrafts(data ?? []));
+    supabase
       .from("backblasts")
       .select("id, title, date, ao, author:profiles(name)")
+      .eq("status", "published")
       .order("date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(50)
@@ -34,7 +51,7 @@ function Dashboard({ user }: { user: CurrentUser }) {
         if (error) setError(error.message);
         else setBackblasts(data);
       });
-  }, []);
+  }, [user.id]);
 
   return (
     <section className="card">
@@ -42,6 +59,34 @@ function Dashboard({ user }: { user: CurrentUser }) {
         <h1 className="card-title">Backblasts</h1>
         <span className="status mt-2">{user.name}</span>
       </header>
+
+      {drafts.length > 0 && (
+        <div className="panel flex flex-col gap-1 p-2">
+          <h2 className="label px-3 pt-2">Your drafts</h2>
+          <ul className="divide-y divide-line">
+            {drafts.map((d) => (
+              <li key={d.id}>
+                <Link
+                  href={`/backblasts/edit?id=${d.id}`}
+                  className="group flex items-center gap-4 rounded-xl px-3 py-3.5 transition-colors hover:bg-white/[0.02]"
+                >
+                  <span className="h-8 w-0.5 rounded-full bg-accent shadow-[0_0_8px_var(--color-accent)]" />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate font-medium text-ink">
+                      {d.title || "Untitled backblast"}
+                    </span>
+                    <span className="truncate text-sm text-muted">
+                      {[d.ao, d.date].filter(Boolean).join(" · ") ||
+                        "Tap to keep writing"}
+                    </span>
+                  </span>
+                  <span className="status">Draft</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="panel p-2">
         {error ? (

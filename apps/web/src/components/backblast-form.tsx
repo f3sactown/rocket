@@ -7,7 +7,7 @@ import {
   paxCount,
   type Backblast,
 } from "@rocket/core";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { parseAttendees } from "@/lib/backblast";
 import { AttendanceInput } from "./attendance-input";
 import { ArrowIcon } from "./icons";
@@ -82,28 +82,39 @@ function attendeesPreview(body: string): string {
 }
 
 export function BackblastForm({
+  heading,
+  status,
+  initial,
+  onChange,
   onSave,
+  onDiscard,
   userId,
-  defaultQ,
   initialTemplates,
 }: {
-  /** Saves the backblast; returns an error message on failure. */
+  heading: string;
+  /** Short save state shown in the header, e.g. "Draft saved". */
+  status: string;
+  initial: Backblast;
+  /** Called after every edit, with the whole backblast. */
+  onChange: (backblast: Backblast) => void;
+  /** Publishes the backblast; returns an error message on failure. */
   onSave: (backblast: Backblast) => Promise<string | void>;
+  /** Throws away the draft. */
+  onDiscard: () => void;
   userId: string;
-  defaultQ: string;
   initialTemplates: SectionTemplate[];
 }) {
-  const [backblast, setBackblast] = useState<Backblast>({
-    title: "",
-    date: "",
-    ao: "",
-    q: defaultQ,
-    attendees: [],
-  });
+  const [backblast, setBackblast] = useState<Backblast>(initial);
   const [templates, setTemplates] = useState(initialTemplates);
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const edited = useRef(false);
+
+  // Report edits (not the initial render) so the draft can be saved.
+  useEffect(() => {
+    if (edited.current) onChange(backblast);
+  }, [backblast, onChange]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -116,8 +127,10 @@ export function BackblastForm({
     }
   }
 
-  const set = <K extends keyof Backblast>(key: K, value: Backblast[K]) =>
+  const set = <K extends keyof Backblast>(key: K, value: Backblast[K]) => {
+    edited.current = true;
     setBackblast((current) => ({ ...current, [key]: value }));
+  };
 
   const textSection = ({ name, label, hint, rows, builtIns }: TextSection) => (
     <div key={name} className="flex flex-col gap-1.5">
@@ -151,8 +164,8 @@ export function BackblastForm({
   return (
     <form onSubmit={onSubmit} className="card">
       <header className="flex items-start justify-between gap-4">
-        <h1 className="card-title">New backblast</h1>
-        <span className="status mt-2">Draft</span>
+        <h1 className="card-title">{heading}</h1>
+        <span className="status mt-2 shrink-0">{status}</span>
       </header>
 
       <div className="panel flex flex-col gap-4">
@@ -266,6 +279,15 @@ export function BackblastForm({
       <button type="submit" disabled={saving} className="btn w-full">
         <ArrowIcon />
         {saving ? "Saving…" : "Save backblast"}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          if (confirm("Discard this draft? This can't be undone.")) onDiscard();
+        }}
+        className="link -mt-2 self-center"
+      >
+        Discard draft
       </button>
     </form>
   );

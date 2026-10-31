@@ -28,7 +28,7 @@ export function parseAttendees(value: Json | unknown): Attendee[] {
 export function fromRow(row: BackblastRow): Backblast {
   return {
     title: row.title,
-    date: row.date,
+    date: row.date ?? "",
     ao: row.ao,
     q: row.q,
     introduction: row.introduction ?? undefined,
@@ -48,7 +48,7 @@ export function toInsert(
   const text = (value: string | undefined) => value?.trim() || null;
   return {
     title: backblast.title.trim(),
-    date: backblast.date,
+    date: backblast.date || null,
     ao: backblast.ao.trim(),
     q: backblast.q.trim(),
     introduction: text(backblast.introduction),
