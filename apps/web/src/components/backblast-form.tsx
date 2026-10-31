@@ -67,7 +67,7 @@ const STEPS: Step[] = [
   {
     kind: "attendance",
     title: "Name-o-rama",
-    hint: "The names of the PAX who attended. The Q is counted automatically. Mark visitors with their home region, FNGs with who invited them, and 2.0s.",
+    hint: "The names of the PAX who attended. The Q is counted automatically. Mark downrange PAX with their home region, FNGs with who invited them, and 2.0s.",
   },
   {
     kind: "text",
@@ -408,15 +408,18 @@ export function BackblastForm({
         </p>
       )}
 
-      <div className="grid grid-cols-[auto_1fr] gap-3">
-        <button
-          type="button"
-          disabled={stepIndex === 0}
-          onClick={() => goTo(stepIndex - 1)}
-          className="btn gap-2 px-4 text-base whitespace-nowrap disabled:invisible"
-        >
-          ← Previous
-        </button>
+      <div
+        className={`grid gap-3 ${stepIndex === 0 ? "grid-cols-1" : "grid-cols-[auto_1fr]"}`}
+      >
+        {stepIndex > 0 && (
+          <button
+            type="button"
+            onClick={() => goTo(stepIndex - 1)}
+            className="btn gap-2 px-4 text-base whitespace-nowrap"
+          >
+            ← Previous
+          </button>
+        )}
         {stepIndex < LAST_STEP ? (
           <button
             type="submit"

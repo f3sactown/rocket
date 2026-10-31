@@ -23,7 +23,7 @@ const base: Backblast = {
 };
 
 describe("attendeeLabel", () => {
-  it("shows a visitor's home region", () => {
+  it("shows a downrange PAX's home region", () => {
     expect(
       attendeeLabel({ name: "Huggies", kind: "visitor", region: "South Fork" }),
     ).toBe("Huggies (South Fork)");
@@ -145,7 +145,7 @@ describe("formatBackblast", () => {
         "@Scooper",
         "@Righty",
         "",
-        "Visiting PAX (1):",
+        "Downrange PAX (1):",
         "@Dingo",
         "",
         "FNGs (1):",
@@ -163,15 +163,15 @@ describe("formatBackblast", () => {
         { name: "Little Casper", kind: "2.0" },
       ],
     });
-    expect(detailed).toContain("Visiting PAX (1):\n@Dingo (South Fork)");
+    expect(detailed).toContain("Downrange PAX (1):\n@Dingo (South Fork)");
     expect(detailed).toContain("FNGs (1):\n@Ellie (invited by @Casper)");
-    expect(detailed).toContain("2.0s (1):\n@Little Casper");
+    expect(detailed).toContain("2.0s (1):\n@Little Casper (2.0)");
     expect(detailed).not.toContain("PAX (0)");
   });
 
   it("puts the title and workout in Workout Details and leaves out blank sections", () => {
     expect(parts[1].trim()).toBe(
-      "Hills for days\n\nThe Thang:\n11s on the hill",
+      "Title: Hills for days\n\nThe Thang:\n11s on the hill",
     );
     expect(parts[2].trim()).toBe("Second F:\nCoffee");
   });

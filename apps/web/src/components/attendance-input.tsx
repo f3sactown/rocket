@@ -5,7 +5,7 @@ import { useRef } from "react";
 
 const KIND_LABELS: Record<AttendeeKind, string> = {
   pax: "PAX",
-  visitor: "Visitor",
+  visitor: "Downrange",
   fng: "FNG",
   "2.0": "2.0",
 };
@@ -109,7 +109,7 @@ export function AttendanceInput({
   );
 }
 
-/** The extra detail a visitor or FNG needs, with an inline label so it isn't mistaken for a name. */
+/** The extra detail a downrange PAX or FNG needs, with an inline label so it isn't mistaken for a name. */
 function Detail({
   label,
   ariaLabel,
