@@ -7,13 +7,14 @@ beatdown, and copy a Slack-ready backblast. Backblasts are shared with every sig
 
 - **[Next.js](https://nextjs.org) + TypeScript + Tailwind** for the web app
 - **[Supabase](https://supabase.com)** for the Postgres database and login (Supabase Auth)
+- **GitHub Pages** for hosting: the app is a static site that talks to Supabase from the browser
 - **pnpm workspaces** monorepo so new tools can be added alongside the first
 
 ## Layout
 
 ```
 apps/
-  web/            Next.js app (UI, server actions, Supabase clients)
+  web/            Next.js app, exported as a static site
 packages/
   core/           Shared F3 domain types and logic (e.g. backblast formatting)
 supabase/
@@ -25,8 +26,8 @@ New tools go in `apps/` (or as routes inside `apps/web`); code shared between th
 
 ## Who can see what
 
-Access rules live in the database as row-level security (`supabase/migrations`), so they hold no
-matter which app or client talks to Supabase:
+The app runs entirely in the browser, so access rules live in the database as row-level security
+(`supabase/migrations`). They hold no matter which app or client talks to Supabase:
 
 - Signed-out visitors can't read anything.
 - Signed-in users can read every profile and backblast.
@@ -45,13 +46,26 @@ pnpm dev                        # http://localhost:3000
 
 Local Supabase Studio runs at http://127.0.0.1:54323 and captured emails at http://127.0.0.1:54324.
 
-### Hosted Supabase
+## Deploying (GitHub Pages + Supabase)
 
-1. Create a project at [supabase.com](https://supabase.com).
-2. Link and push the schema: `pnpm supabase link --project-ref <ref>` then `pnpm db:push`.
-3. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` on your host.
-4. In Authentication → URL Configuration, set the Site URL and add `<your-site>/auth/callback`
-   as a redirect URL.
+Every push to `main` builds the static site and deploys it to GitHub Pages
+(`https://<owner>.github.io/<repo>/`) via `.github/workflows/pages.yml`.
+
+One-time setup:
+
+1. **Supabase project:** create one at [supabase.com](https://supabase.com), then link it and apply
+   the migrations:
+   ```bash
+   pnpm supabase link --project-ref <ref>
+   pnpm db:push
+   ```
+2. **Repository variables:** in GitHub, go to Settings → Secrets and variables → Actions →
+   **Variables** and add `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` (from Supabase → Project
+   Settings → API). Both are safe to be public.
+3. **Pages source:** in Settings → Pages, set **Source** to **GitHub Actions**.
+4. **Supabase auth URLs:** in Supabase → Authentication → URL Configuration, set the **Site URL** to
+   `https://<owner>.github.io/<repo>/` and add the same address under **Redirect URLs**.
+5. Re-run the **Deploy to GitHub Pages** workflow (Actions tab), or push to `main`.
 
 ## Scripts
 
@@ -72,8 +86,8 @@ Local Supabase Studio runs at http://127.0.0.1:54323 and captured emails at http
 
 Everything is standard Postgres: `supabase db dump` (or `pg_dump`) exports the schema and data,
 including users in `auth.users` with their hashed passwords. The app only talks to Supabase
-through `apps/web/src/lib/supabase/` and `apps/web/src/lib/auth.ts`, which keeps a later switch
-contained.
+through `apps/web/src/lib/supabase/` and `apps/web/src/components/auth-provider.tsx`, which keeps a
+later switch contained.
 
 ## Secrets
 

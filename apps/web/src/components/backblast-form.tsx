@@ -82,12 +82,13 @@ function attendeesPreview(body: string): string {
 }
 
 export function BackblastForm({
-  action,
+  onSave,
   userId,
   defaultQ,
   initialTemplates,
 }: {
-  action: (form: FormData) => Promise<void>;
+  /** Saves the backblast; returns an error message on failure. */
+  onSave: (backblast: Backblast) => Promise<string | void>;
   userId: string;
   defaultQ: string;
   initialTemplates: SectionTemplate[];
@@ -101,6 +102,19 @@ export function BackblastForm({
   });
   const [templates, setTemplates] = useState(initialTemplates);
   const [showPreview, setShowPreview] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    const message = await onSave(backblast);
+    if (message) {
+      setError(message);
+      setSaving(false);
+    }
+  }
 
   const set = <K extends keyof Backblast>(key: K, value: Backblast[K]) =>
     setBackblast((current) => ({ ...current, [key]: value }));
@@ -135,7 +149,7 @@ export function BackblastForm({
   );
 
   return (
-    <form action={action} className="card">
+    <form onSubmit={onSubmit} className="card">
       <header className="flex items-start justify-between gap-4">
         <h1 className="card-title">New backblast</h1>
         <span className="status mt-2">Draft</span>
@@ -227,11 +241,6 @@ export function BackblastForm({
           value={backblast.attendees}
           onChange={(a) => set("attendees", a)}
         />
-        <input
-          type="hidden"
-          name="attendees"
-          value={JSON.stringify(backblast.attendees)}
-        />
       </div>
 
       <div className="panel flex flex-col gap-5">
@@ -253,9 +262,10 @@ export function BackblastForm({
         )}
       </div>
 
-      <button type="submit" className="btn w-full">
+      {error && <p className="text-sm text-accent">{error}</p>}
+      <button type="submit" disabled={saving} className="btn w-full">
         <ArrowIcon />
-        Save backblast
+        {saving ? "Saving…" : "Save backblast"}
       </button>
     </form>
   );

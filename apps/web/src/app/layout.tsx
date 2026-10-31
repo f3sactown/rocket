@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AuthProvider } from "@/components/auth-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:py-16">
-          {children}
+          <AuthProvider>{children}</AuthProvider>
         </main>
         <footer className="px-4 pb-8 text-center font-mono text-xs text-muted">
           Rocket v{process.env.NEXT_PUBLIC_APP_VERSION}

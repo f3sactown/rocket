@@ -1,12 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowIcon } from "./icons";
 
 export function AuthForm() {
-  const router = useRouter();
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [message, setMessage] = useState<{
     text: string;
@@ -29,7 +27,7 @@ export function AuthForm() {
         password,
         options: {
           data: { name: String(form.get("name")).trim() },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH}/`,
         },
       });
       setPending(false);
@@ -47,7 +45,6 @@ export function AuthForm() {
       setPending(false);
       if (error) return setMessage({ text: error.message, error: true });
     }
-    router.refresh();
   }
 
   return (
