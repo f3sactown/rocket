@@ -36,6 +36,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
   const [result, setResult] = useState<{
     backblast: Backblast | null;
     authorId?: string;
+    authorName?: string;
     error?: string;
   } | null>(null);
 
@@ -43,13 +44,14 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     if (!id) return;
     createClient()
       .from("backblasts")
-      .select("*")
+      .select("*, author:profiles(name)")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) =>
         setResult({
           backblast: data && fromRow(data),
           authorId: data?.author_id,
+          authorName: data?.author?.name,
           error: error?.message,
         }),
       );
@@ -78,7 +80,11 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     <article className="card">
       <header className="flex items-start justify-between gap-4">
         <h1 className="card-title">{backblast.title}</h1>
-        <span className="status mt-2 shrink-0">{backblast.ao}</span>
+        {result.authorName && (
+          <span className="status mt-2 shrink-0" title="Written by">
+            {result.authorName}
+          </span>
+        )}
       </header>
 
       <div className="panel grid grid-cols-3 divide-x divide-line p-0">
@@ -94,7 +100,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
       </div>
 
       <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-ink">Q: {backblast.q}</span>
+        <span className="font-medium text-ink">{backblast.ao}</span>
         <span className="text-ink-soft">{formatDate(backblast.date)}</span>
       </div>
 
