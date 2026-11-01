@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  attendeeFromName,
   attendeeLabel,
   backblastParts,
   formatDate,
@@ -207,5 +208,20 @@ describe("FiA vocabulary", () => {
     const f3 = formatBackblast({ ...base, warmup: "SSH x20", thang: "11s" });
     expect(f3).toContain("Warm-o-rama:\nSSH x20");
     expect(f3).toContain("The Thang:\n11s");
+  });
+});
+
+describe("attendeeFromName", () => {
+  it("reads a home region or 2.0 note after the name", () => {
+    expect(attendeeFromName("McLovin (Seattle)")).toEqual({
+      name: "McLovin",
+      kind: "visitor",
+      region: "Seattle",
+    });
+    expect(attendeeFromName("Cubby (2.0)")).toEqual({
+      name: "Cubby",
+      kind: "2.0",
+    });
+    expect(attendeeFromName("Sparky")).toEqual({ name: "Sparky", kind: "pax" });
   });
 });

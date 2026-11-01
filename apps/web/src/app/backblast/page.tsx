@@ -16,9 +16,6 @@ import { createClient } from "@/lib/supabase/client";
 export default function BackblastPage() {
   return (
     <>
-      <Link href="/" className="link">
-        ← All backblasts
-      </Link>
       <Suspense fallback={<div className="card h-96 animate-pulse" />}>
         <SignedIn>{(user) => <BackblastDetail user={user} />}</SignedIn>
       </Suspense>

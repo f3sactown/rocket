@@ -124,7 +124,7 @@ async function readRegion({ sheet_id: id, config }) {
       .filter((s) => s.ao && !/^(y|yes|true|x)$/i.test(s.retired ?? ""))
       .map((s) => ({
         name: s.ao,
-        address: [s.location, s.address].filter(Boolean).join(" - "),
+        address: s.location || s.address,
         day: s.day ?? "",
         time: s.time ?? "",
       })),

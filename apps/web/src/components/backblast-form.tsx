@@ -2,6 +2,7 @@
 
 import {
   DEFAULT_INTRODUCTION,
+  attendeeFromName,
   attendeeLabel,
   backblastParts,
   formatBackblast,
@@ -54,7 +55,7 @@ function stepsFor(language: Language): Step[] {
     {
       kind: "basics",
       title: "Basics",
-      hint: "The title, date, AO, address and Q for this beatdown.",
+      hint: "The title, date, AO and Q for this beatdown.",
     },
     {
       kind: "text",
@@ -237,11 +238,12 @@ export function BackblastForm({
     setBackblast((current) => ({ ...current, [key]: value }));
   };
 
-  /** Sets the AO and, for an AO from the region's sheet, fills in its address. */
+  /** Sets the AO and, for an AO from the region's sheet, adds its location. */
   function chooseAo(ao: string) {
     set("ao", ao);
+    // The AO's location (usually a park) goes in the backblast with it.
     const site = sites.value?.find((s) => s.name === ao);
-    if (site?.address) set("address", site.address);
+    set("address", site?.address ?? "");
   }
 
   return (
@@ -375,6 +377,7 @@ export function BackblastForm({
                     if (e.target.value === OTHER_AO) {
                       setTypingAo(true);
                       set("ao", "");
+                      set("address", "");
                     } else {
                       setTypingAo(false);
                       chooseAo(e.target.value);
@@ -408,15 +411,6 @@ export function BackblastForm({
                   AO list unavailable: {sites.error}
                 </span>
               )}
-            </label>
-            <label className="label flex flex-col gap-1.5">
-              Address
-              <input
-                value={backblast.address ?? ""}
-                onChange={(e) => set("address", e.target.value)}
-                placeholder="Oki Park - 2715 Wissemann Dr, Sacramento, CA 95826"
-                className="input text-base"
-              />
             </label>
             <label className="label flex flex-col gap-1.5">
               Q
@@ -460,7 +454,7 @@ export function BackblastForm({
                   set("attendees", [
                     // Fill an empty row first, then add the rest.
                     ...backblast.attendees.filter((a) => a.name.trim()),
-                    ...names.map((name) => ({ name, kind: "pax" as const })),
+                    ...names.map(attendeeFromName),
                   ])
                 }
               />
