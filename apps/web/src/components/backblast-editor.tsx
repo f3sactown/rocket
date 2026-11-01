@@ -104,13 +104,15 @@ export function BackblastEditor({
       .then(({ data }) => {
         const templates = data ?? [];
         // A new backblast starts with the user's default templates filled in.
-        const start = draftId
+        const loaded = draftId
           ? initialRef.current
           : withDefaults(initialRef.current, templates);
+        // The person writing it is the Q unless they say otherwise.
+        const start = loaded.q.trim() ? loaded : { ...loaded, q: user.name };
         latest.current = start;
         setLoaded({ templates, start });
       });
-  }, [draftId]);
+  }, [draftId, user.name]);
 
   /** Writes the latest content, one save at a time so a new draft is only created once. */
   const persist = useCallback(

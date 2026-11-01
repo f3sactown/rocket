@@ -57,17 +57,18 @@ export function QPicker({
       <span className="label">{rows.length > 1 ? "Qs" : "Q"}</span>
       <ul className="flex flex-col gap-2">
         {rows.map((q, index) => {
+          // Match the roster however the name was typed, e.g. "sparky" or "Sparky (2.0)".
+          const plain = attendeeFromName(q).name.trim().toLowerCase();
+          const listed = names.find((name) => name.toLowerCase() === plain);
           const typed =
-            names.length === 0 ||
-            typing.has(index) ||
-            (q !== "" && !names.includes(q));
+            names.length === 0 || typing.has(index) || (q !== "" && !listed);
           return (
             <li key={index} className="flex gap-2">
               <div className="flex min-w-0 flex-1 flex-col gap-2">
                 {names.length > 0 && (
                   <select
                     aria-label={`Q ${index + 1}`}
-                    value={typed ? OTHER : q}
+                    value={typed ? OTHER : (listed ?? "")}
                     onChange={(e) => {
                       const other = e.target.value === OTHER;
                       setTypingRow(index, other);
