@@ -1,6 +1,6 @@
 "use client";
 
-import type { Backblast } from "@rocket/core";
+import { qNames, type Backblast } from "@rocket/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { parseAttendees, toInsert } from "@/lib/backblast";
@@ -56,8 +56,10 @@ function statusLabel(state: SaveState, published: boolean): string {
 
 /** A published backblast keeps its title, date, AO and Q, so edits missing one wait to save. */
 function hasBasics(backblast: Backblast): boolean {
-  return [backblast.title, backblast.date, backblast.ao, backblast.q].every(
-    (value) => value?.trim(),
+  return (
+    [backblast.title, backblast.date, backblast.ao].every((value) =>
+      value?.trim(),
+    ) && qNames(backblast).length > 0
   );
 }
 
@@ -102,13 +104,15 @@ export function BackblastEditor({
       .then(({ data }) => {
         const templates = data ?? [];
         // A new backblast starts with the user's default templates filled in.
-        const start = draftId
+        const loaded = draftId
           ? initialRef.current
           : withDefaults(initialRef.current, templates);
+        // The person writing it is the Q unless they say otherwise.
+        const start = loaded.q.trim() ? loaded : { ...loaded, q: user.name };
         latest.current = start;
         setLoaded({ templates, start });
       });
-  }, [draftId]);
+  }, [draftId, user.name]);
 
   /** Writes the latest content, one save at a time so a new draft is only created once. */
   const persist = useCallback(

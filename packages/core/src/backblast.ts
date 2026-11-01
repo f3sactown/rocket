@@ -22,6 +22,7 @@ export interface Backblast {
   address?: string;
   /** When the workout ran, e.g. "5:15am-6:00am". */
   time?: string;
+  /** The Q, or several separated by commas, e.g. "Casper, Sparky". */
   q: string;
   introduction?: string;
   warmup?: string;
@@ -81,11 +82,36 @@ export function attendeeLabel(attendee: Attendee): string {
   }
 }
 
-/** Everyone who posted, Q first, with blank names and duplicates removed. */
+/** The backblast's Qs, from its comma-separated Q field, without blanks or duplicates. */
+export function qNames(backblast: Pick<Backblast, "q">): string[] {
+  const seen = new Set<string>();
+  return backblast.q
+    .split(",")
+    .map((name) => name.trim())
+    .filter((name) => {
+      const key = name.toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+/** The Q field for a list of Qs. */
+export function joinQs(names: string[]): string {
+  return names.join(", ");
+}
+
+/** Whether a name is one of the backblast's Qs. */
+export function isQ(backblast: Pick<Backblast, "q">, name: string): boolean {
+  const key = name.trim().toLowerCase();
+  return qNames(backblast).some((q) => q.toLowerCase() === key);
+}
+
+/** Everyone who posted, Qs first, with blank names and duplicates removed. */
 export function attendance(backblast: Backblast): Attendee[] {
   const seen = new Set<string>();
   const all: Attendee[] = [
-    { name: backblast.q, kind: "pax" },
+    ...qNames(backblast).map((name) => ({ name, kind: "pax" as const })),
     ...backblast.attendees,
   ];
   return all.filter((attendee) => {
@@ -182,9 +208,9 @@ function location(address: string | undefined): string | undefined {
 
 /** Event Data: AO, date and time, location, attendance, the Q, and the PAX grouped by kind. */
 function eventData(backblast: Backblast): string {
-  const q = backblast.q.trim();
+  const qs = qNames(backblast);
   const others = attendance(backblast).filter(
-    (attendee) => !q || attendee.name.trim().toLowerCase() !== q.toLowerCase(),
+    (attendee) => !isQ(backblast, attendee.name),
   );
   const group = (title: string, kind: AttendeeKind) => {
     const people = others.filter((attendee) => attendee.kind === kind);
@@ -210,7 +236,8 @@ function eventData(backblast: Backblast): string {
   return blocks(
     where,
     total > 0 && `Total Attendees: ${total}`,
-    q && `Q: ${mention(q)}`,
+    qs.length > 0 &&
+      `${qs.length > 1 ? "Qs" : "Q"}: ${qs.map(mention).join(", ")}`,
     group("PAX", "pax"),
     group("Downrange PAX", "visitor"),
     group("FNGs", "fng"),

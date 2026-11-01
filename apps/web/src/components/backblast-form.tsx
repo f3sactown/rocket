@@ -4,6 +4,8 @@ import {
   DEFAULT_INTRODUCTION,
   attendeeFromName,
   attendeeLabel,
+  joinQs,
+  qNames,
   backblastParts,
   formatBackblast,
   termsFor,
@@ -16,6 +18,7 @@ import { parseAttendees } from "@/lib/backblast";
 import { loadRoster, loadSites, sitesByDay } from "@/lib/regions";
 import { useLoad, useUserRegion } from "@/lib/use-region";
 import { AttendanceInput } from "./attendance-input";
+import { QPicker } from "./q-picker";
 import { Regulars } from "./regulars";
 import { useAuth } from "./auth-provider";
 import { ArrowIcon } from "./icons";
@@ -55,7 +58,7 @@ function stepsFor(language: Language): Step[] {
     {
       kind: "basics",
       title: "Basics",
-      hint: "The title, date, AO, time and Q for this beatdown.",
+      hint: "The title, date, AO and time for this beatdown.",
     },
     {
       kind: "text",
@@ -83,7 +86,7 @@ function stepsFor(language: Language): Step[] {
     {
       kind: "attendance",
       title: "Name-o-rama",
-      hint: "The names of the PAX who attended. The Q is counted automatically. Mark downrange PAX with their home region, FNGs with who invited them, and 2.0s.",
+      hint: "The Q and the names of the PAX who attended. The Q is counted automatically. Mark downrange PAX with their home region, FNGs with who invited them, and 2.0s.",
     },
     {
       kind: "text",
@@ -124,15 +127,12 @@ function isFilled(step: Step, backblast: Backblast): boolean {
   switch (step.kind) {
     case "basics":
       return Boolean(
-        backblast.title.trim() &&
-        backblast.date &&
-        backblast.ao.trim() &&
-        backblast.q.trim(),
+        backblast.title.trim() && backblast.date && backblast.ao.trim(),
       );
     case "text":
       return Boolean(backblast[step.name]?.trim());
     case "attendance":
-      return backblast.attendees.length > 0;
+      return backblast.attendees.length > 0 || qNames(backblast).length > 0;
     case "review":
       return false;
   }
@@ -221,7 +221,11 @@ export function BackblastForm({
 
   async function save() {
     if (!isFilled(steps[0], backblast)) {
-      setError("Add a title, date, AO and Q on the Basics page first.");
+      setError("Add a title, date and AO on the Basics page first.");
+      return;
+    }
+    if (qNames(backblast).length === 0) {
+      setError("Choose the Q on the Name-o-rama page first.");
       return;
     }
     setSaving(true);
@@ -422,22 +426,6 @@ export function BackblastForm({
                 className="input text-base"
               />
             </label>
-            <label className="label flex flex-col gap-1.5">
-              Q
-              <input
-                value={backblast.q}
-                list="region-q-names"
-                onChange={(e) => set("q", e.target.value)}
-                className="input text-base"
-              />
-              {roster.value && (
-                <datalist id="region-q-names">
-                  {roster.value.map((name) => (
-                    <option key={name} value={name} />
-                  ))}
-                </datalist>
-              )}
-            </label>
           </div>
         )}
 
@@ -454,11 +442,17 @@ export function BackblastForm({
 
         {step.kind === "attendance" && (
           <>
+            <QPicker
+              // Every row, including blank ones just added.
+              value={backblast.q.split(",").map((name) => name.trim())}
+              onChange={(qs) => set("q", joinQs(qs))}
+              roster={roster.value}
+            />
             {region && (
               <Regulars
                 region={region}
                 ao={backblast.ao}
-                q={backblast.q}
+                qs={qNames(backblast)}
                 attendees={backblast.attendees}
                 onAdd={(names) =>
                   set("attendees", [
