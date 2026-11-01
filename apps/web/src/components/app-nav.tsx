@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "./auth-provider";
 import { CloseIcon, GearIcon, MenuIcon, PlusIcon } from "./icons";
+import { RocketArt } from "./rocket-art";
 
 const LINKS = [
   {
@@ -60,7 +61,7 @@ export function AppNav() {
         href="/"
         className="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink"
       >
-        <span aria-hidden>🚀</span>
+        <RocketArt className="h-9 w-[19px]" />
         Rocket
       </Link>
       <button
