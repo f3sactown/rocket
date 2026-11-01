@@ -391,7 +391,7 @@ export function BackblastForm({
                     <optgroup key={group.day} label={group.day}>
                       {group.sites.map((site) => (
                         <option key={site.name} value={site.name}>
-                          {[site.name, site.time].filter(Boolean).join(" · ")}
+                          {site.name}
                         </option>
                       ))}
                     </optgroup>
