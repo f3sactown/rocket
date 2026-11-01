@@ -99,6 +99,7 @@ describe("formatBackblast", () => {
     date: "2026-10-14",
     ao: "Talko Tuesday",
     address: "Oki Park - 2715 Wissemann Dr, Sacramento, CA 95826",
+    time: "5:15am-6:00am",
     q: "Casper",
     attendees: [
       ...["Samantha", "Trench", "Tupperware", "Scooper", "Righty"].map(
@@ -132,7 +133,7 @@ describe("formatBackblast", () => {
   it("writes Event Data in the region's format", () => {
     expect(parts[0].trim()).toBe(
       [
-        "Talko Tuesday - Wed, Oct 14, 2026",
+        "Talko Tuesday - Wed, Oct 14, 2026 - 5:15am-6:00am",
         "Oki Park",
         "",
         "Total Attendees: 8",

@@ -55,7 +55,7 @@ function stepsFor(language: Language): Step[] {
     {
       kind: "basics",
       title: "Basics",
-      hint: "The title, date, AO and Q for this beatdown.",
+      hint: "The title, date, AO, time and Q for this beatdown.",
     },
     {
       kind: "text",
@@ -238,12 +238,13 @@ export function BackblastForm({
     setBackblast((current) => ({ ...current, [key]: value }));
   };
 
-  /** Sets the AO and, for an AO from the region's sheet, adds its location. */
+  /** Sets the AO and, for an AO from the region's sheet, adds its location and time. */
   function chooseAo(ao: string) {
     set("ao", ao);
     // The AO's location (usually a park) goes in the backblast with it.
     const site = sites.value?.find((s) => s.name === ao);
     set("address", site?.address ?? "");
+    if (site?.time) set("time", site.time);
   }
 
   return (
@@ -411,6 +412,15 @@ export function BackblastForm({
                   AO list unavailable: {sites.error}
                 </span>
               )}
+            </label>
+            <label className="label flex flex-col gap-1.5">
+              Time
+              <input
+                value={backblast.time ?? ""}
+                onChange={(e) => set("time", e.target.value)}
+                placeholder="5:15am-6:00am"
+                className="input text-base"
+              />
             </label>
             <label className="label flex flex-col gap-1.5">
               Q
