@@ -60,7 +60,7 @@ export function LaunchSplash() {
         <span className="text-2xl font-extrabold tracking-[0.12em] text-white">
           ROCKET
         </span>
-        <span className="text-[11px] font-semibold tracking-[0.45em] text-[#8cc8f0]">
+        <span className="text-[11px] font-semibold tracking-[0.45em] text-[var(--rocket-light)]">
           Q PLANNER
         </span>
       </div>

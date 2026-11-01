@@ -6,13 +6,53 @@ export type Accent = "f3" | "fia" | "blue" | "green" | "orange";
 
 export const ACCENT_STORAGE_KEY = "rocket-accent";
 
-/** Accent colors, in the order they're offered. Swatches are the dark-theme shades. */
-export const ACCENTS: { value: Accent; label: string; swatch: string }[] = [
-  { value: "f3", label: "F3", swatch: "#ef6b62" },
-  { value: "fia", label: "FiA", swatch: "#2dd4bf" },
-  { value: "blue", label: "Blue", swatch: "#60a5fa" },
-  { value: "green", label: "Green", swatch: "#4ade80" },
-  { value: "orange", label: "Orange", swatch: "#fb923c" },
+/** The rocket's trim in an accent: nose and fin edges, fins and porthole ring, stripe. */
+export interface RocketColors {
+  light: string;
+  mid: string;
+  dark: string;
+}
+
+/**
+ * Accent colors, in the order they're offered. Swatches are the dark-theme shades; `rocket` is
+ * the matching trim for the rocket artwork (mirrored as --rocket-* in globals.css).
+ */
+export const ACCENTS: {
+  value: Accent;
+  label: string;
+  swatch: string;
+  rocket: RocketColors;
+}[] = [
+  {
+    value: "f3",
+    label: "F3",
+    swatch: "#ef6b62",
+    rocket: { light: "#f6a29b", mid: "#b04a43", dark: "#7a2f2a" },
+  },
+  {
+    value: "fia",
+    label: "FiA",
+    swatch: "#2dd4bf",
+    rocket: { light: "#7ee8da", mid: "#1f8a7e", dark: "#155e57" },
+  },
+  {
+    value: "blue",
+    label: "Blue",
+    swatch: "#60a5fa",
+    rocket: { light: "#8cc8f0", mid: "#3d6a85", dark: "#2d4a5e" },
+  },
+  {
+    value: "green",
+    label: "Green",
+    swatch: "#4ade80",
+    rocket: { light: "#8fe8ac", mid: "#2f8a4f", dark: "#1f5e36" },
+  },
+  {
+    value: "orange",
+    label: "Orange",
+    swatch: "#fb923c",
+    rocket: { light: "#fcc08a", mid: "#b4642a", dark: "#7a421b" },
+  },
 ];
 
 /**

@@ -31,6 +31,33 @@
     inset 0 1px 0 rgb(255 255 255 / 0.06), 0 10px 24px -10px rgb(0 0 0 / 0.7);
 }
 
+/* Rocket trim per accent (see ACCENTS in lib/theme.ts). F3 red is the default. */
+:root {
+  --rocket-light: #f6a29b;
+  --rocket-mid: #b04a43;
+  --rocket-dark: #7a2f2a;
+}
+:root[data-accent="fia"] {
+  --rocket-light: #7ee8da;
+  --rocket-mid: #1f8a7e;
+  --rocket-dark: #155e57;
+}
+:root[data-accent="blue"] {
+  --rocket-light: #8cc8f0;
+  --rocket-mid: #3d6a85;
+  --rocket-dark: #2d4a5e;
+}
+:root[data-accent="green"] {
+  --rocket-light: #8fe8ac;
+  --rocket-mid: #2f8a4f;
+  --rocket-dark: #1f5e36;
+}
+:root[data-accent="orange"] {
+  --rocket-light: #fcc08a;
+  --rocket-mid: #b4642a;
+  --rocket-dark: #7a421b;
+}
+
 /* Light: the same layering as soft paper and ink, with a deeper red for contrast on white. */
 :root[data-theme="light"] {
   color-scheme: light;
@@ -249,7 +276,11 @@ body::before {
   height: 70vh;
   transform-origin: top;
   transform: scaleY(0);
-  background: linear-gradient(#bfe3ffcc, #5fb2f040 40%, transparent);
+  background: linear-gradient(
+    #ffffffcc,
+    color-mix(in srgb, var(--rocket-light) 40%, transparent) 40%,
+    transparent
+  );
   filter: blur(1.5px);
   animation: splash-trail 1.1s ease-in 0.85s forwards;
 }
