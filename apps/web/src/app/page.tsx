@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
-import { GearIcon, PlusIcon } from "@/components/icons";
+import { PlusIcon } from "@/components/icons";
 import { SignOutButton } from "@/components/sign-out-button";
 import { createClient } from "@/lib/supabase/client";
 
@@ -57,14 +57,7 @@ function Dashboard({ user }: { user: CurrentUser }) {
     <section className="card">
       <header className="flex items-start justify-between gap-4">
         <h1 className="card-title">Backblasts</h1>
-        <Link
-          href="/settings"
-          aria-label="Settings"
-          className="mt-1 flex items-center gap-3 rounded-full py-1 pr-1 pl-2 text-ink-soft transition-colors hover:text-ink"
-        >
-          <span className="status">{user.name}</span>
-          <GearIcon />
-        </Link>
+        <span className="status mt-2 shrink-0">{user.name}</span>
       </header>
 
       {drafts.length > 0 && (
