@@ -133,7 +133,7 @@ describe("formatBackblast", () => {
     expect(parts[0].trim()).toBe(
       [
         "Talko Tuesday - Wed, Oct 14, 2026",
-        "Oki Park - 2715 Wissemann Dr, Sacramento, CA 95826",
+        "Oki Park",
         "",
         "Total Attendees: 8",
         "",
