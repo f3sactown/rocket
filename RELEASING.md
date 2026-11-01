@@ -39,6 +39,14 @@ Breaking changes use `feat!:` or a `BREAKING CHANGE:` footer.
 
 The running app shows its version in the footer, so you can always tell which release you're on.
 
+## Build number
+
+Alongside the version, the footer shows a **build number** and the short commit ID, e.g.
+`Rocket v0.1.0-alpha.1 · build 214 (a1b2c3d)`. The build number is the number of commits in the
+history (`git rev-list --count HEAD`), so it goes up with every commit and never repeats. It's
+computed at build time in `apps/web/next.config.ts`; the Pages workflow checks out the full history
+so the count is right.
+
 ## Changing phase
 
 To move to the next phase, add a `Release-As:` footer to a commit on `main`, for example:
