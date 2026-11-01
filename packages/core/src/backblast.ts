@@ -20,6 +20,8 @@ export interface Backblast {
   ao: string;
   /** Where the AO meets, e.g. "Oki Park". The output leaves out any street address after " - ". */
   address?: string;
+  /** When the workout ran, e.g. "5:15am-6:00am". */
+  time?: string;
   q: string;
   introduction?: string;
   warmup?: string;
@@ -178,7 +180,7 @@ function location(address: string | undefined): string | undefined {
   return address?.split(" - ")[0]?.trim();
 }
 
-/** Event Data: AO and date, location, attendance, the Q, and the PAX grouped by kind. */
+/** Event Data: AO, date and time, location, attendance, the Q, and the PAX grouped by kind. */
 function eventData(backblast: Backblast): string {
   const q = backblast.q.trim();
   const others = attendance(backblast).filter(
@@ -192,7 +194,11 @@ function eventData(backblast: Backblast): string {
     );
   };
   const where = [
-    [backblast.ao.trim(), formatShortDate(backblast.date)]
+    [
+      backblast.ao.trim(),
+      formatShortDate(backblast.date),
+      backblast.time?.trim(),
+    ]
       .filter(Boolean)
       .join(" - "),
     location(backblast.address),
