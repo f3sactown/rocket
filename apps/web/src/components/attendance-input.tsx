@@ -2,6 +2,7 @@
 
 import type { Attendee, AttendeeKind } from "@rocket/core";
 import { useRef } from "react";
+import { useTerms } from "./auth-provider";
 
 const KIND_LABELS: Record<AttendeeKind, string> = {
   pax: "PAX",
@@ -18,6 +19,7 @@ export function AttendanceInput({
   value: Attendee[];
   onChange: (attendees: Attendee[]) => void;
 }) {
+  const terms = useTerms();
   const list = useRef<HTMLUListElement>(null);
 
   function update(index: number, patch: Partial<Attendee>) {
@@ -48,7 +50,7 @@ export function AttendanceInput({
           >
             <input
               aria-label="Name"
-              placeholder="F3 name"
+              placeholder={`${terms.org} name`}
               value={attendee.name}
               onChange={(e) => update(index, { name: e.target.value })}
               onKeyDown={(e) => {

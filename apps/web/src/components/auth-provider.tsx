@@ -1,5 +1,6 @@
 "use client";
 
+import { termsFor, type Language } from "@rocket/core";
 import type { User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -10,6 +11,8 @@ export interface CurrentUser {
   id: string;
   name: string;
   email: string;
+  /** Which vocabulary the app uses for this user (F3 or FiA). */
+  language: Language;
 }
 
 const AuthContext = createContext<{
@@ -27,6 +30,7 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
     id: user.id,
     name: name || user.email || "PAX",
     email: user.email ?? "",
+    language: user.user_metadata?.language === "fia" ? "fia" : "f3",
   };
 }
 
@@ -52,6 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return <AuthContext value={state}>{children}</AuthContext>;
+}
+
+/** The words to show the signed-in user, in their chosen vocabulary (F3 when signed out). */
+export function useTerms() {
+  return termsFor(useContext(AuthContext).user?.language);
 }
 
 export function useAuth() {

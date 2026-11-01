@@ -183,3 +183,29 @@ describe("formatBackblast", () => {
     expect(titles).toEqual(["Event Data", "Workout Details"]);
   });
 });
+
+describe("FiA vocabulary", () => {
+  it("uses Warm-up, The Workout, Community and Fellowship", () => {
+    const fia = formatBackblast(
+      {
+        ...base,
+        warmup: "SSH x20",
+        thang: "11s on the hill",
+        thirdF: "Praises",
+        secondF: "Coffee",
+      },
+      "fia",
+    );
+    expect(fia).toContain("Warm-up:\nSSH x20");
+    expect(fia).toContain("The Workout:\n11s on the hill");
+    expect(fia).toContain("Community:\nPraises");
+    expect(fia).toContain("Fellowship:\nCoffee");
+    expect(fia).not.toMatch(/Warm-o-rama|Thang|Third F|Second F/);
+  });
+
+  it("keeps F3 words by default", () => {
+    const f3 = formatBackblast({ ...base, warmup: "SSH x20", thang: "11s" });
+    expect(f3).toContain("Warm-o-rama:\nSSH x20");
+    expect(f3).toContain("The Thang:\n11s");
+  });
+});

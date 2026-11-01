@@ -1,3 +1,5 @@
+import { termsFor, type Language } from "./terms";
+
 /** How someone attended a beatdown, which changes how their name is shown in the Name-o-rama. */
 export type AttendeeKind = "pax" | "visitor" | "fng" | "2.0";
 
@@ -10,7 +12,7 @@ export interface Attendee {
   invitedBy?: string;
 }
 
-/** A post-workout summary written by the Q for an F3 beatdown. */
+/** A post-workout summary written by the Q for an F3 or FiA beatdown. */
 export interface Backblast {
   title: string;
   /** Workout date in YYYY-MM-DD form. */
@@ -202,7 +204,11 @@ export interface BackblastPart {
  * The backblast's text in its three parts, leaving out blank sections and parts with nothing in
  * them. The review screen shows each part on its own; the copied text joins them.
  */
-export function backblastParts(backblast: Backblast): BackblastPart[] {
+export function backblastParts(
+  backblast: Backblast,
+  language: Language = "f3",
+): BackblastPart[] {
+  const terms = termsFor(language);
   const parts: BackblastPart[] = [
     { title: "Event Data", text: eventData(backblast) },
     {
@@ -210,8 +216,8 @@ export function backblastParts(backblast: Backblast): BackblastPart[] {
       text: blocks(
         backblast.title.trim() && `Title: ${backblast.title.trim()}`,
         labeled("Introduction", backblast.introduction),
-        labeled("Warm-o-rama", backblast.warmup),
-        labeled("The Thang", backblast.thang),
+        labeled(terms.warmup, backblast.warmup),
+        labeled(terms.thang, backblast.thang),
       ),
     },
     {
@@ -219,17 +225,20 @@ export function backblastParts(backblast: Backblast): BackblastPart[] {
       text: blocks(
         labeled("Announcements", backblast.announcements),
         labeled("Words of Wisdom", backblast.wordsOfWisdom),
-        labeled("Third F", backblast.thirdF),
-        labeled("Second F", backblast.secondF),
+        labeled(terms.thirdF, backblast.thirdF),
+        labeled(terms.secondF, backblast.secondF),
       ),
     },
   ];
   return parts.filter((part) => part.text);
 }
 
-/** Render a backblast as plain text, ready to paste into Slack. */
-export function formatBackblast(backblast: Backblast): string {
-  return backblastParts(backblast)
+/** Render a backblast as plain text, ready to paste into Slack, in the given vocabulary. */
+export function formatBackblast(
+  backblast: Backblast,
+  language: Language = "f3",
+): string {
+  return backblastParts(backblast, language)
     .map((part) => part.text)
     .join("\n\n");
 }

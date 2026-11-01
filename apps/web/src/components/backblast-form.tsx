@@ -5,12 +5,15 @@ import {
   attendeeLabel,
   backblastParts,
   formatBackblast,
+  termsFor,
+  type Language,
   paxCount,
   type Backblast,
 } from "@rocket/core";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { parseAttendees } from "@/lib/backblast";
 import { AttendanceInput } from "./attendance-input";
+import { useAuth } from "./auth-provider";
 import { ArrowIcon } from "./icons";
 import { ShareButton } from "./share-button";
 import {
@@ -41,68 +44,76 @@ type Step =
   | { kind: "attendance"; title: string; hint: string }
   | { kind: "review"; title: string; hint: string };
 
-const STEPS: Step[] = [
-  {
-    kind: "basics",
-    title: "Basics",
-    hint: "The title, date, AO, address and Q for this beatdown.",
-  },
-  {
-    kind: "text",
-    name: "introduction",
-    title: "Introduction",
-    hint: "The preamble to include the mission statement, core principles, disclaimer, and credo",
-    builtIns: [{ name: "F3 standard", body: DEFAULT_INTRODUCTION }],
-  },
-  {
-    kind: "text",
-    name: "warmup",
-    title: "Warm-o-rama",
-    hint: "Stretches and warm-up to target muscle groups the PAX will be using during the workout",
-  },
-  {
-    kind: "text",
-    name: "thang",
-    title: "The Thang",
-    hint: "The actual workout",
-  },
-  {
-    kind: "attendance",
-    title: "Name-o-rama",
-    hint: "The names of the PAX who attended. The Q is counted automatically. Mark downrange PAX with their home region, FNGs with who invited them, and 2.0s.",
-  },
-  {
-    kind: "text",
-    name: "announcements",
-    title: "Announcements",
-    hint: "The site Q will have the normal announcements, this is a place for any other announcements that need to be said",
-  },
-  {
-    kind: "text",
-    name: "wordsOfWisdom",
-    title: "Words of Wisdom",
-    hint: "The wisdom you'd like to bestow onto the PAX this day",
-  },
-  {
-    kind: "text",
-    name: "thirdF",
-    title: "Third F",
-    hint: "Prayer requests, special intentions, or praises",
-  },
-  {
-    kind: "text",
-    name: "secondF",
-    title: "Second F",
-    hint: "Usually coffee",
-  },
-  {
-    kind: "review",
-    title: "Review",
-    hint: "What gets copied, split into its three parts here for checking (the copied text has no headings). Tap a section to change it.",
-  },
-];
+/** The pages of the form, worded for the user's vocabulary. */
+function stepsFor(language: Language): Step[] {
+  const terms = termsFor(language);
+  return [
+    {
+      kind: "basics",
+      title: "Basics",
+      hint: "The title, date, AO, address and Q for this beatdown.",
+    },
+    {
+      kind: "text",
+      name: "introduction",
+      title: "Introduction",
+      hint: "The preamble to include the mission statement, core principles, disclaimer, and credo",
+      // The built-in text is F3's mission, principles and credo, so it's offered in F3 only.
+      builtIns:
+        language === "f3"
+          ? [{ name: "F3 standard", body: DEFAULT_INTRODUCTION }]
+          : undefined,
+    },
+    {
+      kind: "text",
+      name: "warmup",
+      title: terms.warmup,
+      hint: "Stretches and warm-up to target muscle groups the PAX will be using during the workout",
+    },
+    {
+      kind: "text",
+      name: "thang",
+      title: terms.thang,
+      hint: "The actual workout",
+    },
+    {
+      kind: "attendance",
+      title: "Name-o-rama",
+      hint: "The names of the PAX who attended. The Q is counted automatically. Mark downrange PAX with their home region, FNGs with who invited them, and 2.0s.",
+    },
+    {
+      kind: "text",
+      name: "announcements",
+      title: "Announcements",
+      hint: "The site Q will have the normal announcements, this is a place for any other announcements that need to be said",
+    },
+    {
+      kind: "text",
+      name: "wordsOfWisdom",
+      title: "Words of Wisdom",
+      hint: "The wisdom you'd like to bestow onto the PAX this day",
+    },
+    {
+      kind: "text",
+      name: "thirdF",
+      title: terms.thirdF,
+      hint: "Prayer requests, special intentions, or praises",
+    },
+    {
+      kind: "text",
+      name: "secondF",
+      title: terms.secondF,
+      hint: "Usually coffee",
+    },
+    {
+      kind: "review",
+      title: "Review",
+      hint: "What gets copied, split into its three parts here for checking (the copied text has no headings). Tap a section to change it.",
+    },
+  ];
+}
 
-const LAST_STEP = STEPS.length - 1;
+const LAST_STEP = stepsFor("f3").length - 1;
 
 /** Whether a page has anything filled in, for the progress bar and review list. */
 function isFilled(step: Step, backblast: Backblast): boolean {
@@ -164,7 +175,9 @@ export function BackblastForm({
   const edited = useRef(false);
   const page = useRef<HTMLDivElement>(null);
   const navigated = useRef(false);
-  const step = STEPS[stepIndex];
+  const language = useAuth().user?.language ?? "f3";
+  const steps = useMemo(() => stepsFor(language), [language]);
+  const step = steps[stepIndex];
 
   // Report edits (not the initial render) so the draft can be saved.
   useEffect(() => {
@@ -187,7 +200,7 @@ export function BackblastForm({
   }
 
   async function save() {
-    if (!isFilled(STEPS[0], backblast)) {
+    if (!isFilled(steps[0], backblast)) {
       setError("Add a title, date, AO and Q on the Basics page first.");
       return;
     }
@@ -224,7 +237,7 @@ export function BackblastForm({
 
       <nav aria-label="Backblast sections" className="flex flex-col gap-2">
         <div className="flex gap-1">
-          {STEPS.map((s, index) => (
+          {steps.map((s, index) => (
             <button
               key={s.title}
               type="button"
@@ -246,7 +259,7 @@ export function BackblastForm({
           ))}
         </div>
         <p className="font-mono text-xs text-muted">
-          Step {stepIndex + 1} of {STEPS.length}
+          Step {stepIndex + 1} of {steps.length}
         </p>
       </nav>
 
@@ -362,7 +375,7 @@ export function BackblastForm({
         {step.kind === "review" && (
           <>
             <ul className="flex flex-wrap gap-2">
-              {STEPS.slice(0, LAST_STEP).map((s, index) => {
+              {steps.slice(0, LAST_STEP).map((s, index) => {
                 const filled = isFilled(s, backblast);
                 return (
                   <li key={s.title}>
@@ -382,12 +395,12 @@ export function BackblastForm({
                 );
               })}
             </ul>
-            {backblastParts(backblast).map((part) => (
+            {backblastParts(backblast, language).map((part) => (
               <section
                 key={part.title}
                 className="overflow-hidden rounded-xl border border-line"
               >
-                <h3 className="border-b border-line bg-hover px-4 py-2 text-xs font-semibold tracking-wider text-ink-soft uppercase">
+                <h3 className="border-b border-line bg-hover px-4 py-2 text-xs font-semibold tracking-wider text-accent uppercase">
                   {part.title}
                 </h3>
                 <pre className="overflow-x-auto p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
@@ -397,7 +410,7 @@ export function BackblastForm({
             ))}
             <ShareButton
               title={backblast.title}
-              text={formatBackblast(backblast)}
+              text={formatBackblast(backblast, language)}
               className="btn w-full px-4 text-base"
             />
           </>

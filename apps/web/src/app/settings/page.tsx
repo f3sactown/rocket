@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { SignedIn, type CurrentUser } from "@/components/auth-provider";
+import { LANGUAGES, termsFor, type Language } from "@rocket/core";
+import {
+  SignedIn,
+  useTerms,
+  type CurrentUser,
+} from "@/components/auth-provider";
 import { AccentPicker, ThemeSwitcher } from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/client";
 
@@ -78,6 +83,7 @@ function Section({
 }
 
 function Settings({ user }: { user: CurrentUser }) {
+  const terms = useTerms();
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [password, setPassword] = useState("");
@@ -85,7 +91,8 @@ function Settings({ user }: { user: CurrentUser }) {
 
   async function saveName(): Promise<Result> {
     const trimmed = name.trim();
-    if (!trimmed) return { text: "Your F3 name can't be empty.", error: true };
+    if (!trimmed)
+      return { text: `Your ${terms.org} name can't be empty.`, error: true };
     const supabase = createClient();
     // The profile name is what others see on your backblasts; the account copy is shown to you.
     const { error } = await supabase
@@ -138,11 +145,11 @@ function Settings({ user }: { user: CurrentUser }) {
 
       <Section
         title="Profile"
-        description="Your F3 name is shown on the backblasts you write."
+        description={`Your ${terms.org} name is shown on the backblasts you write.`}
         save={saveName}
       >
         <label className="label flex flex-col gap-1.5">
-          F3 name
+          {terms.org} name
           <input
             required
             value={name}
@@ -202,6 +209,13 @@ function Settings({ user }: { user: CurrentUser }) {
         </label>
       </Section>
 
+      <Section
+        title="Language"
+        description="Which words the app uses, e.g. Warm-o-rama or Warm-up. Saved to your account."
+      >
+        <LanguagePicker language={user.language} />
+      </Section>
+
       <Section title="Appearance" description="Saved on this device.">
         <div className="flex flex-col gap-2">
           <span className="label">Theme</span>
@@ -215,7 +229,7 @@ function Settings({ user }: { user: CurrentUser }) {
 
       <Section
         title="Account"
-        description="Your account ID is permanent and unique. Everything you write is tied to it, so people who share an F3 name never affect each other's data."
+        description={`Your account ID is permanent and unique. Everything you write is tied to it, so people who share an ${terms.org} name never affect each other's data.`}
       >
         <div className="flex flex-col gap-1.5">
           <span className="label">Account ID</span>
@@ -232,5 +246,59 @@ function Settings({ user }: { user: CurrentUser }) {
         </button>
       </Section>
     </section>
+  );
+}
+
+/** F3 / FiA choice, saved to the account so it follows the user to every device. */
+function LanguagePicker({ language }: { language: Language }) {
+  const [pending, setPending] = useState<Language | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const selected = pending ?? language;
+
+  async function choose(value: Language) {
+    if (value === language) return;
+    setPending(value);
+    setError(null);
+    // The auth provider picks up the change and every screen switches words.
+    const { error } = await createClient().auth.updateUser({
+      data: { language: value },
+    });
+    if (error) setError(error.message);
+    setPending(null);
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        role="radiogroup"
+        aria-label="Language"
+        className="inline-flex gap-1 self-start rounded-full border border-line bg-panel p-1"
+      >
+        {LANGUAGES.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={selected === option.value}
+            disabled={pending !== null}
+            onClick={() => choose(option.value)}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              selected === option.value
+                ? "bg-surface-raised text-ink shadow-sm"
+                : "text-muted hover:text-ink"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-muted">
+        {(() => {
+          const t = termsFor(selected);
+          return `${t.warmup} · ${t.thang} · ${t.thirdF} · ${t.secondF}`;
+        })()}
+      </p>
+      {error && <p className="text-sm text-accent">{error}</p>}
+    </div>
   );
 }
