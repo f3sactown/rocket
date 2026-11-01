@@ -244,7 +244,7 @@ export function BackblastForm({
               aria-label={`Go to ${s.title}`}
               aria-current={index === stepIndex ? "step" : undefined}
               onClick={() => goTo(index)}
-              className="group flex-1 py-2"
+              className="group relative flex-1 py-2"
             >
               <span
                 className={`block h-1.5 rounded-full transition-colors ${
@@ -255,11 +255,25 @@ export function BackblastForm({
                       : "bg-line-strong group-hover:bg-muted"
                 }`}
               />
+              {/* Step name on hover or keyboard focus; kept inside the card at the ends. */}
+              <span
+                aria-hidden
+                className={`pointer-events-none absolute bottom-full z-10 mb-1 rounded-lg border border-line-strong bg-surface-raised px-2 py-1 text-xs font-medium whitespace-nowrap text-ink opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 ${
+                  index === 0
+                    ? "left-0"
+                    : index === steps.length - 1
+                      ? "right-0"
+                      : "left-1/2 -translate-x-1/2"
+                }`}
+              >
+                {s.title}
+              </span>
             </button>
           ))}
         </div>
         <p className="font-mono text-xs text-muted">
           Step {stepIndex + 1} of {steps.length}
+          <span className="text-ink-soft"> · {step.title}</span>
         </p>
       </nav>
 
