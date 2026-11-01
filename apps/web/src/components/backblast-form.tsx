@@ -12,7 +12,10 @@ import {
 } from "@rocket/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { parseAttendees } from "@/lib/backblast";
+import { loadRoster, loadSites } from "@/lib/regions";
+import { useLoad, useUserRegion } from "@/lib/use-region";
 import { AttendanceInput } from "./attendance-input";
+import { Regulars } from "./regulars";
 import { useAuth } from "./auth-provider";
 import { ArrowIcon } from "./icons";
 import { ShareButton } from "./share-button";
@@ -176,6 +179,13 @@ export function BackblastForm({
   const page = useRef<HTMLDivElement>(null);
   const navigated = useRef(false);
   const language = useAuth().user?.language ?? "f3";
+  // The user's region's sheet supplies AO suggestions (with addresses) and PAX names.
+  const region = useUserRegion();
+  const sites = useLoad(region ? () => loadSites(region) : null, [region?.id]);
+  const roster = useLoad(region ? () => loadRoster(region) : null, [
+    region?.id,
+  ]);
+  const autoAddress = useRef<string | null>(null);
   const steps = useMemo(() => stepsFor(language), [language]);
   const step = steps[stepIndex];
 
@@ -217,6 +227,20 @@ export function BackblastForm({
     edited.current = true;
     setBackblast((current) => ({ ...current, [key]: value }));
   };
+
+  /** Sets the AO and, for an AO from the region's sheet, fills in its address. */
+  function chooseAo(ao: string) {
+    set("ao", ao);
+    const site = sites.value?.find(
+      (s) => s.name.toLowerCase() === ao.trim().toLowerCase(),
+    );
+    // Don't overwrite an address the user typed themselves.
+    const address = backblast.address ?? "";
+    if (site?.address && (!address || address === autoAddress.current)) {
+      autoAddress.current = site.address;
+      set("address", site.address);
+    }
+  }
 
   return (
     <form
@@ -344,9 +368,24 @@ export function BackblastForm({
               AO
               <input
                 value={backblast.ao}
-                onChange={(e) => set("ao", e.target.value)}
+                list="region-aos"
+                onChange={(e) => chooseAo(e.target.value)}
                 className="input text-base"
               />
+              {sites.value && (
+                <datalist id="region-aos">
+                  {sites.value.map((site) => (
+                    <option key={site.name} value={site.name}>
+                      {[site.day, site.time].filter(Boolean).join(" · ")}
+                    </option>
+                  ))}
+                </datalist>
+              )}
+              {sites.error && (
+                <span className="text-xs font-normal text-accent">
+                  AO list unavailable: {sites.error}
+                </span>
+              )}
             </label>
             <label className="label flex flex-col gap-1.5">
               Address
@@ -361,9 +400,17 @@ export function BackblastForm({
               Q
               <input
                 value={backblast.q}
+                list="region-q-names"
                 onChange={(e) => set("q", e.target.value)}
                 className="input text-base"
               />
+              {roster.value && (
+                <datalist id="region-q-names">
+                  {roster.value.map((name) => (
+                    <option key={name} value={name} />
+                  ))}
+                </datalist>
+              )}
             </label>
           </div>
         )}
@@ -380,10 +427,28 @@ export function BackblastForm({
         )}
 
         {step.kind === "attendance" && (
-          <AttendanceInput
-            value={backblast.attendees}
-            onChange={(a) => set("attendees", a)}
-          />
+          <>
+            {region && (
+              <Regulars
+                region={region}
+                ao={backblast.ao}
+                q={backblast.q}
+                attendees={backblast.attendees}
+                onAdd={(names) =>
+                  set("attendees", [
+                    // Fill an empty row first, then add the rest.
+                    ...backblast.attendees.filter((a) => a.name.trim()),
+                    ...names.map((name) => ({ name, kind: "pax" as const })),
+                  ])
+                }
+              />
+            )}
+            <AttendanceInput
+              value={backblast.attendees}
+              onChange={(a) => set("attendees", a)}
+              suggestions={roster.value}
+            />
+          </>
         )}
 
         {step.kind === "review" && (

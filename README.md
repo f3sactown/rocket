@@ -95,6 +95,19 @@ The URL and publishable key are designed to be public; row-level security protec
 Never commit or expose the **secret / service-role key** — it bypasses row-level security.
 `.env` files are git-ignored.
 
+## Regions and Google Sheets
+
+Each user picks a **region** (at sign-up or in Settings). A region points at a Google Sheet, and
+Rocket reads it from the browser to suggest AOs (and fill in their address), suggest PAX names, show
+the regulars at an AO over the last 3 months, and show a user's total posts and Qs.
+
+- The sheet must be shared so **anyone with the link can view** it.
+- Each region records which tabs and column headers hold its AOs, roster and attendance; F3 SacTown
+  is set up by `supabase/migrations/20261101000000_regions.sql`. Others can be added in Settings,
+  with a **Check sheet** button that confirms every column exists.
+- Reading uses Google's Visualization API (`apps/web/src/lib/sheets.ts`), so only the rows a
+  query needs are downloaded.
+
 ## Versions and releases
 
 Rocket is in **alpha** (`0.1.0-alpha.N`). Versions and the [changelog](CHANGELOG.md) are managed

@@ -11,9 +11,24 @@ export type Database = {
   public: {
     Tables: {
       profiles: {
-        Row: { id: string; name: string; created_at: string };
-        Insert: { id: string; name: string; created_at?: string };
-        Update: { id?: string; name?: string; created_at?: string };
+        Row: {
+          id: string;
+          name: string;
+          region_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          region_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          region_id?: string | null;
+          created_at?: string;
+        };
         Relationships: [];
       };
       backblasts: {
@@ -101,6 +116,26 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      regions: {
+        Row: {
+          id: string;
+          name: string;
+          sheet_id: string;
+          config: Json;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          sheet_id: string;
+          config: Json;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["regions"]["Insert"]>;
+        Relationships: [];
       };
     };
     Views: { [_ in never]: never };

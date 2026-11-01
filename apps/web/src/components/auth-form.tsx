@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { loadRegions, type Region } from "@/lib/regions";
 import { createClient } from "@/lib/supabase/client";
+import { useLoad } from "@/lib/use-region";
 import { ArrowIcon } from "./icons";
 
 export function AuthForm() {
@@ -11,6 +13,9 @@ export function AuthForm() {
     error: boolean;
   } | null>(null);
   const [pending, setPending] = useState(false);
+  const regions = useLoad(mode === "sign-up" ? () => loadRegions() : null, [
+    mode,
+  ]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -26,7 +31,10 @@ export function AuthForm() {
         email,
         password,
         options: {
-          data: { name: String(form.get("name")).trim() },
+          data: {
+            name: String(form.get("name")).trim(),
+            region_id: String(form.get("region") ?? "") || null,
+          },
           emailRedirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH}/`,
         },
       });
@@ -58,10 +66,13 @@ export function AuthForm() {
 
       <div className="panel flex flex-col gap-4">
         {mode === "sign-up" && (
-          <label className="label flex flex-col gap-1.5">
-            F3 name
-            <input name="name" required className="input" />
-          </label>
+          <>
+            <label className="label flex flex-col gap-1.5">
+              F3 name
+              <input name="name" required className="input" />
+            </label>
+            <RegionSelect regions={regions.value} />
+          </>
         )}
         <label className="label flex flex-col gap-1.5">
           Email
@@ -109,5 +120,27 @@ export function AuthForm() {
           : "Have an account? Sign in"}
       </button>
     </form>
+  );
+}
+
+/** Region choice at sign-up; regions that aren't listed can be added in Settings afterwards. */
+function RegionSelect({ regions }: { regions?: Region[] }) {
+  return (
+    <label className="label flex flex-col gap-1.5">
+      Region
+      <select name="region" defaultValue="" className="input">
+        <option value="">
+          {regions ? "Not listed / choose later" : "Loading regions…"}
+        </option>
+        {regions?.map((region) => (
+          <option key={region.id} value={region.id}>
+            {region.name}
+          </option>
+        ))}
+      </select>
+      <span className="text-xs font-normal text-muted">
+        Region not listed? You can add it in Settings after signing up.
+      </span>
+    </label>
   );
 }

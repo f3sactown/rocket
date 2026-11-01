@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { PlusIcon } from "@/components/icons";
 import { SignOutButton } from "@/components/sign-out-button";
+import { loadPaxStats } from "@/lib/regions";
 import { createClient } from "@/lib/supabase/client";
+import { useLoad, useUserRegion } from "@/lib/use-region";
 
 interface ListItem {
   id: string;
@@ -59,6 +61,7 @@ function Dashboard({ user }: { user: CurrentUser }) {
         <h1 className="card-title">Backblasts</h1>
         <span className="status mt-2 shrink-0">{user.name}</span>
       </header>
+      <PaxTotals user={user} />
 
       {drafts.length > 0 && (
         <div className="panel flex flex-col gap-1 p-2">
@@ -130,5 +133,28 @@ function Dashboard({ user }: { user: CurrentUser }) {
         <SignOutButton />
       </div>
     </section>
+  );
+}
+
+/** The user's total posts and Qs from their region's sheet, or a nudge to choose a region. */
+function PaxTotals({ user }: { user: CurrentUser }) {
+  const region = useUserRegion();
+  const stats = useLoad(region ? () => loadPaxStats(region, user.name) : null, [
+    region?.id,
+    user.name,
+  ]);
+  if (region === null)
+    return (
+      <Link href="/settings" className="link -mt-3">
+        Choose your region in Settings to see your posts and Qs →
+      </Link>
+    );
+  if (!stats.value) return null;
+  return (
+    <p className="-mt-3 text-sm text-ink-soft">
+      <span className="font-mono text-ink">{stats.value.posts}</span> posts ·{" "}
+      <span className="font-mono text-ink">{stats.value.qs}</span> Qs
+      <span className="text-muted"> in {region?.name}</span>
+    </p>
   );
 }
