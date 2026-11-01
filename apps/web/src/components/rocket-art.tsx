@@ -1,8 +1,8 @@
 import { useId } from "react";
 
 /**
- * The Rocket mascot: a silver rocket with a light-blue nose and fins, a porthole and a center
- * stripe. Drawn in a 100×190 box with the nozzle at the bottom; the flame hangs below it when shown.
+ * The Rocket mascot: a silver rocket with a porthole, a center stripe, and a nose cone and fins
+ * in the accent color (the --rocket-* variables). Drawn in a 100×190 box with the nozzle at the bottom; the flame hangs below it when shown.
  */
 export function RocketArt({
   label,
@@ -38,8 +38,11 @@ export function RocketArt({
         </linearGradient>
         <linearGradient id={fire} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#ffffff" />
-          <stop offset="0.35" stopColor="#bfe3ff" />
-          <stop offset="1" stopColor="#5fb2f0" stopOpacity="0" />
+          <stop offset="0.35" style={{ stopColor: "var(--rocket-light)" }} />
+          <stop
+            offset="1"
+            style={{ stopColor: "var(--rocket-mid)", stopOpacity: 0 }}
+          />
         </linearGradient>
       </defs>
 
@@ -52,15 +55,13 @@ export function RocketArt({
       {/* Fins */}
       <path
         d="M31 112 L12 140 L12 152 L31 140 Z"
-        fill="#3d6a85"
-        stroke="#8cc8f0"
+        style={{ fill: "var(--rocket-mid)", stroke: "var(--rocket-light)" }}
         strokeWidth="2.5"
         strokeLinejoin="round"
       />
       <path
         d="M69 112 L88 140 L88 152 L69 140 Z"
-        fill="#3d6a85"
-        stroke="#8cc8f0"
+        style={{ fill: "var(--rocket-mid)", stroke: "var(--rocket-light)" }}
         strokeWidth="2.5"
         strokeLinejoin="round"
       />
@@ -79,7 +80,7 @@ export function RocketArt({
       {/* Nose cone */}
       <path
         d="M50 6 C38 18 31 36 31 53 L69 53 C69 36 62 18 50 6 Z"
-        fill="#8cc8f0"
+        style={{ fill: "var(--rocket-light)" }}
       />
 
       {/* Porthole */}
@@ -88,10 +89,16 @@ export function RocketArt({
         cy="74"
         r="11"
         fill="#0d1d28"
-        stroke="#3d6a85"
+        style={{ stroke: "var(--rocket-mid)" }}
         strokeWidth="5"
       />
-      <circle cx="46" cy="70" r="3.2" fill="#8cc8f0" opacity="0.9" />
+      <circle
+        cx="46"
+        cy="70"
+        r="3.2"
+        opacity="0.9"
+        style={{ fill: "var(--rocket-light)" }}
+      />
 
       {label && (
         <text
@@ -108,7 +115,14 @@ export function RocketArt({
       )}
 
       {/* Center stripe */}
-      <rect x="47" y="114" width="6" height="28" rx="1" fill="#2d4a5e" />
+      <rect
+        x="47"
+        y="114"
+        width="6"
+        height="28"
+        rx="1"
+        style={{ fill: "var(--rocket-dark)" }}
+      />
     </svg>
   );
 }
