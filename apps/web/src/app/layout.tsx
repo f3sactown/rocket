@@ -54,6 +54,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <ThemeSwitcher />
           <span className="font-mono text-xs text-muted">
             Rocket v{process.env.NEXT_PUBLIC_APP_VERSION}
+            {process.env.NEXT_PUBLIC_BUILD_NUMBER &&
+              ` · build ${process.env.NEXT_PUBLIC_BUILD_NUMBER} (${process.env.NEXT_PUBLIC_COMMIT})`}
           </span>
         </footer>
       </body>
