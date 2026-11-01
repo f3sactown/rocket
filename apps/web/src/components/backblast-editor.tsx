@@ -37,21 +37,33 @@ function withDefaults(
 /** How long to wait after the last edit before saving the draft. */
 const AUTOSAVE_DELAY_MS = 800;
 
-type SaveState = "new" | "saving" | "saved" | "error" | "published" | "unsaved";
+type SaveState = "new" | "saving" | "saved" | "error" | "incomplete";
 
-const STATUS_LABELS: Record<SaveState, string> = {
-  new: "Draft",
-  saving: "Saving…",
-  saved: "Draft saved",
-  error: "Not saved",
-  published: "Published",
-  unsaved: "Unsaved changes",
-};
+function statusLabel(state: SaveState, published: boolean): string {
+  switch (state) {
+    case "new":
+      return published ? "Published" : "Draft";
+    case "saving":
+      return "Saving…";
+    case "saved":
+      return published ? "Saved" : "Draft saved";
+    case "error":
+      return "Not saved";
+    case "incomplete":
+      return "Not saved: add a title, date, AO and Q";
+  }
+}
+
+/** A published backblast keeps its title, date, AO and Q, so edits missing one wait to save. */
+function hasBasics(backblast: Backblast): boolean {
+  return [backblast.title, backblast.date, backblast.ao, backblast.q].every(
+    (value) => value?.trim(),
+  );
+}
 
 /**
- * Edits a backblast. Drafts save to Supabase as you type (a new one is created on the first edit)
- * and "Save backblast" publishes them. A published backblast only changes when you save, so
- * readers never see half-finished edits.
+ * Edits a backblast. Changes save to Supabase as you type: a new draft is created on the first
+ * edit, and "Publish backblast" shares it. Edits to a published backblast save the same way.
  */
 export function BackblastEditor({
   user,
@@ -72,8 +84,9 @@ export function BackblastEditor({
     start: Backblast;
   } | null>(null);
   const [saveState, setSaveState] = useState<SaveState>(
-    published ? "published" : draftId ? "saved" : "new",
+    draftId && !published ? "saved" : "new",
   );
+  const status = published ? "published" : "draft";
   const id = useRef(draftId ?? null);
   const latest = useRef(initial);
   // The starting content; later renders may pass a new object, but the form keeps its own state.
@@ -131,23 +144,24 @@ export function BackblastEditor({
     [user.id],
   );
 
-  const saveDraft = useCallback(() => {
+  const saveNow = useCallback(() => {
     timer.current = null;
-    persist("draft").then(
+    if (status === "published" && !hasBasics(latest.current))
+      return setSaveState("incomplete");
+    persist(status).then(
       () => setSaveState((state) => (timer.current ? state : "saved")),
       () => setSaveState("error"),
     );
-  }, [persist]);
+  }, [persist, status]);
 
   const onChange = useCallback(
     (backblast: Backblast) => {
       latest.current = backblast;
-      if (published) return setSaveState("unsaved");
       setSaveState("saving");
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(saveDraft, AUTOSAVE_DELAY_MS);
+      timer.current = setTimeout(saveNow, AUTOSAVE_DELAY_MS);
     },
-    [saveDraft, published],
+    [saveNow],
   );
 
   // Don't lose the last edits when leaving the page before the autosave fires.
@@ -155,10 +169,10 @@ export function BackblastEditor({
     () => () => {
       if (timer.current) {
         clearTimeout(timer.current);
-        persist("draft");
+        if (status === "draft" || hasBasics(latest.current)) persist(status);
       }
     },
-    [persist],
+    [persist, status],
   );
 
   async function discard() {
@@ -177,8 +191,8 @@ export function BackblastEditor({
       heading={
         published ? "Edit backblast" : draftId ? "Edit draft" : "New backblast"
       }
-      status={STATUS_LABELS[saveState]}
-      saveLabel={published ? "Save changes" : "Save backblast"}
+      status={statusLabel(saveState, published)}
+      saveLabel={published ? "Done" : "Publish backblast"}
       initial={loaded.start}
       userId={user.id}
       initialTemplates={loaded.templates}

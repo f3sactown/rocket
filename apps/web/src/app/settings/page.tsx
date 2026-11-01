@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { LANGUAGES, termsFor, type Language } from "@rocket/core";
 import {
   SignedIn,
@@ -89,8 +89,22 @@ function Settings({ user }: { user: CurrentUser }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  async function saveName(): Promise<Result> {
-    const trimmed = name.trim();
+  const [nameResult, setNameResult] = useState<Result>(null);
+  const nameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Saves the name shortly after the last keystroke. */
+  function changeName(value: string) {
+    setName(value);
+    setNameResult({ text: "Saving…", error: false });
+    if (nameTimer.current) clearTimeout(nameTimer.current);
+    nameTimer.current = setTimeout(
+      async () => setNameResult(await saveName(value)),
+      800,
+    );
+  }
+
+  async function saveName(value: string): Promise<Result> {
+    const trimmed = value.trim();
     if (!trimmed)
       return { text: `Your ${terms.org} name can't be empty.`, error: true };
     const supabase = createClient();
@@ -145,18 +159,24 @@ function Settings({ user }: { user: CurrentUser }) {
 
       <Section
         title="Profile"
-        description={`Your ${terms.org} name is shown on the backblasts you write.`}
-        save={saveName}
+        description={`Your ${terms.org} name is shown on the backblasts you write. Changes save as you type.`}
       >
         <label className="label flex flex-col gap-1.5">
           {terms.org} name
           <input
             required
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => changeName(e.target.value)}
             className="input"
           />
         </label>
+        {nameResult && (
+          <p
+            className={`-mt-2 text-sm ${nameResult.error ? "text-accent" : "text-muted"}`}
+          >
+            {nameResult.text}
+          </p>
+        )}
       </Section>
 
       <Section
