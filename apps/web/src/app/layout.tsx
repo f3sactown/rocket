@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppNav } from "@/components/app-nav";
 import { AuthProvider } from "@/components/auth-provider";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { themeScript } from "@/lib/theme";
@@ -40,7 +41,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-2 py-6 sm:gap-6 sm:px-4 sm:py-16">
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <AppNav />
+            {children}
+          </AuthProvider>
         </main>
         <footer className="flex flex-col items-center gap-3 px-4 pb-8">
           <ThemeSwitcher />

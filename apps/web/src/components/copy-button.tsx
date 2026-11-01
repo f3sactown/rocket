@@ -7,7 +7,7 @@ export function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button
-      className="btn w-full"
+      className="btn w-full px-4"
       onClick={async () => {
         await navigator.clipboard.writeText(text);
         setCopied(true);
