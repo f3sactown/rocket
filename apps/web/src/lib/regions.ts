@@ -323,3 +323,51 @@ export async function checkRegion(
   ]);
   return `Found ${sites.length} active AOs and ${roster.length} PAX, and the attendance columns.`;
 }
+
+const WEEKDAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+/** The weekday (0 = Monday) named at the start of a sheet value like "Saturday " or "Sat", or 7. */
+function weekdayIndex(day: string): number {
+  const start = day.trim().slice(0, 3).toLowerCase();
+  const index = WEEKDAYS.findIndex(
+    (d) => d.slice(0, 3).toLowerCase() === start,
+  );
+  return index < 0 ? WEEKDAYS.length : index;
+}
+
+/** Minutes after midnight of the first time in a value like "5:15am-6:00am", or a day's worth. */
+function startMinutes(time: string): number {
+  const match = /(\d{1,2})(?::(\d{2}))?\s*([ap])?/i.exec(time);
+  if (!match) return 24 * 60;
+  let hours = Number(match[1]) % 12;
+  if (match[3]?.toLowerCase() === "p" || (!match[3] && Number(match[1]) === 12))
+    hours += 12;
+  return hours * 60 + Number(match[2] ?? 0);
+}
+
+/** AOs grouped by weekday (Monday first), each day by start time then name. */
+export function sitesByDay(sites: Site[]): { day: string; sites: Site[] }[] {
+  const groups = new Map<number, Site[]>();
+  for (const site of sites) {
+    const index = weekdayIndex(site.day ?? "");
+    groups.set(index, [...(groups.get(index) ?? []), site]);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([index, list]) => ({
+      day: WEEKDAYS[index] ?? "Other days",
+      sites: list.sort(
+        (a, b) =>
+          startMinutes(a.time ?? "") - startMinutes(b.time ?? "") ||
+          a.name.localeCompare(b.name),
+      ),
+    }));
+}
