@@ -8,6 +8,7 @@ import {
   useTerms,
   type CurrentUser,
 } from "@/components/auth-provider";
+import { RegionSettings } from "@/components/region-settings";
 import { AccentPicker, ThemeSwitcher } from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/client";
 
@@ -41,10 +42,13 @@ function Section({
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<Result>(null);
 
+  // Sections without a Save button aren't forms, so they can hold forms of their own.
+  const Container = save ? "form" : "section";
+
   return (
-    <form
+    <Container
       className="panel flex flex-col gap-4"
-      onSubmit={async (event) => {
+      onSubmit={async (event: React.FormEvent) => {
         event.preventDefault();
         if (!save) return;
         setPending(true);
@@ -78,7 +82,7 @@ function Section({
           )}
         </div>
       )}
-    </form>
+    </Container>
   );
 }
 
@@ -207,6 +211,13 @@ function Settings({ user }: { user: CurrentUser }) {
             className="input"
           />
         </label>
+      </Section>
+
+      <Section
+        title="Region"
+        description="Your region's Google Sheet supplies AOs, PAX names and attendance when you write a backblast."
+      >
+        <RegionSettings user={user} />
       </Section>
 
       <Section

@@ -15,9 +15,12 @@ const KIND_LABELS: Record<AttendeeKind, string> = {
 export function AttendanceInput({
   value,
   onChange,
+  suggestions,
 }: {
   value: Attendee[];
   onChange: (attendees: Attendee[]) => void;
+  /** Names to suggest as the user types, e.g. the region's roster. */
+  suggestions?: string[];
 }) {
   const terms = useTerms();
   const list = useRef<HTMLUListElement>(null);
@@ -50,6 +53,7 @@ export function AttendanceInput({
           >
             <input
               aria-label="Name"
+              list={suggestions ? "roster-names" : undefined}
               placeholder={`${terms.org} name`}
               value={attendee.name}
               onChange={(e) => update(index, { name: e.target.value })}
@@ -104,6 +108,13 @@ export function AttendanceInput({
           </li>
         ))}
       </ul>
+      {suggestions && (
+        <datalist id="roster-names">
+          {suggestions.map((name) => (
+            <option key={name} value={name} />
+          ))}
+        </datalist>
+      )}{" "}
       <button type="button" onClick={add} className="link self-start py-1">
         <span className="text-accent">＋</span> Add PAX
       </button>

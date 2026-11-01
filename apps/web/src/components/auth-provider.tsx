@@ -13,6 +13,8 @@ export interface CurrentUser {
   email: string;
   /** Which vocabulary the app uses for this user (F3 or FiA). */
   language: Language;
+  /** The user's home region, if they've chosen one. */
+  regionId: string | null;
 }
 
 const AuthContext = createContext<{
@@ -31,6 +33,10 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
     name: name || user.email || "PAX",
     email: user.email ?? "",
     language: user.user_metadata?.language === "fia" ? "fia" : "f3",
+    regionId:
+      typeof user.user_metadata?.region_id === "string"
+        ? user.user_metadata.region_id
+        : null,
   };
 }
 
