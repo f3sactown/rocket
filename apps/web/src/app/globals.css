@@ -18,8 +18,8 @@
   --ink: #ece7df;
   --ink-soft: #b8bcc4;
   --muted: #7c828d;
-  --accent: #ef6b62;
-  --accent-soft: rgb(239 107 98 / 0.14);
+  --accent: #e0544a;
+  --accent-soft: rgb(224 84 74 / 0.14);
   --glow-1: rgb(22 40 60 / 0.55);
   --glow-2: rgb(18 34 52 / 0.5);
   --card-shadow:
@@ -33,9 +33,9 @@
 
 /* Rocket trim per accent (see ACCENTS in lib/theme.ts). F3 red is the default. */
 :root {
-  --rocket-light: #f6a29b;
-  --rocket-mid: #b04a43;
-  --rocket-dark: #7a2f2a;
+  --rocket-light: #ec8a81;
+  --rocket-mid: #9e3a33;
+  --rocket-dark: #6b2621;
 }
 :root[data-accent="fia"] {
   --rocket-light: #7ee8da;
@@ -71,8 +71,8 @@
   --ink: #171b23;
   --ink-soft: #464e5b;
   --muted: #6b7280;
-  --accent: #d6443a;
-  --accent-soft: rgb(214 68 58 / 0.12);
+  --accent: #be3329;
+  --accent-soft: rgb(190 51 41 / 0.12);
   --glow-1: rgb(196 214 238 / 0.6);
   --glow-2: rgb(214 224 240 / 0.6);
   --card-shadow:
