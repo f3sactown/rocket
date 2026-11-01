@@ -11,6 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { CopyButton } from "@/components/copy-button";
+import { ShareButton } from "@/components/share-button";
 import { PencilIcon } from "@/components/icons";
 import { fromRow } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/client";
@@ -108,7 +109,10 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         {text}
       </pre>
 
-      <CopyButton text={text} />
+      <div className="grid grid-cols-2 gap-3">
+        <CopyButton text={text} />
+        <ShareButton title={backblast.title} text={text} />
+      </div>
       {result.authorId === user.id && (
         <Link href={`/backblasts/edit?id=${id}`} className="btn -mt-2 w-full">
           <PencilIcon />

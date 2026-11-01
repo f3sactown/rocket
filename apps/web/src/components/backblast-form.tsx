@@ -4,6 +4,7 @@ import {
   DEFAULT_INTRODUCTION,
   attendeeLabel,
   backblastParts,
+  formatBackblast,
   paxCount,
   type Backblast,
 } from "@rocket/core";
@@ -11,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { parseAttendees } from "@/lib/backblast";
 import { AttendanceInput } from "./attendance-input";
 import { ArrowIcon } from "./icons";
+import { ShareButton } from "./share-button";
 import {
   SectionTemplates,
   type BuiltInTemplate,
@@ -393,6 +395,11 @@ export function BackblastForm({
                 </pre>
               </section>
             ))}
+            <ShareButton
+              title={backblast.title}
+              text={formatBackblast(backblast)}
+              className="btn w-full px-4 text-base"
+            />
           </>
         )}
       </div>
