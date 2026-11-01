@@ -13,20 +13,28 @@ import { sheetIdFromUrl } from "@/lib/sheets";
 import type { Json } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/use-region";
+import { LANGUAGES, type Language } from "@rocket/core";
+import { setAccent } from "./theme-switcher";
 import type { CurrentUser } from "./auth-provider";
 
-/** Saves the user's home region to their profile and account. */
-async function chooseRegion(userId: string, regionId: string | null) {
+/**
+ * Saves the user's home region to their profile and account, and switches their wording (F3 or
+ * FiA) and accent color to the region's. They can change those again afterwards.
+ */
+async function chooseRegion(userId: string, region: Region | null) {
   const supabase = createClient();
   const { error } = await supabase
     .from("profiles")
-    .update({ region_id: regionId })
+    .update({ region_id: region?.id ?? null })
     .eq("id", userId);
   if (error) return error.message;
   // The account copy is what the app reads; updating it refreshes every screen.
   const { error: authError } = await supabase.auth.updateUser({
-    data: { region_id: regionId },
+    data: region
+      ? { region_id: region.id, language: region.language }
+      : { region_id: null },
   });
+  if (!authError && region) setAccent(region.language);
   return authError?.message;
 }
 
@@ -39,10 +47,10 @@ export function RegionSettings({ user }: { user: CurrentUser }) {
   const [error, setError] = useState<string | null>(null);
   const region = regions.value?.find((r) => r.id === user.regionId) ?? null;
 
-  async function choose(regionId: string | null) {
+  async function choose(region: Region | null) {
     setSaving(true);
     setError(null);
-    const message = await chooseRegion(user.id, regionId);
+    const message = await chooseRegion(user.id, region);
     if (message) setError(message);
     setSaving(false);
   }
@@ -56,7 +64,7 @@ export function RegionSettings({ user }: { user: CurrentUser }) {
           disabled={saving || !regions.value}
           onChange={(e) => {
             if (e.target.value === "__add") return setAdding(true);
-            choose(e.target.value || null);
+            choose(regions.value?.find((r) => r.id === e.target.value) ?? null);
           }}
           className="input"
         >
@@ -80,10 +88,10 @@ export function RegionSettings({ user }: { user: CurrentUser }) {
       {adding ? (
         <RegionForm
           onCancel={() => setAdding(false)}
-          onSaved={async (id) => {
+          onSaved={async (region) => {
             setAdding(false);
             setVersion((v) => v + 1);
-            await choose(id);
+            await choose(region);
           }}
         />
       ) : (
@@ -176,9 +184,10 @@ function RegionForm({
   onSaved,
 }: {
   onCancel: () => void;
-  onSaved: (regionId: string) => void;
+  onSaved: (region: Region) => void;
 }) {
   const [name, setName] = useState("");
+  const [language, setLanguage] = useState<Language>("f3");
   const [sheet, setSheet] = useState("");
   const [config, setConfig] = useState<RegionConfig>(DEFAULT_CONFIG);
   const [status, setStatus] = useState<{ text: string; error: boolean } | null>(
@@ -216,9 +225,10 @@ function RegionForm({
       .insert({
         name: name.trim(),
         sheet_id: sheetId,
+        language,
         config: config as unknown as Json,
       })
-      .select("id")
+      .select("id, name, sheet_id, language, config, created_by")
       .single();
     setBusy(false);
     if (error)
@@ -228,7 +238,7 @@ function RegionForm({
           : error.message,
         error: true,
       });
-    onSaved(data.id);
+    onSaved(data as unknown as Region);
   }
 
   return (
@@ -253,6 +263,34 @@ function RegionForm({
           className="input"
         />
       </label>
+      <div className="flex flex-col gap-1.5">
+        <span className="label">Organization</span>
+        <div
+          role="radiogroup"
+          aria-label="Organization"
+          className="inline-flex gap-1 self-start rounded-full border border-line bg-panel p-1"
+        >
+          {LANGUAGES.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={language === option.value}
+              onClick={() => setLanguage(option.value)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                language === option.value
+                  ? "bg-surface-raised text-ink shadow-sm"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-muted">
+          Members who choose this region get its wording and color.
+        </span>
+      </div>
       <label className="label flex flex-col gap-1.5">
         Google Sheet link
         <input

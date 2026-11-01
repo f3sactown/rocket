@@ -5,6 +5,7 @@ import { loadRegions, type Region } from "@/lib/regions";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/use-region";
 import { ArrowIcon } from "./icons";
+import { setAccent } from "./theme-switcher";
 
 export function AuthForm() {
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
@@ -27,13 +28,17 @@ export function AuthForm() {
     setMessage(null);
 
     if (mode === "sign-up") {
+      const region = regions.value?.find((r) => r.id === form.get("region"));
+      if (region) setAccent(region.language);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name: String(form.get("name")).trim(),
-            region_id: String(form.get("region") ?? "") || null,
+            region_id: region?.id ?? null,
+            // A region sets the starting wording (F3 or FiA); it can be changed in Settings.
+            ...(region && { language: region.language }),
           },
           emailRedirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH}/`,
         },

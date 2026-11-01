@@ -1,3 +1,4 @@
+import type { Language } from "@rocket/core";
 import { createClient } from "./supabase/client";
 import { cellText, quote, querySheet, type SheetTable } from "./sheets";
 
@@ -27,6 +28,8 @@ export interface Region {
   id: string;
   name: string;
   sheet_id: string;
+  /** F3 or FiA; choosing the region sets the user's wording and accent to match. */
+  language: Language;
   config: RegionConfig;
   created_by: string | null;
 }
@@ -82,7 +85,7 @@ export function loadRegions(refresh = false): Promise<Region[]> {
     regionsCache = Promise.resolve(
       createClient()
         .from("regions")
-        .select("id, name, sheet_id, config, created_by")
+        .select("id, name, sheet_id, language, config, created_by")
         .order("name"),
     ).then(({ data, error }) => {
       if (error) throw error;
@@ -239,6 +242,7 @@ export async function checkRegion(
     id: `check:${sheetId}:${Date.now()}`,
     name: "",
     sheet_id: sheetId,
+    language: "f3",
     config,
     created_by: null,
   };

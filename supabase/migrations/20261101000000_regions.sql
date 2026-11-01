@@ -5,6 +5,8 @@ create table public.regions (
   id uuid primary key default gen_random_uuid(),
   name text not null unique check (length(trim(name)) > 0),
   sheet_id text not null check (length(trim(sheet_id)) > 0),
+  -- F3 or FiA: picking the region sets the user's wording and accent color to match.
+  language text not null default 'f3' check (language in ('f3', 'fia')),
   -- { sites: { sheet, ao, address, location?, day?, time?, retired? },
   --   roster: { sheet, name },
   --   attendance: { sheet, date, ao, pax, post, q } }  (values are tab and column header names)
@@ -30,9 +32,10 @@ create policy "Users can delete regions they added"
   on public.regions for delete to authenticated
   using ((select auth.uid()) = created_by);
 
-insert into public.regions (name, sheet_id, config, created_by) values (
+insert into public.regions (name, sheet_id, language, config, created_by) values (
   'F3 SacTown',
   '1_R4F0syR4m7eBen4j92PJCFeGrxEvNrbrL7LxFG46So',
+  'f3',
   '{
     "sites": {
       "sheet": "Sites", "ao": "AO Name", "address": "Address", "location": "Location",

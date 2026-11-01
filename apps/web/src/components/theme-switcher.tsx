@@ -168,6 +168,14 @@ export function ThemeSwitcher() {
   );
 }
 
+/** Sets the accent color on this device, e.g. to match a newly chosen region. */
+export function setAccent(accent: Accent) {
+  accentPreference.write(accent);
+  // Apply now too; the accent picker that normally does this may not be on screen.
+  if (accent === "f3") delete document.documentElement.dataset.accent;
+  else document.documentElement.dataset.accent = accent;
+}
+
 /** Accent color swatches, remembered per device. */
 export function AccentPicker() {
   const accent = useSyncExternalStore(

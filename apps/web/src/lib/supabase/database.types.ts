@@ -122,6 +122,7 @@ export type Database = {
           id: string;
           name: string;
           sheet_id: string;
+          language: "f3" | "fia";
           config: Json;
           created_by: string | null;
           created_at: string;
@@ -130,6 +131,7 @@ export type Database = {
           id?: string;
           name: string;
           sheet_id: string;
+          language?: "f3" | "fia";
           config: Json;
           created_by?: string | null;
           created_at?: string;
