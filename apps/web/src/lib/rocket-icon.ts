@@ -33,7 +33,7 @@ export function rocketIconSvg(colors: RocketColors): string {
     <path d="M69 112 L88 140 L88 152 L69 140 Z" fill="${colors.mid}" stroke="${colors.light}" stroke-width="3.5" stroke-linejoin="round"/>
     <path d="M41 143 L59 143 L56 151 L44 151 Z" fill="#5d6770"/>
     <path d="M31 52 L69 52 L69 140 Q69 145 64 145 L36 145 Q31 145 31 140 Z" fill="url(#body)"/>
-    <path d="M50 6 C38 18 31 36 31 53 L69 53 C69 36 62 18 50 6 Z" fill="${colors.light}"/>
+    <path d="M50 6 C38 18 31 36 31 53 L69 53 C69 36 62 18 50 6 Z" fill="${colors.mid}"/>
     <circle cx="50" cy="76" r="12" fill="#0d1d28" stroke="${colors.mid}" stroke-width="6"/>
     <circle cx="46" cy="72" r="3.5" fill="${colors.light}" opacity="0.9"/>
     <rect x="46" y="100" width="8" height="42" rx="1.5" fill="${colors.dark}"/>

@@ -80,7 +80,7 @@ export function RocketArt({
       {/* Nose cone */}
       <path
         d="M50 6 C38 18 31 36 31 53 L69 53 C69 36 62 18 50 6 Z"
-        style={{ fill: "var(--rocket-light)" }}
+        style={{ fill: "var(--rocket-mid)" }}
       />
 
       {/* Porthole */}
