@@ -68,7 +68,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     );
 
   const { backblast } = result;
-  const text = formatBackblast(backblast);
+  const text = formatBackblast(backblast, user.language);
   const count = (kind: string) =>
     backblast.attendees.filter((a) => a.kind === kind).length;
   const stats = [
