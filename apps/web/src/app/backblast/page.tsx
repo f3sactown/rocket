@@ -1,16 +1,12 @@
 "use client";
 
-import {
-  formatBackblast,
-  formatDate,
-  paxCount,
-  type Backblast,
-} from "@rocket/core";
+import { formatBackblast, formatDate, type Backblast } from "@rocket/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { CopyButton } from "@/components/copy-button";
+import { CountPanel } from "@/components/count-panel";
 import { ShareButton } from "@/components/share-button";
 import { PencilIcon } from "@/components/icons";
 import { fromRow } from "@/lib/backblast";
@@ -69,14 +65,6 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
 
   const { backblast } = result;
   const text = formatBackblast(backblast, user.language);
-  const count = (kind: string) =>
-    backblast.attendees.filter((a) => a.kind === kind).length;
-  const stats = [
-    { label: "PAX", value: paxCount(backblast) },
-    { label: "FNGs", value: count("fng") },
-    { label: "Downrange", value: count("visitor") },
-  ];
-
   return (
     <article className="card">
       <header className="flex items-start justify-between gap-4">
@@ -88,17 +76,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         )}
       </header>
 
-      <div className="panel grid grid-cols-3 divide-x divide-line p-0">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="flex flex-col items-center gap-2 py-5"
-          >
-            <span className="font-mono text-2xl text-ink">{stat.value}</span>
-            <span className="text-sm text-ink-soft">{stat.label}</span>
-          </div>
-        ))}
-      </div>
+      <CountPanel backblast={backblast} />
 
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-ink">{backblast.ao}</span>
