@@ -18,7 +18,7 @@ export interface Backblast {
   /** Workout date in YYYY-MM-DD form. */
   date: string;
   ao: string;
-  /** Where the AO meets, e.g. "Oki Park - 2715 Wissemann Dr, Sacramento, CA 95826". */
+  /** Where the AO meets, e.g. "Oki Park". The output leaves out any street address after " - ". */
   address?: string;
   q: string;
   introduction?: string;
@@ -170,7 +170,15 @@ function blocks(...parts: (string | false | undefined)[]): string {
   return parts.filter((part) => part && part.trim()).join("\n\n");
 }
 
-/** Event Data: AO and date, address, attendance, the Q, and the PAX grouped by kind. */
+/**
+ * Where the AO meets, without a street address: "McKinley Park - 601 Alhambra Blvd" becomes
+ * "McKinley Park". Older backblasts stored both.
+ */
+function location(address: string | undefined): string | undefined {
+  return address?.split(" - ")[0]?.trim();
+}
+
+/** Event Data: AO and date, location, attendance, the Q, and the PAX grouped by kind. */
 function eventData(backblast: Backblast): string {
   const q = backblast.q.trim();
   const others = attendance(backblast).filter(
@@ -187,7 +195,7 @@ function eventData(backblast: Backblast): string {
     [backblast.ao.trim(), formatShortDate(backblast.date)]
       .filter(Boolean)
       .join(" - "),
-    backblast.address?.trim(),
+    location(backblast.address),
   ]
     .filter(Boolean)
     .join("\n");

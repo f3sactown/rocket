@@ -183,7 +183,7 @@ export function BackblastForm({
   const page = useRef<HTMLDivElement>(null);
   const navigated = useRef(false);
   const language = useAuth().user?.language ?? "f3";
-  // The user's region's sheet supplies AO suggestions (with addresses) and PAX names.
+  // The user's region's sheet supplies AO suggestions (with locations) and PAX names.
   const region = useUserRegion();
   const sites = useLoad(region ? () => loadSites(region) : null, [region?.id]);
   const roster = useLoad(region ? () => loadRoster(region) : null, [
