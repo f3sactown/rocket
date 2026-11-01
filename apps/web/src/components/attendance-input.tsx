@@ -1,6 +1,10 @@
 "use client";
 
-import type { Attendee, AttendeeKind } from "@rocket/core";
+import {
+  attendeeFromName,
+  type Attendee,
+  type AttendeeKind,
+} from "@rocket/core";
 import { useRef } from "react";
 import { useTerms } from "./auth-provider";
 
@@ -33,6 +37,11 @@ export function AttendanceInput({
     );
   }
 
+  /** Picking a roster name like "McLovin (Seattle)" keeps the name and fills in the note. */
+  function fromName(name: string): Partial<Attendee> {
+    return suggestions?.includes(name) ? attendeeFromName(name) : { name };
+  }
+
   function add() {
     onChange([...value, { name: "", kind: "pax" }]);
     // Focus the new row's name once it renders.
@@ -56,7 +65,7 @@ export function AttendanceInput({
               list={suggestions ? "roster-names" : undefined}
               placeholder={`${terms.org} name`}
               value={attendee.name}
-              onChange={(e) => update(index, { name: e.target.value })}
+              onChange={(e) => update(index, fromName(e.target.value))}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();

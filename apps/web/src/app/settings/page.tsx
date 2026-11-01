@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { LANGUAGES, termsFor, type Language } from "@rocket/core";
 import {
@@ -15,9 +14,6 @@ import { createClient } from "@/lib/supabase/client";
 export default function SettingsPage() {
   return (
     <>
-      <Link href="/" className="link">
-        ← All backblasts
-      </Link>
       <SignedIn>{(user) => <Settings user={user} />}</SignedIn>
     </>
   );

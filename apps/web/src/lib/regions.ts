@@ -198,9 +198,8 @@ export function loadSites(region: Region): Promise<Site[]> {
       .filter((row) => !/^(y|yes|true|x)$/i.test(get(row, "retired")))
       .map((row) => ({
         name: get(row, "ao"),
-        address: [get(row, "location"), get(row, "address")]
-          .filter(Boolean)
-          .join(" - "),
+        // Where the AO meets: its location (usually a park), else its address.
+        address: get(row, "location") || get(row, "address"),
         day: get(row, "day"),
         time: get(row, "time"),
       }))

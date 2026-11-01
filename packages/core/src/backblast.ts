@@ -46,6 +46,20 @@ Disclaimer: I am not a professional. You are here of your own free will and part
 
 Credo: Leave no man behind, but leave no man where you found him.`;
 
+/**
+ * Reads a name as a region's sheet may write it, with a note in parentheses: "McLovin (Seattle)"
+ * is downrange from Seattle and "Cubby (2.0)" is a 2.0. Other names are regular PAX.
+ */
+export function attendeeFromName(name: string): Attendee {
+  const match = /^(.+?)\s*\(([^()]+)\)\s*$/.exec(name);
+  if (!match) return { name, kind: "pax" };
+  const plain = match[1]!.trim();
+  const note = match[2]!.trim();
+  return note === "2.0"
+    ? { name: plain, kind: "2.0" }
+    : { name: plain, kind: "visitor", region: note };
+}
+
 /** A name as it appears in the Name-o-rama, e.g. "Huggies (South Fork)" or "Rookie (FNG, invited by Sparky)". */
 export function attendeeLabel(attendee: Attendee): string {
   const name = attendee.name.trim();

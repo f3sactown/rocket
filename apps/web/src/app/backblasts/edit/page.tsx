@@ -1,7 +1,6 @@
 "use client";
 
 import type { Backblast } from "@rocket/core";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
@@ -13,9 +12,6 @@ import { createClient } from "@/lib/supabase/client";
 export default function EditBackblastPage() {
   return (
     <>
-      <Link href="/" className="link">
-        ← All backblasts
-      </Link>
       <Suspense fallback={<div className="card h-96 animate-pulse" />}>
         <SignedIn>{(user) => <EditBackblast user={user} />}</SignedIn>
       </Suspense>

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Attendee } from "@rocket/core";
+import { attendeeFromName, type Attendee } from "@rocket/core";
 import { loadRegulars, REGULARS_MONTHS, type Region } from "@/lib/regions";
 import { useLoad } from "@/lib/use-region";
 
@@ -32,7 +32,7 @@ export function Regulars({
     [q, ...attendees.map((a) => a.name)].map((n) => n.trim().toLowerCase()),
   );
   const available = (regulars.value ?? []).filter(
-    (r) => !listed.has(r.name.toLowerCase()),
+    (r) => !listed.has(attendeeFromName(r.name).name.toLowerCase()),
   );
 
   return (
