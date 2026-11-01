@@ -126,6 +126,8 @@ export type Database = {
           config: Json;
           created_by: string | null;
           created_at: string;
+          synced_at: string | null;
+          sync_error: string | null;
         };
         Insert: {
           id?: string;
@@ -137,6 +139,38 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["regions"]["Insert"]>;
+        Relationships: [];
+      };
+      region_sites: {
+        Row: {
+          region_id: string;
+          name: string;
+          address: string;
+          day: string;
+          time: string;
+        };
+        Insert: Database["public"]["Tables"]["region_sites"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["region_sites"]["Row"]>;
+        Relationships: [];
+      };
+      region_roster: {
+        Row: { region_id: string; name: string };
+        Insert: Database["public"]["Tables"]["region_roster"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["region_roster"]["Row"]>;
+        Relationships: [];
+      };
+      region_regulars: {
+        Row: { region_id: string; ao: string; pax: string; posts: number };
+        Insert: Database["public"]["Tables"]["region_regulars"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["region_regulars"]["Row"]>;
+        Relationships: [];
+      };
+      region_pax_stats: {
+        Row: { region_id: string; pax: string; posts: number; qs: number };
+        Insert: Database["public"]["Tables"]["region_pax_stats"]["Row"];
+        Update: Partial<
+          Database["public"]["Tables"]["region_pax_stats"]["Row"]
+        >;
         Relationships: [];
       };
     };

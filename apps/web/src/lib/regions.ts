@@ -32,6 +32,10 @@ export interface Region {
   language: Language;
   config: RegionConfig;
   created_by: string | null;
+  /** When the nightly sync last copied the sheet into Supabase; null until the first sync. */
+  synced_at: string | null;
+  /** Why the last sync failed, if it did (the previous copy is kept). */
+  sync_error: string | null;
 }
 
 /** Column names from F3 SacTown's sheet, offered as the starting point for a new region. */
@@ -85,7 +89,9 @@ export function loadRegions(refresh = false): Promise<Region[]> {
     regionsCache = Promise.resolve(
       createClient()
         .from("regions")
-        .select("id, name, sheet_id, language, config, created_by")
+        .select(
+          "id, name, sheet_id, language, config, created_by, synced_at, sync_error",
+        )
         .order("name"),
     ).then(({ data, error }) => {
       if (error) throw error;
@@ -96,7 +102,8 @@ export function loadRegions(refresh = false): Promise<Region[]> {
   return regionsCache;
 }
 
-// Sheet reads are cached per page load so moving between steps doesn't re-download.
+// Reads are cached per page load so moving between steps doesn't re-download. Regions that have
+// synced read the nightly copy in Supabase; until then they read the sheet live.
 const cache = new Map<string, Promise<unknown>>();
 function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
   if (!cache.has(key)) {
@@ -115,6 +122,27 @@ function columnsOf(sheetId: string, tab: string): Promise<Map<string, string>> {
       table.cols.map((col) => [col.label.trim().toLowerCase(), col.id]),
     );
   });
+}
+
+/** Matches text exactly but case-insensitively in an `ilike` filter. */
+function escapeLike(text: string): string {
+  return text.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/** Reads a region's rows from one of the nightly-synced tables. */
+async function synced<T>(
+  table: "region_sites" | "region_roster",
+  columns: string,
+  region: Region,
+  orderBy: string,
+): Promise<T[]> {
+  const { data, error } = await createClient()
+    .from(table)
+    .select(columns)
+    .eq("region_id", region.id)
+    .order(orderBy);
+  if (error) throw error;
+  return data as unknown as T[];
 }
 
 /** Column letters for the given header names; throws naming any that are missing. */
@@ -146,6 +174,10 @@ function rows(table: SheetTable): string[][] {
 
 /** The region's active AOs (retired ones are left out), by name. */
 export function loadSites(region: Region): Promise<Site[]> {
+  if (region.synced_at)
+    return cached(`sites:${region.id}`, () =>
+      synced<Site>("region_sites", "name, address, day, time", region, "name"),
+    );
   const { sheet, ...names } = region.config.sites;
   return cached(`sites:${region.id}`, async () => {
     const cols = await columns(region.sheet_id, sheet, names);
@@ -178,6 +210,12 @@ export function loadSites(region: Region): Promise<Site[]> {
 
 /** Every PAX name on the region's roster, sorted. */
 export function loadRoster(region: Region): Promise<string[]> {
+  if (region.synced_at)
+    return cached(`roster:${region.id}`, async () =>
+      (
+        await synced<{ name: string }>("region_roster", "name", region, "name")
+      ).map((r) => r.name),
+    );
   const { sheet, name } = region.config.roster;
   return cached(`roster:${region.id}`, async () => {
     const cols = await columns(region.sheet_id, sheet, { name });
@@ -198,6 +236,18 @@ export function loadRoster(region: Region): Promise<string[]> {
 
 /** Who has posted at an AO in the last few months, most posts first. */
 export function loadRegulars(region: Region, ao: string): Promise<Regular[]> {
+  if (region.synced_at)
+    return cached(`regulars:${region.id}:${ao.toLowerCase()}`, async () => {
+      const { data, error } = await createClient()
+        .from("region_regulars")
+        .select("pax, posts")
+        .eq("region_id", region.id)
+        .ilike("ao", escapeLike(ao))
+        .order("posts", { ascending: false })
+        .order("pax");
+      if (error) throw error;
+      return data.map((r) => ({ name: r.pax, posts: r.posts }));
+    });
   const { sheet, date, ao: aoName, pax } = region.config.attendance;
   return cached(`regulars:${region.id}:${ao.toLowerCase()}`, async () => {
     const cols = await columns(region.sheet_id, sheet, {
@@ -220,6 +270,18 @@ export function loadRegulars(region: Region, ao: string): Promise<Regular[]> {
 
 /** A PAX's total posts and Qs in the region's records. */
 export function loadPaxStats(region: Region, name: string): Promise<PaxStats> {
+  if (region.synced_at)
+    return cached(`stats:${region.id}:${name.toLowerCase()}`, async () => {
+      const { data, error } = await createClient()
+        .from("region_pax_stats")
+        .select("posts, qs")
+        .eq("region_id", region.id)
+        .ilike("pax", escapeLike(name.trim()))
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return { posts: data?.posts ?? 0, qs: data?.qs ?? 0 };
+    });
   const { sheet, pax, post, q } = region.config.attendance;
   return cached(`stats:${region.id}:${name.toLowerCase()}`, async () => {
     const cols = await columns(region.sheet_id, sheet, { pax, post, q });
@@ -245,6 +307,8 @@ export async function checkRegion(
     language: "f3",
     config,
     created_by: null,
+    synced_at: null,
+    sync_error: null,
   };
   const [sites, roster] = await Promise.all([
     loadSites(probe),

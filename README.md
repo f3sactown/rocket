@@ -105,8 +105,15 @@ the regulars at an AO over the last 3 months, and show a user's total posts and 
 - Each region records which tabs and column headers hold its AOs, roster and attendance; F3 SacTown
   is set up by `supabase/migrations/20261101000000_regions.sql`. Others can be added in Settings,
   with a **Check sheet** button that confirms every column exists.
-- Reading uses Google's Visualization API (`apps/web/src/lib/sheets.ts`), so only the rows a
-  query needs are downloaded.
+- **Nightly sync:** `.github/workflows/sync-regions.yml` runs `scripts/sync-regions.mjs` every
+  night (about 3am Pacific, or on demand from the Actions tab). It copies each region's active AOs,
+  roster, regulars per AO (last 3 months) and all-time totals per PAX into Supabase tables, and the
+  app reads those. A region that hasn't synced yet is read from its sheet live. A failed sync keeps
+  the previous copy and shows the error in Settings.
+- The sync needs the repository **secret** `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project
+  Settings → API Keys → secret key) alongside the `SUPABASE_URL` variable.
+- Sheets are read with Google's Visualization API (`apps/web/src/lib/sheets.ts` in the app,
+  `scripts/sync-regions.mjs` for the sync), so only the rows a query needs are downloaded.
 
 ## Versions and releases
 

@@ -83,6 +83,18 @@ export function RegionSettings({ user }: { user: CurrentUser }) {
         <p className="text-sm text-accent">{error || regions.error}</p>
       )}
 
+      {region && (
+        <p className="-mt-2 text-xs text-muted">
+          {region.synced_at
+            ? `Updated from the sheet every night · last ${new Date(region.synced_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`
+            : "Reading the sheet live until tonight's update."}
+          {region.sync_error && (
+            <span className="block text-accent">
+              Last update failed: {region.sync_error}
+            </span>
+          )}
+        </p>
+      )}
       {region && <RegionStats region={region} name={user.name} />}
 
       {adding ? (
