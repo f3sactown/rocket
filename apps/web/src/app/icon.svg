@@ -11,8 +11,8 @@
     </linearGradient>
     <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="0.4" stop-color="#f6a29b"/>
-      <stop offset="1" stop-color="#b04a43" stop-opacity="0"/>
+      <stop offset="0.4" stop-color="#ec8a81"/>
+      <stop offset="1" stop-color="#9e3a33" stop-opacity="0"/>
     </linearGradient>
   </defs>
   <rect width="64" height="64" rx="14" fill="url(#bg)"/>
@@ -22,13 +22,13 @@
   <circle cx="11" cy="44" r="0.6" fill="#fff" opacity="0.5"/>
   <g transform="translate(32 32) rotate(45) scale(0.36) translate(-50 -90)">
     <path d="M42 150 Q50 190 58 150 Z" fill="url(#flame)"/>
-    <path d="M31 112 L12 140 L12 152 L31 140 Z" fill="#b04a43" stroke="#f6a29b" stroke-width="3.5" stroke-linejoin="round"/>
-    <path d="M69 112 L88 140 L88 152 L69 140 Z" fill="#b04a43" stroke="#f6a29b" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M31 112 L12 140 L12 152 L31 140 Z" fill="#9e3a33" stroke="#ec8a81" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M69 112 L88 140 L88 152 L69 140 Z" fill="#9e3a33" stroke="#ec8a81" stroke-width="3.5" stroke-linejoin="round"/>
     <path d="M41 143 L59 143 L56 151 L44 151 Z" fill="#5d6770"/>
     <path d="M31 52 L69 52 L69 140 Q69 145 64 145 L36 145 Q31 145 31 140 Z" fill="url(#body)"/>
-    <path d="M50 6 C38 18 31 36 31 53 L69 53 C69 36 62 18 50 6 Z" fill="#f6a29b"/>
-    <circle cx="50" cy="76" r="12" fill="#0d1d28" stroke="#b04a43" stroke-width="6"/>
-    <circle cx="46" cy="72" r="3.5" fill="#f6a29b" opacity="0.9"/>
-    <rect x="46" y="100" width="8" height="42" rx="1.5" fill="#7a2f2a"/>
+    <path d="M50 6 C38 18 31 36 31 53 L69 53 C69 36 62 18 50 6 Z" fill="#ec8a81"/>
+    <circle cx="50" cy="76" r="12" fill="#0d1d28" stroke="#9e3a33" stroke-width="6"/>
+    <circle cx="46" cy="72" r="3.5" fill="#ec8a81" opacity="0.9"/>
+    <rect x="46" y="100" width="8" height="42" rx="1.5" fill="#6b2621"/>
   </g>
 </svg>

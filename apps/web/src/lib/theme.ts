@@ -26,8 +26,8 @@ export const ACCENTS: {
   {
     value: "f3",
     label: "F3",
-    swatch: "#ef6b62",
-    rocket: { light: "#f6a29b", mid: "#b04a43", dark: "#7a2f2a" },
+    swatch: "#e0544a",
+    rocket: { light: "#ec8a81", mid: "#9e3a33", dark: "#6b2621" },
   },
   {
     value: "fia",
