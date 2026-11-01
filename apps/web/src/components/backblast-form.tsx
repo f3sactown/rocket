@@ -12,7 +12,7 @@ import {
 } from "@rocket/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { parseAttendees } from "@/lib/backblast";
-import { loadRoster, loadSites } from "@/lib/regions";
+import { loadRoster, loadSites, sitesByDay } from "@/lib/regions";
 import { useLoad, useUserRegion } from "@/lib/use-region";
 import { AttendanceInput } from "./attendance-input";
 import { Regulars } from "./regulars";
@@ -145,6 +145,9 @@ function attendeesPreview(body: string): string {
   }
 }
 
+/** The AO menu's choice for typing an AO that isn't listed. */
+const OTHER_AO = "__other";
+
 export function BackblastForm({
   heading,
   status,
@@ -185,7 +188,13 @@ export function BackblastForm({
   const roster = useLoad(region ? () => loadRoster(region) : null, [
     region?.id,
   ]);
-  const autoAddress = useRef<string | null>(null);
+  // An AO typed by hand, for one that isn't on the region's list.
+  const [typingAo, setTypingAo] = useState(false);
+  const customAo =
+    typingAo ||
+    (!!backblast.ao &&
+      !!sites.value &&
+      !sites.value.some((s) => s.name === backblast.ao));
   const steps = useMemo(() => stepsFor(language), [language]);
   const step = steps[stepIndex];
 
@@ -231,15 +240,8 @@ export function BackblastForm({
   /** Sets the AO and, for an AO from the region's sheet, fills in its address. */
   function chooseAo(ao: string) {
     set("ao", ao);
-    const site = sites.value?.find(
-      (s) => s.name.toLowerCase() === ao.trim().toLowerCase(),
-    );
-    // Don't overwrite an address the user typed themselves.
-    const address = backblast.address ?? "";
-    if (site?.address && (!address || address === autoAddress.current)) {
-      autoAddress.current = site.address;
-      set("address", site.address);
-    }
+    const site = sites.value?.find((s) => s.name === ao);
+    if (site?.address) set("address", site.address);
   }
 
   return (
@@ -366,20 +368,40 @@ export function BackblastForm({
             </label>
             <label className="label flex flex-col gap-1.5">
               AO
-              <input
-                value={backblast.ao}
-                list="region-aos"
-                onChange={(e) => chooseAo(e.target.value)}
-                className="input text-base"
-              />
-              {sites.value && (
-                <datalist id="region-aos">
-                  {sites.value.map((site) => (
-                    <option key={site.name} value={site.name}>
-                      {[site.day, site.time].filter(Boolean).join(" · ")}
-                    </option>
+              {sites.value?.length ? (
+                <select
+                  value={customAo ? OTHER_AO : backblast.ao}
+                  onChange={(e) => {
+                    if (e.target.value === OTHER_AO) {
+                      setTypingAo(true);
+                      set("ao", "");
+                    } else {
+                      setTypingAo(false);
+                      chooseAo(e.target.value);
+                    }
+                  }}
+                  className="input text-base"
+                >
+                  <option value="">Choose an AO…</option>
+                  {sitesByDay(sites.value).map((group) => (
+                    <optgroup key={group.day} label={group.day}>
+                      {group.sites.map((site) => (
+                        <option key={site.name} value={site.name}>
+                          {[site.name, site.time].filter(Boolean).join(" · ")}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
-                </datalist>
+                  <option value={OTHER_AO}>Other…</option>
+                </select>
+              ) : null}
+              {(customAo || !sites.value?.length) && (
+                <input
+                  value={backblast.ao}
+                  onChange={(e) => set("ao", e.target.value)}
+                  placeholder={sites.value?.length ? "AO name" : undefined}
+                  className="input text-base"
+                />
               )}
               {sites.error && (
                 <span className="text-xs font-normal text-accent">
