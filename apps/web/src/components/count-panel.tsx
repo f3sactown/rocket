@@ -3,6 +3,7 @@
 import {
   attendance,
   attendeeLabel,
+  isQ,
   type Attendee,
   type Backblast,
 } from "@rocket/core";
@@ -15,9 +16,8 @@ interface Count {
 
 /** Everyone counted in each total, labelled as on the backblast (Q, home region, inviter, 2.0). */
 function countsFor(backblast: Backblast): Count[] {
-  const q = backblast.q.trim().toLowerCase();
   const label = (attendee: Attendee) =>
-    q && attendee.name.trim().toLowerCase() === q
+    isQ(backblast, attendee.name)
       ? `${attendeeLabel(attendee)} (Q)`
       : attendeeLabel(attendee);
   const everyone = attendance(backblast);

@@ -11,13 +11,14 @@ import { useLoad } from "@/lib/use-region";
 export function Regulars({
   region,
   ao,
-  q,
+  qs,
   attendees,
   onAdd,
 }: {
   region: Region;
   ao: string;
-  q: string;
+  /** The Qs, left out like anyone already listed. */
+  qs: string[];
   attendees: Attendee[];
   onAdd: (names: string[]) => void;
 }) {
@@ -29,7 +30,7 @@ export function Regulars({
   if (!aoName) return null;
 
   const listed = new Set(
-    [q, ...attendees.map((a) => a.name)].map((n) => n.trim().toLowerCase()),
+    [...qs, ...attendees.map((a) => a.name)].map((n) => n.trim().toLowerCase()),
   );
   const available = (regulars.value ?? []).filter(
     (r) => !listed.has(attendeeFromName(r.name).name.toLowerCase()),

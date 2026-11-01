@@ -1,6 +1,6 @@
 "use client";
 
-import type { Backblast } from "@rocket/core";
+import { qNames, type Backblast } from "@rocket/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { parseAttendees, toInsert } from "@/lib/backblast";
@@ -56,8 +56,10 @@ function statusLabel(state: SaveState, published: boolean): string {
 
 /** A published backblast keeps its title, date, AO and Q, so edits missing one wait to save. */
 function hasBasics(backblast: Backblast): boolean {
-  return [backblast.title, backblast.date, backblast.ao, backblast.q].every(
-    (value) => value?.trim(),
+  return (
+    [backblast.title, backblast.date, backblast.ao].every((value) =>
+      value?.trim(),
+    ) && qNames(backblast).length > 0
   );
 }
 

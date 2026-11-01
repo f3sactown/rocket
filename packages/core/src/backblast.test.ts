@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   attendeeFromName,
+  qNames,
   attendeeLabel,
   backblastParts,
   formatDate,
@@ -224,5 +225,29 @@ describe("attendeeFromName", () => {
       kind: "2.0",
     });
     expect(attendeeFromName("Sparky")).toEqual({ name: "Sparky", kind: "pax" });
+  });
+});
+
+describe("several Qs", () => {
+  const coQ: Backblast = {
+    title: "Co-Q",
+    date: "2026-10-14",
+    ao: "Talko Tuesday",
+    q: "Casper, Sparky , casper",
+    attendees: [
+      { name: "Sparky", kind: "pax" },
+      { name: "Trench", kind: "pax" },
+    ],
+  };
+
+  it("reads the Q field as a list", () => {
+    expect(qNames(coQ)).toEqual(["Casper", "Sparky"]);
+  });
+
+  it("counts each Q once and lists them together", () => {
+    expect(paxCount(coQ)).toBe(3);
+    const eventData = backblastParts(coQ)[0]!.text;
+    expect(eventData).toContain("Qs: @Casper, @Sparky");
+    expect(eventData).toContain("PAX (1):\n@Trench");
   });
 });
