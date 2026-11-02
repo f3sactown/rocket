@@ -5,7 +5,14 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "./auth-provider";
-import { CloseIcon, GearIcon, MenuIcon, PlusIcon } from "./icons";
+import {
+  ArchiveIcon,
+  CloseIcon,
+  GearIcon,
+  MenuIcon,
+  PlusIcon,
+  SearchIcon,
+} from "./icons";
 import { RocketArt } from "./rocket-art";
 
 const LINKS = [
@@ -20,11 +27,29 @@ const LINKS = [
     match: (path: string) => path.startsWith("/backblasts/new"),
   },
   {
+    href: "/search",
+    label: "Search",
+    match: (path: string) => path.startsWith("/search"),
+  },
+  {
+    href: "/archive",
+    label: "Archive",
+    match: (path: string) => path.startsWith("/archive"),
+  },
+  {
     href: "/settings",
     label: "Settings",
     match: (path: string) => path.startsWith("/settings"),
   },
 ];
+
+const ICONS: Record<string, React.ReactNode> = {
+  "/": "☰",
+  "/backblasts/new": <PlusIcon />,
+  "/search": <SearchIcon />,
+  "/archive": <ArchiveIcon />,
+  "/settings": <GearIcon />,
+};
 
 /** Top bar with the app name and a menu to every page. Shown only when signed in. */
 export function AppNav() {
@@ -98,13 +123,7 @@ export function AppNav() {
                 }`}
               >
                 <span className={current ? "text-accent" : "text-muted"}>
-                  {link.href === "/settings" ? (
-                    <GearIcon />
-                  ) : link.href === "/" ? (
-                    "☰"
-                  ) : (
-                    <PlusIcon />
-                  )}
+                  {ICONS[link.href]}
                 </span>
                 {link.label}
               </Link>

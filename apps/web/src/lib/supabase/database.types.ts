@@ -119,6 +119,30 @@ export type Database = {
           },
         ];
       };
+      backblast_archives: {
+        Row: {
+          user_id: string;
+          backblast_id: string;
+          archived_at: string;
+        };
+        Insert: {
+          user_id?: string;
+          backblast_id: string;
+          archived_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["backblast_archives"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "backblast_archives_backblast_id_fkey";
+            columns: ["backblast_id"];
+            isOneToOne: false;
+            referencedRelation: "backblasts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       regions: {
         Row: {
           id: string;

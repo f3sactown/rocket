@@ -6,6 +6,7 @@ import {
   SignedIn,
   useTerms,
   type CurrentUser,
+  type SwipeAction,
 } from "@/components/auth-provider";
 import { RegionSettings } from "@/components/region-settings";
 import { AccentPicker, ThemeSwitcher } from "@/components/theme-switcher";
@@ -255,6 +256,13 @@ function Settings({ user }: { user: CurrentUser }) {
       </Section>
 
       <Section
+        title="Swipe actions"
+        description="Swipe a backblast in a list to act on it. You can only delete your own. Saved to your account."
+      >
+        <SwipePicker swipeLeft={user.swipeLeft} />
+      </Section>
+
+      <Section
         title="Account"
         description={`Your account ID is permanent and unique. Everything you write is tied to it, so people who share an ${terms.org} name never affect each other's data.`}
       >
@@ -273,6 +281,70 @@ function Settings({ user }: { user: CurrentUser }) {
         </button>
       </Section>
     </section>
+  );
+}
+
+const SWIPE_OPTIONS: { value: SwipeAction; label: string }[] = [
+  { value: "delete", label: "Left deletes, right archives" },
+  { value: "archive", label: "Left archives, right deletes" },
+];
+
+/** Which swipe direction deletes and which archives. */
+function SwipePicker({ swipeLeft }: { swipeLeft: SwipeAction }) {
+  const [pending, setPending] = useState<SwipeAction | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const selected = pending ?? swipeLeft;
+
+  async function choose(value: SwipeAction) {
+    if (value === swipeLeft) return;
+    setPending(value);
+    setError(null);
+    const { error } = await createClient().auth.updateUser({
+      data: { swipe_left: value },
+    });
+    if (error) setError(error.message);
+    setPending(null);
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        role="radiogroup"
+        aria-label="Swipe actions"
+        className="flex flex-col gap-2"
+      >
+        {SWIPE_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={selected === option.value}
+            disabled={pending !== null}
+            onClick={() => choose(option.value)}
+            className={`flex items-center gap-3 rounded-xl border px-4 py-2.5 text-left text-sm font-medium transition-colors ${
+              selected === option.value
+                ? "border-accent/60 bg-accent-soft text-ink"
+                : "border-line text-ink-soft hover:border-line-strong hover:text-ink"
+            }`}
+          >
+            <span
+              className={`size-3.5 shrink-0 rounded-full border ${
+                selected === option.value
+                  ? "border-accent bg-accent"
+                  : "border-line-strong"
+              }`}
+            />
+            {option.label}
+            {option.value === "delete" && (
+              <span className="ml-auto text-xs font-normal text-muted">
+                Standard
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+      {error && <p className="text-sm text-accent">{error}</p>}
+    </div>
   );
 }
 
