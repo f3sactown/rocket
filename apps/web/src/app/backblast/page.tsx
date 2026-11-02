@@ -40,7 +40,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     if (!id) return;
     createClient()
       .from("backblasts")
-      .select("*, author:profiles(name)")
+      .select("*, author:profiles!backblasts_author_id_fkey(name)")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) =>
