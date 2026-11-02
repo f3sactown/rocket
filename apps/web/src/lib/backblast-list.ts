@@ -12,7 +12,7 @@ export interface ListItem {
 }
 
 export const LIST_COLUMNS =
-  "id, title, date, ao, status, author_id, author:profiles(name)";
+  "id, title, date, ao, status, author_id, author:profiles!backblasts_author_id_fkey(name)";
 
 /** The IDs of the backblasts the signed-in user has archived, newest first. */
 export async function loadArchivedIds(): Promise<string[]> {
