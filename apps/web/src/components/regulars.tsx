@@ -46,15 +46,6 @@ export function Regulars({
             · last {REGULARS_MONTHS} months
           </span>
         </span>
-        {available.length > 1 && (
-          <button
-            type="button"
-            onClick={() => onAdd(available.map((r) => r.name))}
-            className="link shrink-0 text-xs"
-          >
-            Add all
-          </button>
-        )}
       </div>
       {regulars.loading && <p className="text-sm text-muted">Loading…</p>}
       {regulars.error && (
