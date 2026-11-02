@@ -15,7 +15,11 @@ export interface CurrentUser {
   language: Language;
   /** The user's home region, if they've chosen one. */
   regionId: string | null;
+  /** What swiping a backblast to the left does; swiping right does the other. */
+  swipeLeft: SwipeAction;
 }
+
+export type SwipeAction = "delete" | "archive";
 
 const AuthContext = createContext<{
   user: CurrentUser | null;
@@ -33,6 +37,9 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
     name: name || user.email || "PAX",
     email: user.email ?? "",
     language: user.user_metadata?.language === "fia" ? "fia" : "f3",
+    // Like Mail: swipe left to delete, right to archive, unless the user swapped them.
+    swipeLeft:
+      user.user_metadata?.swipe_left === "archive" ? "archive" : "delete",
     regionId:
       typeof user.user_metadata?.region_id === "string"
         ? user.user_metadata.region_id

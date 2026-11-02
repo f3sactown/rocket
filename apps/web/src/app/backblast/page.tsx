@@ -10,6 +10,7 @@ import { CountPanel } from "@/components/count-panel";
 import { ShareButton } from "@/components/share-button";
 import { PencilIcon } from "@/components/icons";
 import { fromRow } from "@/lib/backblast";
+import { archive, unarchive } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 
 // A query parameter instead of /backblasts/[id], because a static site can't serve dynamic paths.
@@ -27,6 +28,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
   const router = useRouter();
   const id = useSearchParams().get("id");
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [archived, setArchived] = useState<boolean | null>(null);
   const [result, setResult] = useState<{
     backblast: Backblast | null;
     authorId?: string;
@@ -50,6 +52,25 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         }),
       );
   }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    createClient()
+      .from("backblast_archives")
+      .select("backblast_id")
+      .eq("backblast_id", id)
+      .then(({ data }) => setArchived((data ?? []).length > 0));
+  }, [id]);
+
+  async function toggleArchive() {
+    setDeleteError(null);
+    try {
+      await (archived ? unarchive(id!) : archive(id!));
+      setArchived(!archived);
+    } catch (error) {
+      setDeleteError((error as Error).message);
+    }
+  }
 
   if (id && !result) return <div className="card h-96 animate-pulse" />;
   if (!result?.backblast)
@@ -94,25 +115,36 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
           Edit backblast
         </Link>
       )}
-      {result.authorId === user.id && (
-        <button
-          type="button"
-          onClick={async () => {
-            if (!confirm("Delete this backblast? This can't be undone."))
-              return;
-            setDeleteError(null);
-            const { error } = await createClient()
-              .from("backblasts")
-              .delete()
-              .eq("id", id!);
-            if (error) setDeleteError(error.message);
-            else router.push("/");
-          }}
-          className="link -mt-1 self-center hover:text-accent"
-        >
-          Delete backblast
-        </button>
-      )}
+      <div className="-mt-1 flex justify-center gap-6">
+        {archived !== null && (
+          <button
+            type="button"
+            onClick={toggleArchive}
+            className="link hover:text-ink"
+          >
+            {archived ? "Unarchive" : "Archive"}
+          </button>
+        )}
+        {result.authorId === user.id && (
+          <button
+            type="button"
+            onClick={async () => {
+              if (!confirm("Delete this backblast? This can't be undone."))
+                return;
+              setDeleteError(null);
+              const { error } = await createClient()
+                .from("backblasts")
+                .delete()
+                .eq("id", id!);
+              if (error) setDeleteError(error.message);
+              else router.push("/");
+            }}
+            className="link hover:text-accent"
+          >
+            Delete backblast
+          </button>
+        )}
+      </div>
       {deleteError && <p className="text-sm text-accent">{deleteError}</p>}
     </article>
   );
