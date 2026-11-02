@@ -8,6 +8,7 @@ import {
   type Backblast,
 } from "@rocket/core";
 import { useState } from "react";
+import { useTerms } from "./auth-provider";
 
 interface Count {
   label: string;
@@ -32,6 +33,7 @@ function countsFor(backblast: Backblast): Count[] {
 
 /** The PAX / FNGs / Downrange totals. Hover or tap one to see who's in it. */
 export function CountPanel({ backblast }: { backblast: Backblast }) {
+  const terms = useTerms();
   const counts = countsFor(backblast);
   const [pinned, setPinned] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
@@ -76,14 +78,14 @@ export function CountPanel({ backblast }: { backblast: Backblast }) {
         <div
           id="count-people"
           role="region"
-          aria-label={`${shown.label} at this beatdown`}
+          aria-label={`${shown.label} at this ${terms.beatdown}`}
           className="rounded-2xl border border-line bg-surface p-3"
         >
           <p className="mb-2 text-xs font-semibold tracking-wider text-accent uppercase">
             {shown.label} ({shown.people.length})
           </p>
           {shown.people.length === 0 ? (
-            <p className="text-sm text-muted">None at this beatdown.</p>
+            <p className="text-sm text-muted">None at this {terms.beatdown}.</p>
           ) : (
             <ul className="flex flex-wrap gap-1.5">
               {shown.people.map((person) => (

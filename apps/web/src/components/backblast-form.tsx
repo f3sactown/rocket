@@ -9,6 +9,7 @@ import {
   backblastParts,
   formatBackblast,
   termsFor,
+  titleCase,
   type Language,
   paxCount,
   type Backblast,
@@ -58,7 +59,7 @@ function stepsFor(language: Language): Step[] {
     {
       kind: "basics",
       title: "Basics",
-      hint: "The title, AO, date and time for this beatdown.",
+      hint: `The title, AO, date and time for this ${terms.beatdown}.`,
     },
     {
       kind: "text",
@@ -254,7 +255,7 @@ export function BackblastForm({
     const site = sites.value?.find((s) => s.name === ao);
     set("address", site?.address ?? "");
     if (site?.time) set("time", site.time);
-    const date = site?.day && nextDateOn(site.day);
+    const date = site?.day && nextDateOn(site.day, site.time);
     if (date && (!backblast.date || backblast.date === autoDate.current)) {
       autoDate.current = date;
       set("date", date);
@@ -371,6 +372,11 @@ export function BackblastForm({
               <input
                 value={backblast.title}
                 onChange={(e) => set("title", e.target.value)}
+                // Capitalized like a title once you're done typing it.
+                onBlur={(e) => {
+                  const cased = titleCase(e.target.value);
+                  if (cased !== e.target.value) set("title", cased);
+                }}
                 className="input text-base"
               />
             </label>

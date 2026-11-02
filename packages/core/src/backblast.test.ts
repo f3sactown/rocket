@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   attendeeFromName,
   qNames,
+  titleCase,
   attendeeLabel,
   backblastParts,
   formatDate,
@@ -174,7 +175,7 @@ describe("formatBackblast", () => {
 
   it("puts the title and workout in Workout Details and leaves out blank sections", () => {
     expect(parts[1].trim()).toBe(
-      "Title: Hills for days\n\nThe Thang:\n11s on the hill",
+      "Title: Hills for Days\n\nThe Thang:\n11s on the hill",
     );
     expect(parts[2].trim()).toBe("Second F:\nCoffee");
   });
@@ -249,5 +250,22 @@ describe("several Qs", () => {
     const eventData = backblastParts(coQ)[0]!.text;
     expect(eventData).toContain("Qs: @Casper, @Sparky");
     expect(eventData).toContain("PAX (1):\n@Trench");
+  });
+});
+
+describe("titleCase", () => {
+  it("capitalizes words but not short ones in the middle", () => {
+    expect(titleCase("hills for days and the merkins of doom")).toBe(
+      "Hills for Days and the Merkins of Doom",
+    );
+    expect(titleCase("the coupon is what it is in")).toBe(
+      "The Coupon Is What It Is In",
+    );
+  });
+
+  it("keeps capitals already there and handles colons and hyphens", () => {
+    expect(titleCase("WOD at McKinley: a full-body burner")).toBe(
+      "WOD at McKinley: A Full-Body Burner",
+    );
   });
 });

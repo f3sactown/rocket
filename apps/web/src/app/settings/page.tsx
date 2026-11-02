@@ -8,6 +8,7 @@ import {
   type CurrentUser,
   type SwipeAction,
 } from "@/components/auth-provider";
+import { PasswordInput } from "@/components/password-input";
 import { RegionSettings } from "@/components/region-settings";
 import { AccentPicker, ThemeSwitcher } from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/client";
@@ -206,8 +207,8 @@ function Settings({ user }: { user: CurrentUser }) {
       >
         <label className="label flex flex-col gap-1.5">
           New password
-          <input
-            type="password"
+          <PasswordInput
+            aria-label="New password"
             required
             minLength={8}
             autoComplete="new-password"
@@ -218,8 +219,8 @@ function Settings({ user }: { user: CurrentUser }) {
         </label>
         <label className="label flex flex-col gap-1.5">
           Confirm new password
-          <input
-            type="password"
+          <PasswordInput
+            aria-label="Confirm new password"
             required
             minLength={8}
             autoComplete="new-password"
