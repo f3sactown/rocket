@@ -65,7 +65,7 @@ function hasBasics(backblast: Backblast): boolean {
 
 /**
  * Edits a backblast. Changes save to Supabase as you type: a new draft is created on the first
- * edit, and "Publish backblast" shares it. Edits to a published backblast save the same way.
+ * edit, and "Finish draft" shares it. Edits to a published backblast save the same way.
  */
 export function BackblastEditor({
   user,
@@ -196,7 +196,7 @@ export function BackblastEditor({
         published ? "Edit backblast" : draftId ? "Edit draft" : "New backblast"
       }
       status={statusLabel(saveState, published)}
-      saveLabel={published ? "Done" : "Publish backblast"}
+      saveLabel={published ? "Done" : "Finish draft"}
       initial={loaded.start}
       userId={user.id}
       initialTemplates={loaded.templates}

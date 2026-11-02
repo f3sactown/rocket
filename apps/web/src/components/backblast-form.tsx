@@ -15,7 +15,7 @@ import {
 } from "@rocket/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { parseAttendees } from "@/lib/backblast";
-import { loadRoster, loadSites, sitesByDay } from "@/lib/regions";
+import { loadRoster, loadSites, nextDateOn, sitesByDay } from "@/lib/regions";
 import { useLoad, useUserRegion } from "@/lib/use-region";
 import { AttendanceInput } from "./attendance-input";
 import { QPicker } from "./q-picker";
@@ -58,7 +58,7 @@ function stepsFor(language: Language): Step[] {
     {
       kind: "basics",
       title: "Basics",
-      hint: "The title, date, AO and time for this beatdown.",
+      hint: "The title, AO, date and time for this beatdown.",
     },
     {
       kind: "text",
@@ -191,6 +191,8 @@ export function BackblastForm({
   ]);
   // An AO typed by hand, for one that isn't on the region's list.
   const [typingAo, setTypingAo] = useState(false);
+  // The date the AO filled in, so picking another AO can change it but a chosen date stays.
+  const autoDate = useRef<string | null>(null);
   const customAo =
     typingAo ||
     (!!backblast.ao &&
@@ -242,13 +244,21 @@ export function BackblastForm({
     setBackblast((current) => ({ ...current, [key]: value }));
   };
 
-  /** Sets the AO and, for an AO from the region's sheet, adds its location and time. */
+  /**
+   * Sets the AO and, for an AO from the region's sheet, adds its location and time, and the next
+   * date it meets unless the user already chose a date.
+   */
   function chooseAo(ao: string) {
     set("ao", ao);
     // The AO's location (usually a park) goes in the backblast with it.
     const site = sites.value?.find((s) => s.name === ao);
     set("address", site?.address ?? "");
     if (site?.time) set("time", site.time);
+    const date = site?.day && nextDateOn(site.day);
+    if (date && (!backblast.date || backblast.date === autoDate.current)) {
+      autoDate.current = date;
+      set("date", date);
+    }
   }
 
   return (
@@ -365,15 +375,6 @@ export function BackblastForm({
               />
             </label>
             <label className="label flex flex-col gap-1.5">
-              Date
-              <input
-                type="date"
-                value={backblast.date}
-                onChange={(e) => set("date", e.target.value)}
-                className="input text-base"
-              />
-            </label>
-            <label className="label flex flex-col gap-1.5">
               AO
               {sites.value?.length ? (
                 <select
@@ -416,6 +417,15 @@ export function BackblastForm({
                   AO list unavailable: {sites.error}
                 </span>
               )}
+            </label>
+            <label className="label flex flex-col gap-1.5">
+              Date
+              <input
+                type="date"
+                value={backblast.date}
+                onChange={(e) => set("date", e.target.value)}
+                className="input text-base"
+              />
             </label>
             <label className="label flex flex-col gap-1.5">
               Time

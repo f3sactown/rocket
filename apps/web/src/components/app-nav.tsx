@@ -86,7 +86,10 @@ export function AppNav() {
         href="/"
         className="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink"
       >
-        <RocketArt className="h-9 w-[19px]" />
+        {/* Tilted like the app icon, heading up and to the right. */}
+        <span className="flex size-9 items-center justify-center">
+          <RocketArt className="h-9 w-[19px] rotate-45" />
+        </span>
         Rocket
       </Link>
       <button

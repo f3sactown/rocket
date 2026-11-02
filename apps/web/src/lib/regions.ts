@@ -370,3 +370,21 @@ export function sitesByDay(sites: Site[]): { day: string; sites: Site[] }[] {
       ),
     }));
 }
+
+/**
+ * The next date (YYYY-MM-DD, local time) on the weekday a sheet value like "Tuesday" names,
+ * counting today if it's that day, or null if the value names no weekday.
+ */
+export function nextDateOn(day: string, from = new Date()): string | null {
+  const index = weekdayIndex(day);
+  if (index >= WEEKDAYS.length) return null;
+  // weekdayIndex counts from Monday; getDay counts from Sunday.
+  const ahead = (((index + 1) % 7) - from.getDay() + 7) % 7;
+  const date = new Date(
+    from.getFullYear(),
+    from.getMonth(),
+    from.getDate() + ahead,
+  );
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
