@@ -371,15 +371,29 @@ export function sitesByDay(sites: Site[]): { day: string; sites: Site[] }[] {
     }));
 }
 
+/** Minutes after midnight of the end of a time like "5:15am-6:00am", or its start if no end. */
+function endMinutes(time: string): number {
+  const parts = time.split(/[-–]/);
+  return startMinutes(parts[parts.length - 1]!.trim() || time);
+}
+
 /**
- * The next date (YYYY-MM-DD, local time) on the weekday a sheet value like "Tuesday" names,
- * counting today if it's that day, or null if the value names no weekday.
+ * The next date (YYYY-MM-DD, local time) on the weekday a sheet value like "Tuesday" names, or
+ * null if the value names no weekday. Today counts until the AO's time (e.g. "5:15am-6:00am") is
+ * over.
  */
-export function nextDateOn(day: string, from = new Date()): string | null {
+export function nextDateOn(
+  day: string,
+  time = "",
+  from = new Date(),
+): string | null {
   const index = weekdayIndex(day);
   if (index >= WEEKDAYS.length) return null;
   // weekdayIndex counts from Monday; getDay counts from Sunday.
-  const ahead = (((index + 1) % 7) - from.getDay() + 7) % 7;
+  let ahead = (((index + 1) % 7) - from.getDay() + 7) % 7;
+  // Once today's workout is over, the next one is a week away.
+  const minutesNow = from.getHours() * 60 + from.getMinutes();
+  if (ahead === 0 && time && endMinutes(time) <= minutesNow) ahead = 7;
   const date = new Date(
     from.getFullYear(),
     from.getMonth(),

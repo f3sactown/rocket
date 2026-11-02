@@ -63,6 +63,43 @@ export function attendeeFromName(name: string): Attendee {
     : { name: plain, kind: "visitor", region: note };
 }
 
+/** Short words left lowercase inside a title, as most style guides do. */
+const SMALL_WORDS = new Set(
+  "a an and as at but by for from in into nor of off on onto or over per so the to up via vs with yet".split(
+    " ",
+  ),
+);
+
+/**
+ * A title in title case: "hills for days" becomes "Hills for Days". Words keep any capitals
+ * already in them (e.g. "McKinley", "WOD"); short words stay lowercase unless they start or end
+ * the title or follow a colon.
+ */
+export function titleCase(title: string): string {
+  const words = title.split(/(\s+)/);
+  const last = words.length - 1;
+  return words
+    .map((word, index) => {
+      if (/^\s*$/.test(word)) return word;
+      const lower = word.toLowerCase();
+      const afterColon = index >= 2 && /:$/.test(words[index - 2]!);
+      if (
+        index !== 0 &&
+        index !== last &&
+        !afterColon &&
+        SMALL_WORDS.has(lower.replace(/[^a-z]/g, ""))
+      )
+        return lower;
+      // Capitalize each part of a hyphenated word, after any leading punctuation.
+      return word.replace(
+        /(^|-)([^a-zA-Z0-9]*)([a-z])/g,
+        (_, start, punctuation, letter) =>
+          start + punctuation + letter.toUpperCase(),
+      );
+    })
+    .join("");
+}
+
 /** A name as it appears in the Name-o-rama, e.g. "Huggies (South Fork)" or "Rookie (FNG, invited by Sparky)". */
 export function attendeeLabel(attendee: Attendee): string {
   const name = attendee.name.trim();
@@ -269,7 +306,7 @@ export function backblastParts(
     {
       title: "Workout Details",
       text: blocks(
-        backblast.title.trim() && `Title: ${backblast.title.trim()}`,
+        backblast.title.trim() && `Title: ${titleCase(backblast.title.trim())}`,
         labeled("Introduction", backblast.introduction),
         labeled(terms.warmup, backblast.warmup),
         labeled(terms.thang, backblast.thang),

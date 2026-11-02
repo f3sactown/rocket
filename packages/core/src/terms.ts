@@ -9,6 +9,8 @@ export const LANGUAGES: { value: Language; label: string }[] = [
 export interface Terms {
   /** The organization's name, e.g. in "F3 name". */
   org: string;
+  /** One gathering to work out: an F3 "beatdown", a FiA "workout". */
+  beatdown: string;
   warmup: string;
   thang: string;
   thirdF: string;
@@ -18,6 +20,7 @@ export interface Terms {
 const TERMS: Record<Language, Terms> = {
   f3: {
     org: "F3",
+    beatdown: "beatdown",
     warmup: "Warm-o-rama",
     thang: "The Thang",
     thirdF: "Third F",
@@ -25,6 +28,7 @@ const TERMS: Record<Language, Terms> = {
   },
   fia: {
     org: "FiA",
+    beatdown: "workout",
     warmup: "Warm-up",
     thang: "The Workout",
     thirdF: "Community",
