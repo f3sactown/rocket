@@ -34,6 +34,8 @@ export function SwipeRow({
   const moved = useRef(false);
   const [offset, setOffset] = useState(0);
   const [animating, setAnimating] = useState(false);
+  // Whether letting go now would run the action, which shows the color at full strength.
+  const [past, setPast] = useState(false);
 
   const width = () => row.current?.offsetWidth ?? 320;
   const threshold = () => Math.min(THRESHOLD_PX, width() * THRESHOLD_SHARE);
@@ -69,6 +71,7 @@ export function SwipeRow({
     if (Math.abs(next) > limit)
       next = Math.sign(next) * (limit + (Math.abs(next) - limit) * 0.6);
     setOffset(next);
+    setPast(Math.abs(next) >= limit);
   }
 
   function onPointerEnd() {
@@ -83,11 +86,11 @@ export function SwipeRow({
       setTimeout(action.onCommit, 180);
     } else {
       setOffset(0);
+      setPast(false);
     }
   }
 
   const shown = offset < 0 ? left : offset > 0 ? right : undefined;
-  const past = Math.abs(offset) >= threshold();
 
   return (
     <div className="relative overflow-hidden rounded-xl">
