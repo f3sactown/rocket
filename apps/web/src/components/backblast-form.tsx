@@ -7,7 +7,7 @@ import {
   joinQs,
   qNames,
   backblastParts,
-  formatBackblast,
+  copyText,
   termsFor,
   titleCase,
   type Language,
@@ -525,7 +525,7 @@ export function BackblastForm({
             ))}
             <ShareButton
               title={backblast.title}
-              text={formatBackblast(backblast, language)}
+              text={copyText(backblast, language)}
               className="btn w-full px-4 text-base"
             />
           </>
