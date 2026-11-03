@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   attendeeFromName,
+  copyText,
+  paxList,
   qNames,
   titleCase,
   attendeeLabel,
@@ -267,5 +269,34 @@ describe("titleCase", () => {
     expect(titleCase("WOD at McKinley: a full-body burner")).toBe(
       "WOD at McKinley: A Full-Body Burner",
     );
+  });
+});
+
+describe("paxList", () => {
+  const backblast: Backblast = {
+    title: "Hills",
+    date: "2026-10-14",
+    ao: "Talko Tuesday",
+    q: "Casper, Sparky",
+    attendees: [
+      { name: "Huggies", kind: "visitor", region: "South Fork" },
+      { name: "Rookie", kind: "fng", invitedBy: "Sparky" },
+      { name: "Cubby", kind: "2.0" },
+      { name: "Trench", kind: "pax" },
+    ],
+  };
+
+  it("lists everyone without @, keeping downrange regions and 2.0s but not FNG notes", () => {
+    expect(paxList(backblast)).toBe(
+      "Casper, Sparky, Huggies (South Fork), Rookie, Cubby (2.0), Trench",
+    );
+  });
+
+  it("ends the copied text", () => {
+    expect(
+      copyText(backblast).endsWith(
+        "\n\nCasper, Sparky, Huggies (South Fork), Rookie, Cubby (2.0), Trench",
+      ),
+    ).toBe(true);
   });
 });

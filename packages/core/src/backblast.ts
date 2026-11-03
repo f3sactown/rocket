@@ -334,3 +334,32 @@ export function formatBackblast(
     .map((part) => part.text)
     .join("\n\n");
 }
+
+/**
+ * Everyone who posted on one line, e.g. "Casper, Huggies (South Fork), Rookie, Cubby (2.0)":
+ * no @, downrange PAX with their region and 2.0s marked, FNGs by name alone.
+ */
+export function paxList(backblast: Backblast): string {
+  return attendance(backblast)
+    .map((attendee) => {
+      const name = attendee.name.trim();
+      if (attendee.kind === "visitor" && attendee.region?.trim())
+        return `${name} (${attendee.region.trim()})`;
+      if (attendee.kind === "2.0") return `${name} (2.0)`;
+      return name;
+    })
+    .join(", ");
+}
+
+/**
+ * The text that's copied or shared: the backblast, then the PAX list on its own line. The list
+ * isn't shown on screen.
+ */
+export function copyText(
+  backblast: Backblast,
+  language: Language = "f3",
+): string {
+  return [formatBackblast(backblast, language), paxList(backblast)]
+    .filter(Boolean)
+    .join("\n\n");
+}

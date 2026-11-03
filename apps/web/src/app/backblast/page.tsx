@@ -1,6 +1,11 @@
 "use client";
 
-import { formatBackblast, formatDate, type Backblast } from "@rocket/core";
+import {
+  copyText,
+  formatBackblast,
+  formatDate,
+  type Backblast,
+} from "@rocket/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -106,8 +111,11 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
       </pre>
 
       <div className="grid grid-cols-2 gap-3">
-        <CopyButton text={text} />
-        <ShareButton title={backblast.title} text={text} />
+        <CopyButton text={copyText(backblast, user.language)} />
+        <ShareButton
+          title={backblast.title}
+          text={copyText(backblast, user.language)}
+        />
       </div>
       {result.authorId === user.id && (
         <Link href={`/backblasts/edit?id=${id}`} className="btn -mt-2 w-full">
