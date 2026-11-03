@@ -9,6 +9,7 @@ import {
   ArchiveIcon,
   CloseIcon,
   DumbbellIcon,
+  HomeIcon,
   GearIcon,
   MenuIcon,
   PlusIcon,
@@ -17,6 +18,11 @@ import {
 import { RocketArt } from "./rocket-art";
 
 const LINKS = [
+  {
+    href: "/",
+    label: "Home",
+    match: (path: string) => path === "/",
+  },
   {
     href: "/workouts",
     label: "Workouts",
@@ -32,12 +38,10 @@ const LINKS = [
     match: (path: string) => path.startsWith("/workouts/new"),
   },
   {
-    href: "/",
+    href: "/backblasts",
     label: "Backblasts",
     match: (path: string) =>
-      path === "/" ||
-      path.startsWith("/backblast/") ||
-      path.startsWith("/backblasts/"),
+      path.startsWith("/backblast/") || path.startsWith("/backblasts"),
   },
   {
     href: "/search",
@@ -59,7 +63,8 @@ const LINKS = [
 const ICONS: Record<string, React.ReactNode> = {
   "/workouts": <DumbbellIcon />,
   "/workouts/new": <PlusIcon />,
-  "/": "☰",
+  "/": <HomeIcon />,
+  "/backblasts": "☰",
   "/search": <SearchIcon />,
   "/archive": <ArchiveIcon />,
   "/settings": <GearIcon />,

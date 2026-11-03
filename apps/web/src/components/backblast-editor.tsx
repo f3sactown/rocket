@@ -98,7 +98,7 @@ const WORDS = {
     table: "backblasts",
     edit: "/backblasts/edit/",
     view: "/backblast",
-    list: "/",
+    list: "/backblasts",
     new: "New backblast",
     draft: "Edit draft",
     published: "Edit backblast",
