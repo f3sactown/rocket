@@ -352,8 +352,8 @@ export function paxList(backblast: Backblast): string {
 }
 
 /**
- * The text that's copied or shared: the backblast, then the PAX list on its own line. The list
- * isn't shown on screen.
+ * The text that's copied or shared: the backblast, then a few blank lines and the PAX list. The
+ * list isn't shown on screen.
  */
 export function copyText(
   backblast: Backblast,
@@ -361,5 +361,5 @@ export function copyText(
 ): string {
   return [formatBackblast(backblast, language), paxList(backblast)]
     .filter(Boolean)
-    .join("\n\n");
+    .join("\n\n\n\n");
 }

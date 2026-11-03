@@ -292,10 +292,10 @@ describe("paxList", () => {
     );
   });
 
-  it("ends the copied text", () => {
+  it("ends the copied text, after three blank lines", () => {
     expect(
       copyText(backblast).endsWith(
-        "\n\nCasper, Sparky, Huggies (South Fork), Rookie, Cubby (2.0), Trench",
+        "Hills\n\n\n\nCasper, Sparky, Huggies (South Fork), Rookie, Cubby (2.0), Trench",
       ),
     ).toBe(true);
   });
