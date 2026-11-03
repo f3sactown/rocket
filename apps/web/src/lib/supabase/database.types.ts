@@ -45,6 +45,7 @@ export type Database = {
           warmup: string | null;
           thang: string | null;
           notes: string | null;
+          workout_id: string | null;
           attendees: Json;
           announcements: string | null;
           words_of_wisdom: string | null;
@@ -67,6 +68,7 @@ export type Database = {
           warmup?: string | null;
           thang?: string | null;
           notes?: string | null;
+          workout_id?: string | null;
           attendees?: Json;
           announcements?: string | null;
           words_of_wisdom?: string | null;
@@ -117,6 +119,78 @@ export type Database = {
             columns: ["owner_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      workouts: {
+        Row: {
+          id: string;
+          author_id: string;
+          status: "draft" | "published";
+          title: string;
+          date: string | null;
+          ao: string;
+          address: string | null;
+          time: string | null;
+          introduction: string | null;
+          warmup: string | null;
+          thang: string | null;
+          notes: string | null;
+          announcements: string | null;
+          words_of_wisdom: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          author_id?: string;
+          status?: "draft" | "published";
+          title?: string;
+          date?: string | null;
+          ao?: string;
+          address?: string | null;
+          time?: string | null;
+          introduction?: string | null;
+          warmup?: string | null;
+          thang?: string | null;
+          notes?: string | null;
+          announcements?: string | null;
+          words_of_wisdom?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["workouts"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "workouts_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      workout_archives: {
+        Row: {
+          user_id: string;
+          workout_id: string;
+          archived_at: string;
+        };
+        Insert: {
+          user_id?: string;
+          workout_id: string;
+          archived_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["workout_archives"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "workout_archives_workout_id_fkey";
+            columns: ["workout_id"];
+            isOneToOne: false;
+            referencedRelation: "workouts";
             referencedColumns: ["id"];
           },
         ];

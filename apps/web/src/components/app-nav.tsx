@@ -8,6 +8,7 @@ import { useAuth } from "./auth-provider";
 import {
   ArchiveIcon,
   CloseIcon,
+  DumbbellIcon,
   GearIcon,
   MenuIcon,
   PlusIcon,
@@ -17,14 +18,26 @@ import { RocketArt } from "./rocket-art";
 
 const LINKS = [
   {
-    href: "/",
-    label: "Backblasts",
-    match: (path: string) => path === "/" || path.startsWith("/backblast/"),
+    href: "/workouts",
+    label: "Workouts",
+    match: (path: string) =>
+      path === "/workouts" ||
+      path === "/workouts/" ||
+      path.startsWith("/workout/") ||
+      path.startsWith("/workouts/edit"),
   },
   {
-    href: "/backblasts/new",
-    label: "New backblast",
-    match: (path: string) => path.startsWith("/backblasts/new"),
+    href: "/workouts/new",
+    label: "New workout",
+    match: (path: string) => path.startsWith("/workouts/new"),
+  },
+  {
+    href: "/",
+    label: "Backblasts",
+    match: (path: string) =>
+      path === "/" ||
+      path.startsWith("/backblast/") ||
+      path.startsWith("/backblasts/"),
   },
   {
     href: "/search",
@@ -44,8 +57,9 @@ const LINKS = [
 ];
 
 const ICONS: Record<string, React.ReactNode> = {
+  "/workouts": <DumbbellIcon />,
+  "/workouts/new": <PlusIcon />,
   "/": "☰",
-  "/backblasts/new": <PlusIcon />,
   "/search": <SearchIcon />,
   "/archive": <ArchiveIcon />,
   "/settings": <GearIcon />,

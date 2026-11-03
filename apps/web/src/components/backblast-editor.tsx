@@ -3,20 +3,33 @@
 import { qNames, type Backblast } from "@rocket/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { parseAttendees, toInsert } from "@/lib/backblast";
+import {
+  loadWorkout,
+  parseAttendees,
+  toInsert,
+  toWorkoutInsert,
+} from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/client";
 import type { CurrentUser } from "./auth-provider";
-import { BackblastForm } from "./backblast-form";
+import { BackblastForm, type FormMode } from "./backblast-form";
 import { TEMPLATE_COLUMNS, type SectionTemplate } from "./section-templates";
 
-/** Fills in each section that has a default template. */
+/** The default-template sections each form fills in when it starts. */
+const DEFAULT_SECTIONS: Record<FormMode, string[]> = {
+  workout: ["introduction"],
+  backblast: ["attendees", "introduction", "thirdF", "secondF"],
+};
+
+/** Fills in each of the form's sections that has a default template and is still empty. */
 function withDefaults(
   backblast: Backblast,
   templates: SectionTemplate[],
+  mode: FormMode,
 ): Backblast {
   const filled = { ...backblast };
   for (const template of templates) {
     if (!template.is_default) continue;
+    if (!DEFAULT_SECTIONS[mode].includes(template.section)) continue;
     if (template.section === "attendees") {
       try {
         filled.attendees = parseAttendees(JSON.parse(template.body));
@@ -28,7 +41,9 @@ function withDefaults(
       template.section === "thirdF" ||
       template.section === "secondF"
     ) {
-      filled[template.section] = template.body;
+      // A backblast's introduction comes from its workout when it has one.
+      if (!filled[template.section]?.trim())
+        filled[template.section] = template.body;
     }
   }
   return filled;
@@ -50,29 +65,61 @@ function statusLabel(state: SaveState, published: boolean): string {
     case "error":
       return "Not saved";
     case "incomplete":
-      return "Not saved: add a title, date, AO and Q";
+      return "Not saved: add a title, date and AO (and the Q on a backblast)";
   }
 }
 
-/** A published backblast keeps its title, date, AO and Q, so edits missing one wait to save. */
-function hasBasics(backblast: Backblast): boolean {
+/**
+ * A finished workout keeps its title, date and AO, and a published backblast those and its Q, so
+ * edits missing one wait to save.
+ */
+function hasBasics(backblast: Backblast, mode: FormMode): boolean {
   return (
     [backblast.title, backblast.date, backblast.ao].every((value) =>
       value?.trim(),
-    ) && qNames(backblast).length > 0
+    ) &&
+    (mode === "workout" || qNames(backblast).length > 0)
   );
 }
 
+const WORDS = {
+  workout: {
+    table: "workouts",
+    edit: "/workouts/edit/",
+    view: "/workout",
+    list: "/workouts",
+    new: "New workout",
+    draft: "Edit workout draft",
+    published: "Edit workout",
+    finish: "Finish workout",
+    failed: "Couldn't save the workout.",
+  },
+  backblast: {
+    table: "backblasts",
+    edit: "/backblasts/edit/",
+    view: "/backblast",
+    list: "/",
+    new: "New backblast",
+    draft: "Edit draft",
+    published: "Edit backblast",
+    finish: "Finish draft",
+    failed: "Couldn't save the backblast.",
+  },
+} as const;
+
 /**
- * Edits a backblast. Changes save to Supabase as you type: a new draft is created on the first
- * edit, and "Finish draft" shares it. Edits to a published backblast save the same way.
+ * Edits a workout or a backblast. Changes save to Supabase as you type: a new draft is created on
+ * the first edit, and the last page's button finishes it. Edits to a finished one save the same
+ * way.
  */
 export function BackblastEditor({
+  mode = "backblast",
   user,
   draftId,
   published = false,
   initial,
 }: {
+  mode?: FormMode;
   user: CurrentUser;
   /** The backblast being edited, or undefined for a new one. */
   draftId?: string;
@@ -81,6 +128,7 @@ export function BackblastEditor({
   initial: Backblast;
 }) {
   const router = useRouter();
+  const words = WORDS[mode];
   const [loaded, setLoaded] = useState<{
     templates: SectionTemplate[];
     start: Backblast;
@@ -103,34 +151,41 @@ export function BackblastEditor({
       .order("name")
       .then(({ data }) => {
         const templates = data ?? [];
-        // A new backblast starts with the user's default templates filled in.
+        // A new one starts with the user's default templates filled in.
         const loaded = draftId
           ? initialRef.current
-          : withDefaults(initialRef.current, templates);
-        // The person writing it is the Q unless they say otherwise.
-        const start = loaded.q.trim() ? loaded : { ...loaded, q: user.name };
+          : withDefaults(initialRef.current, templates, mode);
+        // The person writing a backblast is the Q unless they say otherwise.
+        const start =
+          mode === "workout" || loaded.q.trim()
+            ? loaded
+            : { ...loaded, q: user.name };
         latest.current = start;
         setLoaded({ templates, start });
       });
-  }, [draftId, user.name]);
+  }, [draftId, user.name, mode]);
 
   /** Writes the latest content, one save at a time so a new draft is only created once. */
   const persist = useCallback(
     (status: "draft" | "published") => {
       const run = queue.current.then(async () => {
         const supabase = createClient();
-        const row = { ...toInsert(latest.current), status };
+        const fields =
+          mode === "workout"
+            ? toWorkoutInsert(latest.current)
+            : toInsert(latest.current);
+        const row = { ...fields, status };
+        // Both tables take the same shape of update; the union of their types doesn't.
+        const table = supabase.from(words.table as "backblasts");
         if (id.current) {
-          const { error } = await supabase
-            .from("backblasts")
-            .update(row)
+          const { error } = await table
+            .update(row as never)
             .eq("id", id.current);
           if (error) throw error;
           return;
         }
-        const { data, error } = await supabase
-          .from("backblasts")
-          .insert({ ...row, author_id: user.id })
+        const { data, error } = await table
+          .insert({ ...row, author_id: user.id } as never)
           .select("id")
           .single();
         if (error) throw error;
@@ -139,24 +194,24 @@ export function BackblastEditor({
         window.history.replaceState(
           null,
           "",
-          `${process.env.NEXT_PUBLIC_BASE_PATH}/backblasts/edit/?id=${data.id}`,
+          `${process.env.NEXT_PUBLIC_BASE_PATH}${words.edit}?id=${data.id}`,
         );
       });
       queue.current = run.catch(() => {});
       return run;
     },
-    [user.id],
+    [user.id, mode, words],
   );
 
   const saveNow = useCallback(() => {
     timer.current = null;
-    if (status === "published" && !hasBasics(latest.current))
+    if (status === "published" && !hasBasics(latest.current, mode))
       return setSaveState("incomplete");
     persist(status).then(
       () => setSaveState((state) => (timer.current ? state : "saved")),
       () => setSaveState("error"),
     );
-  }, [persist, status]);
+  }, [persist, status, mode]);
 
   const onChange = useCallback(
     (backblast: Backblast) => {
@@ -173,10 +228,11 @@ export function BackblastEditor({
     () => () => {
       if (timer.current) {
         clearTimeout(timer.current);
-        if (status === "draft" || hasBasics(latest.current)) persist(status);
+        if (status === "draft" || hasBasics(latest.current, mode))
+          persist(status);
       }
     },
-    [persist, status],
+    [persist, status, mode],
   );
 
   async function discard() {
@@ -184,19 +240,26 @@ export function BackblastEditor({
     timer.current = null;
     await queue.current;
     if (id.current)
-      await createClient().from("backblasts").delete().eq("id", id.current);
-    router.push("/");
+      await createClient()
+        .from(words.table as "backblasts")
+        .delete()
+        .eq("id", id.current);
+    router.push(words.list);
   }
 
   if (!loaded) return <div className="card h-96 animate-pulse" />;
 
   return (
     <BackblastForm
-      heading={
-        published ? "Edit backblast" : draftId ? "Edit draft" : "New backblast"
+      mode={mode}
+      onCopyWorkout={
+        mode === "backblast" && loaded.start.workoutId
+          ? () => loadWorkout(loaded.start.workoutId!)
+          : undefined
       }
+      heading={published ? words.published : draftId ? words.draft : words.new}
       status={statusLabel(saveState, published)}
-      saveLabel={published ? "Done" : "Finish draft"}
+      saveLabel={published ? "Done" : words.finish}
       initial={loaded.start}
       userId={user.id}
       initialTemplates={loaded.templates}
@@ -208,12 +271,9 @@ export function BackblastEditor({
         try {
           await persist("published");
         } catch (error) {
-          return (
-            (error as { message?: string }).message ??
-            "Couldn't save the backblast."
-          );
+          return (error as { message?: string }).message ?? words.failed;
         }
-        router.push(`/backblast?id=${id.current}`);
+        router.push(`${words.view}?id=${id.current}`);
       }}
       onDiscard={published ? undefined : discard}
     />

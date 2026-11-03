@@ -35,6 +35,35 @@ export interface Backblast {
   wordsOfWisdom?: string;
   thirdF?: string;
   secondF?: string;
+  /** The workout this backblast was made from, if any. */
+  workoutId?: string;
+}
+
+/**
+ * The plan for a beatdown, written before it. It has the same fields as a backblast but no Q,
+ * attendance or COT sections, and its notes are its own. A backblast is made from it.
+ */
+export type Workout = Backblast;
+
+/** The workout sections a backblast copies from its workout (everything but the notes). */
+export const WORKOUT_SECTIONS = [
+  "title",
+  "date",
+  "ao",
+  "address",
+  "time",
+  "introduction",
+  "warmup",
+  "thang",
+  "announcements",
+  "wordsOfWisdom",
+] as const satisfies readonly (keyof Backblast)[];
+
+/** The backblast with the workout's sections copied in, replacing its own. */
+export function copyWorkout(backblast: Backblast, workout: Workout): Backblast {
+  const copied = { ...backblast };
+  for (const key of WORKOUT_SECTIONS) copied[key] = workout[key] ?? "";
+  return copied;
 }
 
 /** Starting text for the Introduction section; the Q can edit it. */

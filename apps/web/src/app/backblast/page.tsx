@@ -105,6 +105,14 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         <span className="font-medium text-ink">{backblast.ao}</span>
         <span className="text-ink-soft">{formatDate(backblast.date)}</span>
       </div>
+      {backblast.workoutId && (
+        <Link
+          href={`/workout?id=${backblast.workoutId}`}
+          className="link -mt-2 self-start text-sm"
+        >
+          From a workout →
+        </Link>
+      )}
 
       <pre className="panel overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
         {text}

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   attendeeFromName,
   copyText,
+  copyWorkout,
   paxList,
   qNames,
   titleCase,
@@ -315,5 +316,44 @@ describe("notes", () => {
     expect(parts[1]!.text).toBe(
       "Title: Hills\n\nThe Thang:\n11s\n\nNotes:\nBring a headlamp",
     );
+  });
+});
+
+describe("copyWorkout", () => {
+  it("copies every workout section but the notes", () => {
+    const workout = {
+      title: "Hills",
+      date: "2026-10-14",
+      ao: "Talko Tuesday",
+      address: "Oki Park",
+      time: "5:15am-6:00am",
+      q: "",
+      attendees: [],
+      introduction: "Intro",
+      warmup: "SSH",
+      thang: "11s",
+      notes: "Workout note",
+      announcements: "Convergence",
+      wordsOfWisdom: "Keep going",
+    };
+    const backblast = copyWorkout(
+      {
+        title: "",
+        date: "",
+        ao: "",
+        q: "Casper",
+        attendees: [],
+        notes: "Mine",
+      },
+      workout,
+    );
+    expect(backblast).toMatchObject({
+      title: "Hills",
+      ao: "Talko Tuesday",
+      thang: "11s",
+      wordsOfWisdom: "Keep going",
+      notes: "Mine",
+      q: "Casper",
+    });
   });
 });
