@@ -62,9 +62,8 @@ function Dashboard({ user }: { user: CurrentUser }) {
     <section className="card">
       <header className="flex items-start justify-between gap-4">
         <h1 className="card-title">Backblasts</h1>
-        <span className="status mt-2 shrink-0">{user.name}</span>
+        <UserBadge user={user} />
       </header>
-      <PaxTotals user={user} />
 
       {error ? (
         <p className="panel px-3 py-8 text-center text-accent">{error}</p>
@@ -91,25 +90,47 @@ function Dashboard({ user }: { user: CurrentUser }) {
   );
 }
 
-/** The user's total posts and Qs from their region's sheet, or a nudge to choose a region. */
-function PaxTotals({ user }: { user: CurrentUser }) {
+/** The blue the user card is outlined in, the app's Blue accent, whatever accent is chosen. */
+const BADGE_BLUE = "#60a5fa";
+
+/** The user's name with their total posts and Qs and their region, grouped in a blue outline. */
+function UserBadge({ user }: { user: CurrentUser }) {
   const region = useUserRegion();
   const stats = useLoad(region ? () => loadPaxStats(region, user.name) : null, [
     region?.id,
     user.name,
   ]);
-  if (region === null)
-    return (
-      <Link href="/settings" className="link -mt-3">
-        Choose your region in Settings to see your posts and Qs →
-      </Link>
-    );
-  if (!stats.value) return null;
   return (
-    <p className="-mt-3 text-sm text-ink-soft">
-      <span className="font-mono text-ink">{stats.value.posts}</span> posts ·{" "}
-      <span className="font-mono text-ink">{stats.value.qs}</span> Qs
-      <span className="text-muted"> in {region?.name}</span>
-    </p>
+    <div
+      className="flex shrink-0 flex-col items-end gap-0.5 rounded-xl border px-3 py-2 text-right"
+      style={{
+        borderColor: BADGE_BLUE,
+        boxShadow: `0 0 12px color-mix(in srgb, ${BADGE_BLUE} 30%, transparent)`,
+      }}
+    >
+      <span className="status">{user.name}</span>
+      {region === null ? (
+        <Link href="/settings" className="text-xs text-muted hover:text-ink">
+          Choose your region →
+        </Link>
+      ) : (
+        <>
+          <span className="text-xs text-ink-soft">
+            {stats.value ? (
+              <>
+                <span className="font-mono text-ink">{stats.value.posts}</span>{" "}
+                posts ·{" "}
+                <span className="font-mono text-ink">{stats.value.qs}</span> Qs
+              </>
+            ) : stats.error ? (
+              "Totals unavailable"
+            ) : (
+              "Loading…"
+            )}
+          </span>
+          {region && <span className="text-xs text-muted">{region.name}</span>}
+        </>
+      )}
+    </div>
   );
 }
