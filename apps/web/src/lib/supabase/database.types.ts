@@ -44,6 +44,7 @@ export type Database = {
           introduction: string | null;
           warmup: string | null;
           thang: string | null;
+          notes: string | null;
           attendees: Json;
           announcements: string | null;
           words_of_wisdom: string | null;
@@ -65,6 +66,7 @@ export type Database = {
           introduction?: string | null;
           warmup?: string | null;
           thang?: string | null;
+          notes?: string | null;
           attendees?: Json;
           announcements?: string | null;
           words_of_wisdom?: string | null;

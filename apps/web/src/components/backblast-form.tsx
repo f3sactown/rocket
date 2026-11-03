@@ -34,6 +34,7 @@ type TextKey =
   | "introduction"
   | "warmup"
   | "thang"
+  | "notes"
   | "announcements"
   | "wordsOfWisdom"
   | "thirdF"
@@ -48,6 +49,8 @@ type Step =
       title: string;
       hint: string;
       builtIns?: BuiltInTemplate[];
+      /** Whether the page has no saved templates. */
+      noTemplates?: boolean;
     }
   | { kind: "attendance"; title: string; hint: string }
   | { kind: "review"; title: string; hint: string };
@@ -83,6 +86,13 @@ function stepsFor(language: Language): Step[] {
       name: "thang",
       title: terms.thang,
       hint: "The actual workout",
+    },
+    {
+      kind: "text",
+      name: "notes",
+      title: "Notes",
+      hint: "Anything else about the workout",
+      noTemplates: true,
     },
     {
       kind: "attendance",
@@ -326,7 +336,7 @@ export function BackblastForm({
           <h2 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-ink">
             {step.title}
           </h2>
-          {step.kind === "text" && (
+          {step.kind === "text" && !step.noTemplates && (
             <SectionTemplates
               userId={userId}
               section={step.name}

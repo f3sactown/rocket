@@ -27,6 +27,8 @@ export interface Backblast {
   introduction?: string;
   warmup?: string;
   thang?: string;
+  /** Anything else about the workout, after The Thang. */
+  notes?: string;
   /** Everyone who posted besides the Q. */
   attendees: Attendee[];
   announcements?: string;
@@ -310,6 +312,7 @@ export function backblastParts(
         labeled("Introduction", backblast.introduction),
         labeled(terms.warmup, backblast.warmup),
         labeled(terms.thang, backblast.thang),
+        labeled("Notes", backblast.notes),
       ),
     },
     {

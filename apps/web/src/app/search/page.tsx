@@ -25,6 +25,7 @@ const TEXT_COLUMNS = [
   "introduction",
   "warmup",
   "thang",
+  "notes",
   "announcements",
   "words_of_wisdom",
   "third_f",

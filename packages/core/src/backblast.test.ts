@@ -300,3 +300,20 @@ describe("paxList", () => {
     ).toBe(true);
   });
 });
+
+describe("notes", () => {
+  it("come after The Thang in Workout Details", () => {
+    const parts = backblastParts({
+      title: "Hills",
+      date: "2026-10-14",
+      ao: "Talko Tuesday",
+      q: "Casper",
+      attendees: [],
+      thang: "11s",
+      notes: "Bring a headlamp",
+    });
+    expect(parts[1]!.text).toBe(
+      "Title: Hills\n\nThe Thang:\n11s\n\nNotes:\nBring a headlamp",
+    );
+  });
+});
