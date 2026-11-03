@@ -93,7 +93,7 @@ function Dashboard({ user }: { user: CurrentUser }) {
 /** The blue the user card is outlined in, the app's Blue accent, whatever accent is chosen. */
 const BADGE_BLUE = "#60a5fa";
 
-/** The user's name with their total posts and Qs and their region, grouped in a blue outline. */
+/** The user's name and region, with their total posts and Qs below, in a blue outline. */
 function UserBadge({ user }: { user: CurrentUser }) {
   const region = useUserRegion();
   const stats = useLoad(region ? () => loadPaxStats(region, user.name) : null, [
@@ -108,28 +108,28 @@ function UserBadge({ user }: { user: CurrentUser }) {
         boxShadow: `0 0 12px color-mix(in srgb, ${BADGE_BLUE} 30%, transparent)`,
       }}
     >
-      <span className="status">{user.name}</span>
+      <span className="text-sm text-ink">
+        {user.name}
+        {region && <span className="text-muted"> • {region.name}</span>}
+      </span>
       {region === null ? (
         <Link href="/settings" className="text-xs text-muted hover:text-ink">
           Choose your region →
         </Link>
       ) : (
-        <>
-          <span className="text-xs text-ink-soft">
-            {stats.value ? (
-              <>
-                <span className="font-mono text-ink">{stats.value.posts}</span>{" "}
-                posts ·{" "}
-                <span className="font-mono text-ink">{stats.value.qs}</span> Qs
-              </>
-            ) : stats.error ? (
-              "Totals unavailable"
-            ) : (
-              "Loading…"
-            )}
-          </span>
-          {region && <span className="text-xs text-muted">{region.name}</span>}
-        </>
+        <span className="text-xs text-ink-soft">
+          {stats.value ? (
+            <>
+              <span className="font-mono text-ink">{stats.value.posts}</span>{" "}
+              posts ·{" "}
+              <span className="font-mono text-ink">{stats.value.qs}</span> Qs
+            </>
+          ) : stats.error ? (
+            "Totals unavailable"
+          ) : (
+            "Loading…"
+          )}
+        </span>
       )}
     </div>
   );
