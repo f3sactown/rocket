@@ -16,9 +16,6 @@ export default function Home() {
 /** How many of each kind the home page shows. */
 const RECENT = 5;
 
-/** The blue the totals are outlined in, the app's Blue accent, whatever accent is chosen. */
-const BLUE = "#60a5fa";
-
 /** The first page: your totals, your drafts, and the latest workouts and backblasts. */
 function HomePage({ user }: { user: CurrentUser }) {
   const [lists, setLists] = useState<{
@@ -57,10 +54,9 @@ function HomePage({ user }: { user: CurrentUser }) {
       ) : (
         <>
           {lists.drafts.length > 0 && (
-            <BackblastList
-              user={user}
-              groups={[{ title: "Your drafts", items: lists.drafts }]}
-            />
+            <Recent title="Your drafts">
+              <BackblastList user={user} groups={[{ items: lists.drafts }]} />
+            </Recent>
           )}
           <Recent title="Recent workouts" href="/workouts">
             <BackblastList
@@ -87,14 +83,14 @@ function HomePage({ user }: { user: CurrentUser }) {
   );
 }
 
-/** A heading with a link to the full list, above a short list. */
+/** A heading, with a link to the full list if there is one, above a short list. */
 function Recent({
   title,
   href,
   children,
 }: {
   title: string;
-  href: string;
+  href?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -103,16 +99,18 @@ function Recent({
         <h2 className="text-lg font-semibold tracking-tight text-ink">
           {title}
         </h2>
-        <Link href={href} className="link text-sm">
-          See all →
-        </Link>
+        {href && (
+          <Link href={href} className="link text-sm">
+            See all →
+          </Link>
+        )}
       </div>
       {children}
     </div>
   );
 }
 
-/** Your total posts and Qs from your region's sheet, big and outlined in blue. */
+/** Your total posts and Qs from your region's sheet, big and outlined in the accent color. */
 function Totals({ user }: { user: CurrentUser }) {
   const region = useUserRegion();
   const stats = useLoad(region ? () => loadPaxStats(region, user.name) : null, [
@@ -129,8 +127,10 @@ function Totals({ user }: { user: CurrentUser }) {
     <div
       className="flex flex-col items-center gap-1 rounded-2xl border py-5"
       style={{
-        borderColor: BLUE,
-        boxShadow: `0 0 16px color-mix(in srgb, ${BLUE} 25%, transparent)`,
+        // Outlined in the accent color the user chose.
+        borderColor: "var(--accent)",
+        boxShadow:
+          "0 0 16px color-mix(in srgb, var(--accent) 25%, transparent)",
       }}
     >
       <span className="font-mono text-4xl text-ink">
