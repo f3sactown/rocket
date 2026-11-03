@@ -153,7 +153,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
                 .delete()
                 .eq("id", id!);
               if (error) setDeleteError(error.message);
-              else router.push("/");
+              else router.push("/backblasts");
             }}
             className="link hover:text-accent"
           >

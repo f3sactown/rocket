@@ -9,6 +9,7 @@ import {
   backblastParts,
   copyText,
   copyWorkout,
+  WORKOUT_SECTIONS,
   formatBackblast,
   termsFor,
   titleCase,
@@ -113,7 +114,7 @@ function allSteps(language: Language): Step[] {
     {
       kind: "workout",
       title: "Workout",
-      hint: "Copied from the workout. Change anything that went differently.",
+      hint: "The workout this backblast was made from. To change it, edit the workout, then update from it here.",
     },
     {
       kind: "attendance",
@@ -177,6 +178,19 @@ function stepsFor(language: Language, mode: FormMode): Step[] {
         text("secondF"),
         kind("review"),
       ];
+}
+
+/** The workout's part of a backblast as text: where and when, then its sections (not the notes). */
+function workoutText(backblast: Backblast, language: Language): string {
+  const workout: Backblast = {
+    title: "",
+    date: "",
+    ao: "",
+    q: "",
+    attendees: [],
+  };
+  for (const key of WORKOUT_SECTIONS) workout[key] = backblast[key] ?? "";
+  return formatBackblast(workout, language);
 }
 
 /** The title for each text section, for the Workout page's fields. */
@@ -324,12 +338,6 @@ export function BackblastForm({
   /** Replaces the Workout page's sections with the workout's current ones. */
   async function copyAgain() {
     if (!onCopyWorkout) return;
-    if (
-      !confirm(
-        "Copy the workout's sections again? Changes made here to them will be replaced.",
-      )
-    )
-      return;
     setCopying(true);
     setError(null);
     const workout = await onCopyWorkout();
@@ -548,55 +556,47 @@ export function BackblastForm({
           <div className="flex flex-col gap-4">{basicsFields}</div>
         )}
 
-        {step.kind === "workout" && (
-          <div className="flex flex-col gap-4">
-            {backblast.workoutId && (
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line px-3 py-2 text-sm text-ink-soft">
-                <span>Made from a workout.</span>
-                <span className="flex gap-4">
-                  <a
-                    href={`${process.env.NEXT_PUBLIC_BASE_PATH}/workout/?id=${backblast.workoutId}`}
+        {step.kind === "workout" &&
+          (backblast.workoutId ? (
+            <div className="flex flex-col gap-3">
+              <pre className="rounded-xl border border-line p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
+                {workoutText(backblast, language) || "The workout is empty."}
+              </pre>
+              <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+                <a
+                  href={`${process.env.NEXT_PUBLIC_BASE_PATH}/workout/?id=${backblast.workoutId}`}
+                  className="link"
+                >
+                  Open workout
+                </a>
+                {onCopyWorkout && (
+                  <button
+                    type="button"
+                    disabled={copying}
+                    onClick={copyAgain}
                     className="link"
                   >
-                    Open workout
-                  </a>
-                  {onCopyWorkout && (
-                    <button
-                      type="button"
-                      disabled={copying}
-                      onClick={copyAgain}
-                      className="link"
-                    >
-                      {copying ? "Copying…" : "Copy again"}
-                    </button>
-                  )}
-                </span>
+                    {copying ? "Updating…" : "Update from workout"}
+                  </button>
+                )}
               </div>
-            )}
-            {basicsFields}
-            {WORKOUT_TEXT.map((name) => (
-              <details
-                key={name}
-                className="group rounded-xl border border-line"
-              >
-                <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5 text-sm font-medium text-ink">
+            </div>
+          ) : (
+            // A backblast started on its own has no workout to show, so it's filled in here.
+            <div className="flex flex-col gap-4">
+              {basicsFields}
+              {WORKOUT_TEXT.map((name) => (
+                <label key={name} className="label flex flex-col gap-1.5">
                   {textTitle(allText, name)}
-                  <span className="truncate text-xs font-normal text-muted">
-                    {backblast[name]?.trim()
-                      ? backblast[name]!.trim().split("\n")[0]
-                      : "Empty"}
-                  </span>
-                </summary>
-                <textarea
-                  aria-label={textTitle(allText, name)}
-                  value={backblast[name] ?? ""}
-                  onChange={(e) => set(name, e.target.value)}
-                  className="input m-3 mt-0 block min-h-40 w-[calc(100%-1.5rem)] resize-y text-base leading-relaxed"
-                />
-              </details>
-            ))}
-          </div>
-        )}
+                  <textarea
+                    value={backblast[name] ?? ""}
+                    onChange={(e) => set(name, e.target.value)}
+                    className="input min-h-28 resize-y text-base leading-relaxed"
+                  />
+                </label>
+              ))}
+            </div>
+          ))}
 
         {step.kind === "text" && (
           <textarea

@@ -1,12 +1,155 @@
 "use client";
 
-import { SignedIn } from "@/components/auth-provider";
-import { ItemDashboard } from "@/components/item-dashboard";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { SignedIn, type CurrentUser } from "@/components/auth-provider";
+import { BackblastList } from "@/components/backblast-list";
+import { PlusIcon } from "@/components/icons";
+import { loadLists, type ListItem } from "@/lib/backblast-list";
+import { loadPaxStats } from "@/lib/regions";
+import { useLoad, useUserRegion } from "@/lib/use-region";
 
 export default function Home() {
+  return <SignedIn>{(user) => <HomePage user={user} />}</SignedIn>;
+}
+
+/** How many of each kind the home page shows. */
+const RECENT = 5;
+
+/** The blue the totals are outlined in, the app's Blue accent, whatever accent is chosen. */
+const BLUE = "#60a5fa";
+
+/** The first page: your totals, your drafts, and the latest workouts and backblasts. */
+function HomePage({ user }: { user: CurrentUser }) {
+  const [lists, setLists] = useState<{
+    drafts: ListItem[];
+    workouts: ListItem[];
+    backblasts: ListItem[];
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      loadLists("workout", user.id, RECENT),
+      loadLists("backblast", user.id, RECENT),
+    ]).then(
+      ([workouts, backblasts]) =>
+        setLists({
+          drafts: [...workouts.drafts, ...backblasts.drafts],
+          workouts: workouts.published,
+          backblasts: backblasts.published,
+        }),
+      (e: Error) => setError(e.message),
+    );
+  }, [user.id]);
+
   return (
-    <SignedIn>
-      {(user) => <ItemDashboard user={user} kind="backblast" />}
-    </SignedIn>
+    <section className="card">
+      <header className="flex flex-col gap-1">
+        <h1 className="card-title">Hey, {user.name}</h1>
+      </header>
+      <Totals user={user} />
+
+      {error ? (
+        <p className="panel px-3 py-8 text-center text-accent">{error}</p>
+      ) : !lists ? (
+        <p className="panel px-3 py-8 text-center text-muted">Loading…</p>
+      ) : (
+        <>
+          {lists.drafts.length > 0 && (
+            <BackblastList
+              user={user}
+              groups={[{ title: "Your drafts", items: lists.drafts }]}
+            />
+          )}
+          <Recent title="Recent workouts" href="/workouts">
+            <BackblastList
+              user={user}
+              groups={[{ items: lists.workouts, empty: "No workouts yet." }]}
+            />
+          </Recent>
+          <Recent title="Recent backblasts" href="/backblasts">
+            <BackblastList
+              user={user}
+              groups={[
+                { items: lists.backblasts, empty: "No backblasts yet." },
+              ]}
+            />
+          </Recent>
+        </>
+      )}
+
+      <Link href="/workouts/new" className="btn w-full">
+        <PlusIcon />
+        New workout
+      </Link>
+    </section>
+  );
+}
+
+/** A heading with a link to the full list, above a short list. */
+function Recent({
+  title,
+  href,
+  children,
+}: {
+  title: string;
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between px-1">
+        <h2 className="text-lg font-semibold tracking-tight text-ink">
+          {title}
+        </h2>
+        <Link href={href} className="link text-sm">
+          See all →
+        </Link>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** Your total posts and Qs from your region's sheet, big and outlined in blue. */
+function Totals({ user }: { user: CurrentUser }) {
+  const region = useUserRegion();
+  const stats = useLoad(region ? () => loadPaxStats(region, user.name) : null, [
+    region?.id,
+    user.name,
+  ]);
+  if (region === null)
+    return (
+      <Link href="/settings" className="link">
+        Choose your region in Settings to see your posts and Qs →
+      </Link>
+    );
+  const tile = (label: string, value: number | undefined) => (
+    <div
+      className="flex flex-col items-center gap-1 rounded-2xl border py-5"
+      style={{
+        borderColor: BLUE,
+        boxShadow: `0 0 16px color-mix(in srgb, ${BLUE} 25%, transparent)`,
+      }}
+    >
+      <span className="font-mono text-4xl text-ink">
+        {value ?? (stats.error ? "–" : "…")}
+      </span>
+      <span className="text-sm text-ink-soft">{label}</span>
+    </div>
+  );
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-2 gap-3">
+        {tile("Posts", stats.value?.posts)}
+        {tile("Qs", stats.value?.qs)}
+      </div>
+      <p className="text-center text-xs text-muted">
+        {stats.error
+          ? `Totals unavailable: ${stats.error}`
+          : `in ${region?.name ?? "your region"}`}
+      </p>
+    </div>
   );
 }

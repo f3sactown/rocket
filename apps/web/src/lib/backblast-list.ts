@@ -105,3 +105,38 @@ export async function deleteItem(id: string, kind: ItemKind = "backblast") {
 
 /** Deletes a backblast. */
 export const deleteBackblast = (id: string) => deleteItem(id, "backblast");
+
+/**
+ * Your drafts of a kind, most recently edited first, and everyone's finished ones, newest first.
+ * What you've archived is left out.
+ */
+export async function loadLists(
+  kind: ItemKind,
+  userId: string,
+  limit = 50,
+): Promise<{ drafts: ListItem[]; published: ListItem[] }> {
+  const supabase = createClient();
+  const archived = await loadArchivedIds(kind);
+  const notArchived = `(${archived.join(",")})`;
+  let drafts = supabase
+    .from(tableFor(kind))
+    .select(listColumns(kind))
+    .eq("status", "draft")
+    .eq("author_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  let published = supabase
+    .from(tableFor(kind))
+    .select(listColumns(kind))
+    .eq("status", "published")
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (archived.length) {
+    drafts = drafts.not("id", "in", notArchived);
+    published = published.not("id", "in", notArchived);
+  }
+  const [d, p] = await Promise.all([drafts, published]);
+  if (d.error || p.error) throw new Error((d.error ?? p.error)!.message);
+  return { drafts: asItems(kind, d.data), published: asItems(kind, p.data) };
+}
