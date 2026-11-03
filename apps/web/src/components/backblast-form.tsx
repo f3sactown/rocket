@@ -22,7 +22,7 @@ import { AttendanceInput } from "./attendance-input";
 import { QPicker } from "./q-picker";
 import { Regulars } from "./regulars";
 import { useAuth } from "./auth-provider";
-import { ArrowIcon } from "./icons";
+import { ArrowIcon, SkipIcon, TrashIcon } from "./icons";
 import { ShareButton } from "./share-button";
 import {
   SectionTemplates,
@@ -577,9 +577,10 @@ export function BackblastForm({
         <button
           type="button"
           onClick={() => goTo(LAST_STEP)}
-          className="link -mt-2 self-center"
+          className="link -mt-2 inline-flex items-center gap-1.5 self-center"
         >
           Skip to review
+          <SkipIcon />
         </button>
       )}
       {onDiscard && (
@@ -589,8 +590,9 @@ export function BackblastForm({
             if (confirm("Discard this draft? This can't be undone."))
               onDiscard();
           }}
-          className="link -mt-2 self-center"
+          className="link -mt-2 inline-flex items-center gap-1.5 self-center hover:text-accent"
         >
+          <TrashIcon />
           Discard draft
         </button>
       )}
