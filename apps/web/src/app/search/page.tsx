@@ -6,7 +6,10 @@ import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
 import { parseAttendees } from "@/lib/backblast";
 import {
-  LIST_COLUMNS,
+  asItems,
+  listColumns,
+  tableFor,
+  type ItemKind,
   loadArchivedIds,
   type ListItem,
 } from "@/lib/backblast-list";
@@ -16,8 +19,8 @@ export default function SearchPage() {
   return <SignedIn>{(user) => <Search user={user} />}</SignedIn>;
 }
 
-/** Every searchable field of a backblast, besides its title. */
-const TEXT_COLUMNS = [
+/** Every searchable field, besides the title, of each kind. */
+const BACKBLAST_COLUMNS = [
   "ao",
   "q",
   "address",
@@ -32,25 +35,41 @@ const TEXT_COLUMNS = [
   "second_f",
 ] as const;
 
+const WORKOUT_COLUMNS = [
+  "ao",
+  "address",
+  "time",
+  "introduction",
+  "warmup",
+  "thang",
+  "notes",
+  "announcements",
+  "words_of_wisdom",
+] as const;
+
 interface Searchable {
   item: ListItem;
   /** Everything else that can match, one piece per field. */
   fields: string[];
 }
 
-/** Loads what can be searched: published backblasts and your own drafts. */
-async function loadSearchable(): Promise<Searchable[]> {
+/** Loads what can be searched of a kind: the finished ones and your own drafts. */
+async function loadSearchable(kind: ItemKind): Promise<Searchable[]> {
+  const columns: readonly string[] =
+    kind === "workout" ? WORKOUT_COLUMNS : BACKBLAST_COLUMNS;
   const { data, error } = await createClient()
-    .from("backblasts")
-    .select(`${LIST_COLUMNS}, attendees, ${TEXT_COLUMNS.join(", ")}`)
+    .from(tableFor(kind))
+    .select(
+      `${listColumns(kind)}, ${kind === "backblast" ? "attendees, " : ""}${columns.join(", ")}`,
+    )
     .order("date", { ascending: false, nullsFirst: true })
     .limit(1000);
   if (error) throw new Error(error.message);
-  return (data as unknown as (ListItem & Record<string, unknown>)[]).map(
+  return (asItems(kind, data) as (ListItem & Record<string, unknown>)[]).map(
     (row) => ({
       item: row,
       fields: [
-        ...TEXT_COLUMNS.map((column) => row[column]),
+        ...columns.map((column) => row[column]),
         row.date && formatDate(row.date),
         row.author?.name,
         ...parseAttendees(row.attendees).map(attendeeLabel),
@@ -92,9 +111,17 @@ function Search({ user }: { user: CurrentUser }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([loadSearchable(), loadArchivedIds()]).then(
-      ([entries, archived]) =>
-        setData({ entries, archived: new Set(archived) }),
+    Promise.all([
+      loadSearchable("workout"),
+      loadSearchable("backblast"),
+      loadArchivedIds("workout"),
+      loadArchivedIds("backblast"),
+    ]).then(
+      ([workouts, backblasts, archivedWorkouts, archivedBackblasts]) =>
+        setData({
+          entries: [...workouts, ...backblasts],
+          archived: new Set([...archivedWorkouts, ...archivedBackblasts]),
+        }),
       (e: Error) => setError(e.message),
     );
   }, [user.id]);
@@ -121,7 +148,7 @@ function Search({ user }: { user: CurrentUser }) {
           type="search"
           autoFocus
           aria-label="Search"
-          placeholder="Search backblasts, AOs, PAX…"
+          placeholder="Search workouts, backblasts, AOs, PAX…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="input text-base"
@@ -172,13 +199,16 @@ function Search({ user }: { user: CurrentUser }) {
               return text ? [[entry.item.id, text]] : [];
             }),
           )}
-          groups={[
-            {
-              title: `Backblasts · ${results.length}`,
-              items: results.map((entry) => entry.item),
+          groups={(["workout", "backblast"] as const).map((kind) => {
+            const items = results
+              .map((entry) => entry.item)
+              .filter((item) => item.kind === kind);
+            return {
+              title: `${kind === "workout" ? "Workouts" : "Backblasts"} · ${items.length}`,
+              items,
               empty: "No matches.",
-            },
-          ]}
+            };
+          })}
         />
       )}
     </section>

@@ -4,13 +4,18 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   archive,
-  deleteBackblast,
+  deleteItem,
+  itemHref,
   unarchive,
   type ListItem,
 } from "@/lib/backblast-list";
 import type { CurrentUser, SwipeAction } from "./auth-provider";
 import { Highlight } from "./highlight";
 import { SwipeRow, type SwipeOption } from "./swipe-row";
+
+function untitled(item: ListItem) {
+  return item.kind === "workout" ? "Untitled workout" : "Untitled backblast";
+}
 
 /** How long "Undo" stays up. A delete only happens once it's gone. */
 const UNDO_MS = 5000;
@@ -33,7 +38,7 @@ interface Pending {
 }
 
 /**
- * Backblasts in one or more groups. Swipe a row to archive it (or unarchive, in the archive) or,
+ * Workouts or backblasts in one or more groups. Swipe a row to archive it (or unarchive, in the archive) or,
  * for your own, to delete it; which direction does which is set in Settings. Both can be undone
  * for a few seconds.
  */
@@ -109,10 +114,10 @@ export function BackblastList({
     hide(item.id, true);
     setError(null);
     offerUndo({
-      message: `Deleted “${item.title || "Untitled backblast"}”`,
+      message: `Deleted “${item.title || untitled(item)}”`,
       undo: () => hide(item.id, false),
       finish: () =>
-        deleteBackblast(item.id).then(
+        deleteItem(item.id, item.kind).then(
           () => onDeleted?.(item.id),
           (e: Error) => fail(item.id, e.message),
         ),
@@ -122,17 +127,17 @@ export function BackblastList({
   function toggleArchive(item: ListItem, isArchived: boolean) {
     hide(item.id, true);
     setError(null);
-    const name = item.title || "Untitled backblast";
+    const name = item.title || untitled(item);
     const [run, revert] = isArchived
       ? [unarchive, archive]
       : [archive, unarchive];
-    run(item.id).then(
+    run(item.id, item.kind).then(
       () => {
         onArchived?.(item.id, !isArchived);
         offerUndo({
           message: `${isArchived ? "Unarchived" : "Archived"} “${name}”`,
           undo: () =>
-            revert(item.id).then(
+            revert(item.id, item.kind).then(
               () => {
                 hide(item.id, false);
                 onArchived?.(item.id, isArchived);
@@ -244,9 +249,7 @@ function Row({
   const draft = item.status === "draft";
   return (
     <Link
-      href={
-        draft ? `/backblasts/edit?id=${item.id}` : `/backblast?id=${item.id}`
-      }
+      href={itemHref(item)}
       draggable={false}
       className="group flex items-center gap-4 rounded-xl px-3 py-3.5 transition-colors hover:bg-hover"
     >
@@ -259,10 +262,7 @@ function Row({
       />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium text-ink">
-          <Highlight
-            text={item.title || "Untitled backblast"}
-            words={highlight}
-          />
+          <Highlight text={item.title || untitled(item)} words={highlight} />
         </span>
         <span className="truncate text-sm text-muted">
           {draft

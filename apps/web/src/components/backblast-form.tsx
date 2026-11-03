@@ -8,6 +8,8 @@ import {
   qNames,
   backblastParts,
   copyText,
+  copyWorkout,
+  formatBackblast,
   termsFor,
   titleCase,
   type Language,
@@ -53,10 +55,24 @@ type Step =
       noTemplates?: boolean;
     }
   | { kind: "attendance"; title: string; hint: string }
+  /** A backblast's copy of its workout's sections, all on one page. */
+  | { kind: "workout"; title: string; hint: string }
   | { kind: "review"; title: string; hint: string };
 
-/** The pages of the form, worded for the user's vocabulary. */
-function stepsFor(language: Language): Step[] {
+/** Which form: the workout (the plan) or the backblast written from it. */
+export type FormMode = "workout" | "backblast";
+
+/** The workout sections a backblast shows on its Workout page, below the basics. */
+const WORKOUT_TEXT: TextKey[] = [
+  "introduction",
+  "warmup",
+  "thang",
+  "announcements",
+  "wordsOfWisdom",
+];
+
+/** Every page either form can have, worded for the user's vocabulary, by key. */
+function allSteps(language: Language): Step[] {
   const terms = termsFor(language);
   return [
     {
@@ -95,6 +111,11 @@ function stepsFor(language: Language): Step[] {
       noTemplates: true,
     },
     {
+      kind: "workout",
+      title: "Workout",
+      hint: "Copied from the workout. Change anything that went differently.",
+    },
+    {
       kind: "attendance",
       title: "Name-o-rama",
       hint: "The Q and the names of the PAX who attended. The Q is counted automatically. Mark downrange PAX with their home region, FNGs with who invited them, and 2.0s.",
@@ -131,12 +152,44 @@ function stepsFor(language: Language): Step[] {
   ];
 }
 
-const LAST_STEP = stepsFor("f3").length - 1;
+/** The pages of a workout or a backblast, in order. */
+function stepsFor(language: Language, mode: FormMode): Step[] {
+  const all = allSteps(language);
+  const text = (name: TextKey) =>
+    all.find((step) => step.kind === "text" && step.name === name)!;
+  const kind = (k: Step["kind"]) => all.find((step) => step.kind === k)!;
+  return mode === "workout"
+    ? [
+        kind("basics"),
+        text("introduction"),
+        text("warmup"),
+        text("thang"),
+        text("notes"),
+        text("announcements"),
+        text("wordsOfWisdom"),
+        { ...kind("review"), hint: "The workout as it will be copied." },
+      ]
+    : [
+        kind("workout"),
+        text("notes"),
+        kind("attendance"),
+        text("thirdF"),
+        text("secondF"),
+        kind("review"),
+      ];
+}
+
+/** The title for each text section, for the Workout page's fields. */
+function textTitle(steps: Step[], name: TextKey): string {
+  const step = steps.find((s) => s.kind === "text" && s.name === name);
+  return step?.title ?? name;
+}
 
 /** Whether a page has anything filled in, for the progress bar and review list. */
 function isFilled(step: Step, backblast: Backblast): boolean {
   switch (step.kind) {
     case "basics":
+    case "workout":
       return Boolean(
         backblast.title.trim() && backblast.date && backblast.ao.trim(),
       );
@@ -161,6 +214,8 @@ function attendeesPreview(body: string): string {
 const OTHER_AO = "__other";
 
 export function BackblastForm({
+  mode = "backblast",
+  onCopyWorkout,
   heading,
   status,
   saveLabel,
@@ -171,6 +226,12 @@ export function BackblastForm({
   userId,
   initialTemplates,
 }: {
+  mode?: FormMode;
+  /**
+   * For a backblast made from a workout: fetches the workout's sections again, returning the
+   * workout (or an error message).
+   */
+  onCopyWorkout?: () => Promise<Backblast | string>;
   heading: string;
   /** Short save state shown in the header, e.g. "Draft saved". */
   status: string;
@@ -209,8 +270,11 @@ export function BackblastForm({
     (!!backblast.ao &&
       !!sites.value &&
       !sites.value.some((s) => s.name === backblast.ao));
-  const steps = useMemo(() => stepsFor(language), [language]);
-  const step = steps[stepIndex];
+  const steps = useMemo(() => stepsFor(language, mode), [language, mode]);
+  const lastStep = steps.length - 1;
+  const step = steps[stepIndex]!;
+  const allText = useMemo(() => stepsFor(language, "workout"), [language]);
+  const [copying, setCopying] = useState(false);
 
   // Report edits (not the initial render) so the draft can be saved.
   useEffect(() => {
@@ -229,15 +293,17 @@ export function BackblastForm({
   function goTo(index: number) {
     navigated.current = true;
     setError(null);
-    setStepIndex(Math.max(0, Math.min(LAST_STEP, index)));
+    setStepIndex(Math.max(0, Math.min(lastStep, index)));
   }
 
   async function save() {
-    if (!isFilled(steps[0], backblast)) {
-      setError("Add a title, date and AO on the Basics page first.");
+    if (!isFilled(steps[0]!, backblast)) {
+      setError(
+        `Add a title, date and AO on the ${steps[0]!.title} page first.`,
+      );
       return;
     }
-    if (qNames(backblast).length === 0) {
+    if (mode === "backblast" && qNames(backblast).length === 0) {
       setError("Choose the Q on the Name-o-rama page first.");
       return;
     }
@@ -254,6 +320,24 @@ export function BackblastForm({
     edited.current = true;
     setBackblast((current) => ({ ...current, [key]: value }));
   };
+
+  /** Replaces the Workout page's sections with the workout's current ones. */
+  async function copyAgain() {
+    if (!onCopyWorkout) return;
+    if (
+      !confirm(
+        "Copy the workout's sections again? Changes made here to them will be replaced.",
+      )
+    )
+      return;
+    setCopying(true);
+    setError(null);
+    const workout = await onCopyWorkout();
+    setCopying(false);
+    if (typeof workout === "string") return setError(workout);
+    edited.current = true;
+    setBackblast((current) => copyWorkout(current, workout));
+  }
 
   /**
    * Sets the AO and, for an AO from the region's sheet, adds its location and time, and the next
@@ -272,12 +356,92 @@ export function BackblastForm({
     }
   }
 
+  const basicsFields = (
+    <>
+      <label className="label flex flex-col gap-1.5">
+        Title
+        <input
+          value={backblast.title}
+          onChange={(e) => set("title", e.target.value)}
+          // Capitalized like a title once you're done typing it.
+          onBlur={(e) => {
+            const cased = titleCase(e.target.value);
+            if (cased !== e.target.value) set("title", cased);
+          }}
+          className="input text-base"
+        />
+      </label>
+      <label className="label flex flex-col gap-1.5">
+        AO
+        {sites.value?.length ? (
+          <select
+            value={customAo ? OTHER_AO : backblast.ao}
+            onChange={(e) => {
+              if (e.target.value === OTHER_AO) {
+                setTypingAo(true);
+                set("ao", "");
+                set("address", "");
+              } else {
+                setTypingAo(false);
+                chooseAo(e.target.value);
+              }
+            }}
+            className="input text-base"
+          >
+            <option value="">Choose an AO…</option>
+            {sitesByDay(sites.value).map((group) => (
+              <optgroup key={group.day} label={group.day}>
+                {group.sites.map((site) => (
+                  <option key={site.name} value={site.name}>
+                    {site.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+            <option value={OTHER_AO}>Other…</option>
+          </select>
+        ) : null}
+        {(customAo || !sites.value?.length) && (
+          <input
+            value={backblast.ao}
+            onChange={(e) => set("ao", e.target.value)}
+            placeholder={sites.value?.length ? "AO name" : undefined}
+            className="input text-base"
+          />
+        )}
+        {sites.error && (
+          <span className="text-xs font-normal text-accent">
+            AO list unavailable: {sites.error}
+          </span>
+        )}
+      </label>
+      <label className="label flex flex-col gap-1.5">
+        Date
+        <input
+          type="date"
+          value={backblast.date}
+          onChange={(e) => set("date", e.target.value)}
+          className="input text-base"
+        />
+      </label>
+      <label className="label flex flex-col gap-1.5">
+        Time
+        <input
+          value={backblast.time ?? ""}
+          onChange={(e) => set("time", e.target.value)}
+          placeholder="5:15am-6:00am"
+          className="input text-base"
+        />
+      </label>
+    </>
+  );
+
   return (
     <form
       // Enter in a single-line field moves to the next page; saving happens on the last page.
       onSubmit={(event) => {
         event.preventDefault();
-        if (stepIndex < LAST_STEP) goTo(stepIndex + 1);
+        if (stepIndex < lastStep) goTo(stepIndex + 1);
         else save();
       }}
       className="card"
@@ -289,7 +453,12 @@ export function BackblastForm({
         <span className="status shrink-0">{status}</span>
       </header>
 
-      <nav aria-label="Backblast sections" className="flex flex-col gap-2">
+      <nav
+        aria-label={
+          mode === "workout" ? "Workout sections" : "Backblast sections"
+        }
+        className="flex flex-col gap-2"
+      >
         <div className="flex gap-1">
           {steps.map((s, index) => (
             <button
@@ -376,82 +545,56 @@ export function BackblastForm({
         )}
 
         {step.kind === "basics" && (
+          <div className="flex flex-col gap-4">{basicsFields}</div>
+        )}
+
+        {step.kind === "workout" && (
           <div className="flex flex-col gap-4">
-            <label className="label flex flex-col gap-1.5">
-              Title
-              <input
-                value={backblast.title}
-                onChange={(e) => set("title", e.target.value)}
-                // Capitalized like a title once you're done typing it.
-                onBlur={(e) => {
-                  const cased = titleCase(e.target.value);
-                  if (cased !== e.target.value) set("title", cased);
-                }}
-                className="input text-base"
-              />
-            </label>
-            <label className="label flex flex-col gap-1.5">
-              AO
-              {sites.value?.length ? (
-                <select
-                  value={customAo ? OTHER_AO : backblast.ao}
-                  onChange={(e) => {
-                    if (e.target.value === OTHER_AO) {
-                      setTypingAo(true);
-                      set("ao", "");
-                      set("address", "");
-                    } else {
-                      setTypingAo(false);
-                      chooseAo(e.target.value);
-                    }
-                  }}
-                  className="input text-base"
-                >
-                  <option value="">Choose an AO…</option>
-                  {sitesByDay(sites.value).map((group) => (
-                    <optgroup key={group.day} label={group.day}>
-                      {group.sites.map((site) => (
-                        <option key={site.name} value={site.name}>
-                          {site.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                  <option value={OTHER_AO}>Other…</option>
-                </select>
-              ) : null}
-              {(customAo || !sites.value?.length) && (
-                <input
-                  value={backblast.ao}
-                  onChange={(e) => set("ao", e.target.value)}
-                  placeholder={sites.value?.length ? "AO name" : undefined}
-                  className="input text-base"
-                />
-              )}
-              {sites.error && (
-                <span className="text-xs font-normal text-accent">
-                  AO list unavailable: {sites.error}
+            {backblast.workoutId && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line px-3 py-2 text-sm text-ink-soft">
+                <span>Made from a workout.</span>
+                <span className="flex gap-4">
+                  <a
+                    href={`${process.env.NEXT_PUBLIC_BASE_PATH}/workout/?id=${backblast.workoutId}`}
+                    className="link"
+                  >
+                    Open workout
+                  </a>
+                  {onCopyWorkout && (
+                    <button
+                      type="button"
+                      disabled={copying}
+                      onClick={copyAgain}
+                      className="link"
+                    >
+                      {copying ? "Copying…" : "Copy again"}
+                    </button>
+                  )}
                 </span>
-              )}
-            </label>
-            <label className="label flex flex-col gap-1.5">
-              Date
-              <input
-                type="date"
-                value={backblast.date}
-                onChange={(e) => set("date", e.target.value)}
-                className="input text-base"
-              />
-            </label>
-            <label className="label flex flex-col gap-1.5">
-              Time
-              <input
-                value={backblast.time ?? ""}
-                onChange={(e) => set("time", e.target.value)}
-                placeholder="5:15am-6:00am"
-                className="input text-base"
-              />
-            </label>
+              </div>
+            )}
+            {basicsFields}
+            {WORKOUT_TEXT.map((name) => (
+              <details
+                key={name}
+                className="group rounded-xl border border-line"
+              >
+                <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2.5 text-sm font-medium text-ink">
+                  {textTitle(allText, name)}
+                  <span className="truncate text-xs font-normal text-muted">
+                    {backblast[name]?.trim()
+                      ? backblast[name]!.trim().split("\n")[0]
+                      : "Empty"}
+                  </span>
+                </summary>
+                <textarea
+                  aria-label={textTitle(allText, name)}
+                  value={backblast[name] ?? ""}
+                  onChange={(e) => set(name, e.target.value)}
+                  className="input m-3 mt-0 block min-h-40 w-[calc(100%-1.5rem)] resize-y text-base leading-relaxed"
+                />
+              </details>
+            ))}
           </div>
         )}
 
@@ -500,7 +643,7 @@ export function BackblastForm({
         {step.kind === "review" && (
           <>
             <ul className="flex flex-wrap gap-2">
-              {steps.slice(0, LAST_STEP).map((s, index) => {
+              {steps.slice(0, lastStep).map((s, index) => {
                 const filled = isFilled(s, backblast);
                 return (
                   <li key={s.title}>
@@ -535,7 +678,11 @@ export function BackblastForm({
             ))}
             <ShareButton
               title={backblast.title}
-              text={copyText(backblast, language)}
+              text={
+                mode === "workout"
+                  ? formatBackblast(backblast, language)
+                  : copyText(backblast, language)
+              }
               className="btn w-full px-4 text-base"
             />
           </>
@@ -545,9 +692,9 @@ export function BackblastForm({
       {error && (
         <p className="text-sm text-accent">
           {error}{" "}
-          {error.includes("Basics") && (
+          {error.includes(steps[0]!.title) && (
             <button type="button" onClick={() => goTo(0)} className="underline">
-              Go to Basics
+              Go to {steps[0]!.title}
             </button>
           )}
         </p>
@@ -565,7 +712,7 @@ export function BackblastForm({
             ← Previous
           </button>
         )}
-        {stepIndex < LAST_STEP ? (
+        {stepIndex < lastStep ? (
           <button
             type="submit"
             className="btn gap-2 px-4 text-base whitespace-nowrap"
@@ -583,10 +730,10 @@ export function BackblastForm({
           </button>
         )}
       </div>
-      {stepIndex < LAST_STEP && (
+      {stepIndex < lastStep && (
         <button
           type="button"
-          onClick={() => goTo(LAST_STEP)}
+          onClick={() => goTo(lastStep)}
           className="link -mt-2 inline-flex items-center gap-1.5 self-center"
         >
           Skip to review
