@@ -6,11 +6,16 @@ import {
   workoutDates,
   workoutRuns,
   type Workout,
+  type WorkoutRun,
 } from "@rocket/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
-import { SignedIn, type CurrentUser } from "@/components/auth-provider";
+import { Suspense, useEffect, useRef, useState } from "react";
+import {
+  SignedIn,
+  type CurrentUser,
+  type SwipeAction,
+} from "@/components/auth-provider";
 import { CopyButton } from "@/components/copy-button";
 import {
   ArchiveIcon,
@@ -28,6 +33,7 @@ import {
   removeWorkoutRun,
 } from "@/lib/backblast";
 import { ReuseWorkout } from "@/components/reuse-workout";
+import { SwipeRow } from "@/components/swipe-row";
 import { archive, deleteItem, unarchive } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 
@@ -238,6 +244,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         backblasts={backblasts}
         reusing={reusing}
         onReusingChange={setReusing}
+        swipeLeft={user.swipeLeft}
         written={allBackblasts.map((b) => b.date)}
         onWorkoutChange={(update) =>
           setResult((current) =>
@@ -284,6 +291,7 @@ function WorkoutDates({
   reusing,
   onReusingChange,
   onWorkoutChange,
+  swipeLeft,
 }: {
   workoutId: string;
   workout: Workout;
@@ -294,15 +302,20 @@ function WorkoutDates({
   reusing: boolean;
   onReusingChange: (reusing: boolean) => void;
   onWorkoutChange: (update: Partial<Workout>) => void;
+  /** Which way the user swipes to delete (Settings). */
+  swipeLeft: SwipeAction;
 }) {
   const runs = workoutRuns(workout);
   const [error, setError] = useState<string | null>(null);
 
-  async function remove(date: string) {
-    if (!confirm(`Remove ${formatDate(date)} from this workout?`)) return;
+  // The date just removed, offered back with Undo for a few seconds.
+  const [removed, setRemoved] = useState<WorkoutRun | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  async function remove(run: WorkoutRun) {
     setError(null);
     try {
-      const saved = await removeWorkoutRun(workoutId, date);
+      const saved = await removeWorkoutRun(workoutId, run.date);
       onWorkoutChange({
         date: saved.date,
         ao: saved.ao,
@@ -310,10 +323,31 @@ function WorkoutDates({
         time: saved.time,
         runs: saved.runs,
       });
+      setRemoved(run);
+      if (undoTimer.current) clearTimeout(undoTimer.current);
+      undoTimer.current = setTimeout(() => setRemoved(null), 6000);
     } catch (e) {
       setError((e as Error).message);
     }
   }
+
+  async function undo() {
+    if (!removed) return;
+    const run = removed;
+    setRemoved(null);
+    try {
+      onWorkoutChange({ runs: await addWorkoutRun(workoutId, run) });
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  // Swiping the way that deletes (set in Settings) removes a date.
+  const removeOption = (run: WorkoutRun) => ({
+    label: "Remove",
+    color: "#c8372d",
+    onCommit: () => remove(run),
+  });
 
   return (
     <section id="dates" className="flex scroll-mt-4 flex-col gap-3">
@@ -334,34 +368,36 @@ function WorkoutDates({
             const link = backblastLink(workoutId, run.date, backblasts);
             const removable = mine && !written.includes(run.date);
             return (
-              <li
-                key={run.date}
-                className="flex items-center justify-between gap-3 px-2 py-2.5"
-              >
-                <span className="flex min-w-0 flex-col">
-                  <span className="text-sm text-ink">
-                    {formatDate(run.date)}
-                  </span>
-                  <span className="truncate text-xs text-muted">
-                    {[run.ao, run.time].filter(Boolean).join(" · ")}
-                  </span>
-                </span>
-                <span className="flex shrink-0 items-center gap-3">
-                  {removable && (
-                    <button
-                      type="button"
-                      aria-label={`Remove ${formatDate(run.date)}`}
-                      onClick={() => remove(run.date)}
-                      className="link inline-flex items-center gap-1 text-sm hover:text-accent"
+              <li key={run.date}>
+                <SwipeRow
+                  left={
+                    removable && swipeLeft === "delete"
+                      ? removeOption(run)
+                      : undefined
+                  }
+                  right={
+                    removable && swipeLeft === "archive"
+                      ? removeOption(run)
+                      : undefined
+                  }
+                >
+                  <div className="flex items-center justify-between gap-3 px-2 py-2.5">
+                    <span className="flex min-w-0 flex-col">
+                      <span className="text-sm text-ink">
+                        {formatDate(run.date)}
+                      </span>
+                      <span className="truncate text-xs text-muted">
+                        {[run.ao, run.time].filter(Boolean).join(" · ")}
+                      </span>
+                    </span>
+                    <Link
+                      href={link.href}
+                      className="btn shrink-0 px-3 py-1.5 text-sm"
                     >
-                      <TrashIcon />
-                      Remove
-                    </button>
-                  )}
-                  <Link href={link.href} className="btn px-3 py-1.5 text-sm">
-                    {link.label}
-                  </Link>
-                </span>
+                      {link.label}
+                    </Link>
+                  </div>
+                </SwipeRow>
               </li>
             );
           })}
@@ -377,6 +413,27 @@ function WorkoutDates({
             onReusingChange(false);
           }}
         />
+      )}
+      {mine && runs.length > 1 && !removed && (
+        <p className="-mt-1 text-xs text-muted">
+          Swipe a date {swipeLeft === "delete" ? "left" : "right"} to remove it,
+          if it has no backblast.
+        </p>
+      )}
+      {removed && (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-3 rounded-xl border border-line-strong px-3 py-2 text-sm"
+        >
+          <span className="text-ink">Removed {formatDate(removed.date)}</span>
+          <button
+            type="button"
+            onClick={undo}
+            className="font-semibold text-accent"
+          >
+            Undo
+          </button>
+        </div>
       )}
       {error && <p className="text-sm text-accent">{error}</p>}
     </section>
