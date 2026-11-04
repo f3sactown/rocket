@@ -20,7 +20,7 @@ const BLANK: Workout = { title: "", date: "", ao: "", q: "", attendees: [] };
 
 /**
  * A new workout; with ?from=…, it starts as a copy of that workout (to run it again), without its
- * date so a new one is chosen.
+ * AO, location, date or time, so those are chosen for the new run.
  */
 function NewWorkout({ user }: { user: CurrentUser }) {
   // Read once: saving the first draft changes the address to its edit link, dropping ?from=.
@@ -41,7 +41,14 @@ function NewWorkout({ user }: { user: CurrentUser }) {
         // Your own notes come along; someone else's stay private.
         const notes =
           data.author_id === user.id ? await loadWorkoutNotes(data.id) : "";
-        setFrom({ ...fromWorkoutRow(data, notes), date: "" });
+        // Where and when are chosen fresh for the new run: no AO, location, date or time.
+        setFrom({
+          ...fromWorkoutRow(data, notes),
+          ao: "",
+          address: undefined,
+          date: "",
+          time: undefined,
+        });
       });
   }, [fromId, user.id]);
 
