@@ -72,7 +72,8 @@ export function toInsert(
   };
 }
 
-export function fromWorkoutRow(row: WorkoutRow): Workout {
+/** A workout from its row; its notes are kept apart (see loadWorkoutNotes). */
+export function fromWorkoutRow(row: WorkoutRow, notes?: string): Workout {
   return {
     title: row.title,
     date: row.date ?? "",
@@ -84,7 +85,7 @@ export function fromWorkoutRow(row: WorkoutRow): Workout {
     introduction: row.introduction ?? undefined,
     warmup: row.warmup ?? undefined,
     thang: row.thang ?? undefined,
-    notes: row.notes ?? undefined,
+    notes: notes || undefined,
     announcements: row.announcements ?? undefined,
     wordsOfWisdom: row.words_of_wisdom ?? undefined,
   };
@@ -103,7 +104,6 @@ export function toWorkoutInsert(
     introduction: text(workout.introduction),
     warmup: text(workout.warmup),
     thang: text(workout.thang),
-    notes: text(workout.notes),
     announcements: text(workout.announcements),
     words_of_wisdom: text(workout.wordsOfWisdom),
   };
@@ -119,4 +119,27 @@ export async function loadWorkout(id: string): Promise<Workout | string> {
   if (error) return error.message;
   if (!data) return "That workout is gone or isn't shared.";
   return fromWorkoutRow(data);
+}
+
+/**
+ * A workout's notes, which only its Q can read: empty for anyone else, or when there are none.
+ */
+export async function loadWorkoutNotes(workoutId: string): Promise<string> {
+  const { data } = await createClient()
+    .from("workout_notes")
+    .select("body")
+    .eq("workout_id", workoutId)
+    .maybeSingle();
+  return data?.body ?? "";
+}
+
+/** Saves a workout's private notes. */
+export async function saveWorkoutNotes(workoutId: string, body: string) {
+  const { error } = await createClient()
+    .from("workout_notes")
+    .upsert(
+      { workout_id: workoutId, body: body.trim() },
+      { onConflict: "workout_id" },
+    );
+  if (error) throw error;
 }

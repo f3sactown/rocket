@@ -148,7 +148,7 @@ function Totals({ user }: { user: CurrentUser }) {
       <p className="text-center text-xs text-muted">
         {stats.error
           ? `Totals unavailable: ${stats.error}`
-          : `in ${region?.name ?? "your region"}`}
+          : (region?.name ?? "")}
       </p>
     </div>
   );

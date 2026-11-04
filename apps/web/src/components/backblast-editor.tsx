@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   loadWorkout,
   parseAttendees,
+  saveWorkoutNotes,
   toInsert,
   toWorkoutInsert,
 } from "@/lib/backblast";
@@ -14,11 +15,24 @@ import type { CurrentUser } from "./auth-provider";
 import { BackblastForm, type FormMode } from "./backblast-form";
 import { TEMPLATE_COLUMNS, type SectionTemplate } from "./section-templates";
 
-/** The default-template sections each form fills in when it starts. */
-const DEFAULT_SECTIONS: Record<FormMode, string[]> = {
-  workout: ["introduction"],
-  backblast: ["attendees", "introduction", "thirdF", "secondF"],
-};
+/** The workout's sections, which a workout's defaults fill in. */
+const WORKOUT_DEFAULTS = [
+  "introduction",
+  "warmup",
+  "thang",
+  "announcements",
+  "wordsOfWisdom",
+];
+
+/**
+ * The default-template sections a new one starts with. A backblast made from a workout takes those
+ * sections from the workout instead.
+ */
+function defaultSections(mode: FormMode, backblast: Backblast): string[] {
+  if (mode === "workout") return WORKOUT_DEFAULTS;
+  const own = ["attendees", "thirdF", "secondF"];
+  return backblast.workoutId ? own : [...own, ...WORKOUT_DEFAULTS];
+}
 
 /** Fills in each of the form's sections that has a default template and is still empty. */
 function withDefaults(
@@ -29,21 +43,24 @@ function withDefaults(
   const filled = { ...backblast };
   for (const template of templates) {
     if (!template.is_default) continue;
-    if (!DEFAULT_SECTIONS[mode].includes(template.section)) continue;
+    if (!defaultSections(mode, backblast).includes(template.section)) continue;
     if (template.section === "attendees") {
       try {
         filled.attendees = parseAttendees(JSON.parse(template.body));
       } catch {
         // Ignore a malformed roster rather than blocking the form.
       }
-    } else if (
-      template.section === "introduction" ||
-      template.section === "thirdF" ||
-      template.section === "secondF"
-    ) {
-      // A backblast's introduction comes from its workout when it has one.
-      if (!filled[template.section]?.trim())
-        filled[template.section] = template.body;
+    } else {
+      const section = template.section as
+        | "introduction"
+        | "warmup"
+        | "thang"
+        | "announcements"
+        | "wordsOfWisdom"
+        | "thirdF"
+        | "secondF";
+      // Only an empty section is filled, so nothing already written is replaced.
+      if (!filled[section]?.trim()) filled[section] = template.body;
     }
   }
   return filled;
@@ -91,7 +108,7 @@ const WORDS = {
     new: "New workout",
     draft: "Edit workout draft",
     published: "Edit workout",
-    finish: "Finish workout",
+    finish: "Publish workout",
     failed: "Couldn't save the workout.",
   },
   backblast: {
@@ -182,20 +199,23 @@ export function BackblastEditor({
             .update(row as never)
             .eq("id", id.current);
           if (error) throw error;
-          return;
+        } else {
+          const { data, error } = await table
+            .insert({ ...row, author_id: user.id } as never)
+            .select("id")
+            .single();
+          if (error) throw error;
+          id.current = data.id;
+          // Point the address bar at the draft, so a reload or the back button returns to it.
+          window.history.replaceState(
+            null,
+            "",
+            `${process.env.NEXT_PUBLIC_BASE_PATH}${words.edit}?id=${data.id}`,
+          );
         }
-        const { data, error } = await table
-          .insert({ ...row, author_id: user.id } as never)
-          .select("id")
-          .single();
-        if (error) throw error;
-        id.current = data.id;
-        // Point the address bar at the draft, so a reload or the back button returns to it.
-        window.history.replaceState(
-          null,
-          "",
-          `${process.env.NEXT_PUBLIC_BASE_PATH}${words.edit}?id=${data.id}`,
-        );
+        // A workout's notes are private to its Q, so they're saved apart from the workout.
+        if (mode === "workout")
+          await saveWorkoutNotes(id.current, latest.current.notes ?? "");
       });
       queue.current = run.catch(() => {});
       return run;

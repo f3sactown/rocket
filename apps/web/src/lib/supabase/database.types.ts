@@ -136,7 +136,6 @@ export type Database = {
           introduction: string | null;
           warmup: string | null;
           thang: string | null;
-          notes: string | null;
           announcements: string | null;
           words_of_wisdom: string | null;
           created_at: string;
@@ -154,7 +153,6 @@ export type Database = {
           introduction?: string | null;
           warmup?: string | null;
           thang?: string | null;
-          notes?: string | null;
           announcements?: string | null;
           words_of_wisdom?: string | null;
           created_at?: string;
@@ -167,6 +165,32 @@ export type Database = {
             columns: ["author_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      workout_notes: {
+        Row: {
+          workout_id: string;
+          author_id: string;
+          body: string;
+          updated_at: string;
+        };
+        Insert: {
+          workout_id: string;
+          author_id?: string;
+          body?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["workout_notes"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "workout_notes_workout_id_fkey";
+            columns: ["workout_id"];
+            isOneToOne: true;
+            referencedRelation: "workouts";
             referencedColumns: ["id"];
           },
         ];
