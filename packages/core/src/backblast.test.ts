@@ -375,7 +375,7 @@ describe("thangs", () => {
         { text: "Run", music: { url: "https://youtu.be/xyz" } },
       ]),
     ).toBe(
-      "Thang 1:\nBurpees\nMusic: Eye of the Tiger - https://open.spotify.com/track/abc\n\nThang 2:\nRun\nMusic: https://youtu.be/xyz",
+      "Thang 1:\nBurpees\n🎵 Eye of the Tiger 🎵 https://open.spotify.com/track/abc\n\nThang 2:\nRun\n🎵 https://youtu.be/xyz",
     );
     expect(thangText([{ text: "Solo", music: { url: "not a link" } }])).toBe(
       "Solo",
