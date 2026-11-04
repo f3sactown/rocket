@@ -43,61 +43,6 @@ export interface Backblast {
   secondF?: string;
   /** The workout this backblast was made from, if any. */
   workoutId?: string;
-  /**
-   * A workout's other runs, when it's run again: each on its own date, maybe at another AO.
-   * The workout's own date, AO, location and time are its first run.
-   */
-  runs?: WorkoutRun[];
-}
-
-/** One day a workout is run: when and where. */
-export interface WorkoutRun {
-  /** YYYY-MM-DD. */
-  date: string;
-  ao: string;
-  /** Where the AO meets, e.g. "Oki Park". */
-  address?: string;
-  time?: string;
-}
-
-/** Every run of a workout, its own first, earliest date first, one per date. */
-export function workoutRuns(
-  workout: Pick<Backblast, "date" | "ao" | "address" | "time" | "runs">,
-): WorkoutRun[] {
-  const first: WorkoutRun = {
-    date: workout.date,
-    ao: workout.ao,
-    address: workout.address,
-    time: workout.time,
-  };
-  const seen = new Set<string>();
-  return [first, ...(workout.runs ?? [])]
-    .filter((run) => {
-      if (!run.date || seen.has(run.date)) return false;
-      seen.add(run.date);
-      return true;
-    })
-    .sort((a, b) => a.date.localeCompare(b.date));
-}
-
-/** Every date a workout is run on, earliest first. */
-export function workoutDates(
-  workout: Pick<Backblast, "date" | "ao" | "address" | "time" | "runs">,
-): string[] {
-  return workoutRuns(workout).map((run) => run.date);
-}
-
-/**
- * The date of a workout to act on now: today if it's run today, else the latest one that has
- * passed, else the next one coming up.
- */
-export function currentDate(
-  dates: string[],
-  today: string,
-): string | undefined {
-  if (dates.includes(today)) return today;
-  const past = dates.filter((d) => d < today);
-  return past[past.length - 1] ?? dates[0];
 }
 
 /**

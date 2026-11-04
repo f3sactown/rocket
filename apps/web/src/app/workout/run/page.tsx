@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  backblastParts,
-  currentDate,
-  termsFor,
-  workoutDates,
-  workoutRuns,
-  type Workout,
-} from "@rocket/core";
+import { backblastParts, termsFor, type Workout } from "@rocket/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -34,13 +27,6 @@ const SIZES = [
 type Size = (typeof SIZES)[number]["value"];
 
 const SIZE_KEY = "rocket-run-size";
-
-/** Today's date (YYYY-MM-DD) where the user is. */
-function localToday(): string {
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
 
 function savedSize(): Size {
   try {
@@ -142,14 +128,9 @@ function RunWorkout({ user }: { user: CurrentUser }) {
   const { workout } = result;
   const terms = termsFor(user.language);
   // Where and when, as at the top of the copied workout.
-  // A workout run on several days is shown for today's run, or the nearest one.
-  const date = currentDate(workoutDates(workout), localToday()) ?? workout.date;
-  const run = workoutRuns(workout).find((r) => r.date === date);
   const where = backblastParts(
     {
       ...workout,
-      ...run,
-      date,
       title: "",
       notes: "",
       thang: "",
@@ -254,12 +235,12 @@ function RunWorkout({ user }: { user: CurrentUser }) {
           {section("Words of Wisdom", workout.wordsOfWisdom)}
         </div>
         {(() => {
-          const existing = backblasts.find((b) => b.date === date);
+          const existing = backblasts[0];
           const href = existing
             ? existing.status === "draft"
               ? `/backblasts/edit?id=${existing.id}`
               : `/backblast?id=${existing.id}`
-            : `/backblasts/new?workout=${id}&date=${date}`;
+            : `/backblasts/new?workout=${id}`;
           return (
             <Link href={href} className="btn w-full">
               <ArrowIcon />

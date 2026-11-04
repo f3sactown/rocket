@@ -9,7 +9,6 @@ import {
   backblastParts,
   copyText,
   copyWorkout,
-  workoutRuns,
   formatDate,
   thangText,
   type Thang,
@@ -30,7 +29,7 @@ import { QPicker } from "./q-picker";
 import { ThangsInput } from "./thangs-input";
 import { Regulars } from "./regulars";
 import { useAuth } from "./auth-provider";
-import { ArrowIcon, SkipIcon, TrashIcon } from "./icons";
+import { ArrowIcon, PencilIcon, SkipIcon, TrashIcon } from "./icons";
 import { ShareButton } from "./share-button";
 import {
   SectionTemplates,
@@ -119,7 +118,7 @@ function allSteps(language: Language): Step[] {
     {
       kind: "workout",
       title: "Workout",
-      hint: "The workout this backblast was made from. To change it, edit the workout, then update from it here.",
+      hint: "This backblast's copy of the workout. Edit it here for anything that went differently; the workout itself isn't changed.",
     },
     {
       kind: "attendance",
@@ -307,6 +306,8 @@ export function BackblastForm({
   const tooEarly =
     mode === "backblast" && !!backblast.date && backblast.date > localToday();
   const [copying, setCopying] = useState(false);
+  // Whether the backblast's copy of its workout is open for editing.
+  const [editingCopy, setEditingCopy] = useState(false);
 
   // Report edits (not the initial render) so the draft can be saved.
   useEffect(() => {
@@ -389,21 +390,8 @@ export function BackblastForm({
     setCopying(false);
     if (typeof workout === "string") return setError(workout);
     edited.current = true;
-    // The backblast keeps its own run: a workout run on several days has one backblast each,
-    // maybe at different AOs.
-    setBackblast((current) => {
-      const run = workoutRuns(workout).find((r) => r.date === current.date);
-      const copied = copyWorkout(current, workout);
-      return run
-        ? {
-            ...copied,
-            date: run.date,
-            ao: run.ao,
-            address: run.address,
-            time: run.time,
-          }
-        : { ...copied, date: current.date || workout.date };
-    });
+    setBackblast((current) => copyWorkout(current, workout));
+    setEditingCopy(false);
   }
 
   /**
@@ -616,12 +604,20 @@ export function BackblastForm({
         )}
 
         {step.kind === "workout" &&
-          (backblast.workoutId ? (
+          (backblast.workoutId && !editingCopy ? (
             <div className="flex flex-col gap-3">
               <pre className="rounded-xl border border-line p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
                 {workoutText(backblast, language) || "The workout is empty."}
               </pre>
               <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+                <button
+                  type="button"
+                  onClick={() => setEditingCopy(true)}
+                  className="link inline-flex items-center gap-1.5"
+                >
+                  <PencilIcon />
+                  Edit
+                </button>
                 <a
                   href={`${process.env.NEXT_PUBLIC_BASE_PATH}/workout/?id=${backblast.workoutId}`}
                   className="link"
@@ -641,8 +637,23 @@ export function BackblastForm({
               </div>
             </div>
           ) : (
-            // A backblast started on its own has no workout to show, so it's filled in here.
+            // The backblast's own copy of the workout. Editing it never changes the workout.
             <div className="flex flex-col gap-4">
+              {backblast.workoutId && (
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-line px-3 py-2 text-sm text-ink-soft">
+                  <span>
+                    Changes here are only for this backblast. The workout stays
+                    as it is.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setEditingCopy(false)}
+                    className="link shrink-0 font-medium text-ink"
+                  >
+                    Done
+                  </button>
+                </div>
+              )}
               {basicsFields}
               {WORKOUT_TEXT.map((name) => (
                 <label key={name} className="label flex flex-col gap-1.5">
