@@ -9,6 +9,7 @@ import {
   backblastParts,
   copyText,
   copyWorkout,
+  workoutRuns,
   formatDate,
   thangText,
   type Thang,
@@ -388,11 +389,21 @@ export function BackblastForm({
     setCopying(false);
     if (typeof workout === "string") return setError(workout);
     edited.current = true;
-    // The backblast keeps its own date: a workout run on several days has one backblast each.
-    setBackblast((current) => ({
-      ...copyWorkout(current, workout),
-      date: current.date || workout.date,
-    }));
+    // The backblast keeps its own run: a workout run on several days has one backblast each,
+    // maybe at different AOs.
+    setBackblast((current) => {
+      const run = workoutRuns(workout).find((r) => r.date === current.date);
+      const copied = copyWorkout(current, workout);
+      return run
+        ? {
+            ...copied,
+            date: run.date,
+            ao: run.ao,
+            address: run.address,
+            time: run.time,
+          }
+        : { ...copied, date: current.date || workout.date };
+    });
   }
 
   /**

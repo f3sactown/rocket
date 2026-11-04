@@ -1,6 +1,6 @@
 "use client";
 
-import { copyWorkout, type Backblast } from "@rocket/core";
+import { copyWorkout, workoutRuns, type Backblast } from "@rocket/core";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
@@ -13,6 +13,20 @@ export default function NewBackblastPage() {
       <SignedIn>{(user) => <NewBackblast user={user} />}</SignedIn>
     </Suspense>
   );
+}
+
+/** A backblast for one of the workout's runs: that day's date, AO, location and time. */
+function forRun(backblast: Backblast, workout: Backblast, date: string | null) {
+  const run = date && workoutRuns(workout).find((r) => r.date === date);
+  return run
+    ? {
+        ...backblast,
+        date: run.date,
+        ao: run.ao,
+        address: run.address,
+        time: run.time,
+      }
+    : backblast;
 }
 
 /** A new backblast; with ?workout=…, it starts as a copy of that workout's sections. */
@@ -48,10 +62,7 @@ function NewBackblast({ user }: { user: CurrentUser }) {
     <BackblastEditor
       key={workoutId}
       user={user}
-      initial={{
-        ...copyWorkout({ ...blank, workoutId }, from),
-        ...(date ? { date } : {}),
-      }}
+      initial={forRun(copyWorkout({ ...blank, workoutId }, from), from, date)}
     />
   );
 }

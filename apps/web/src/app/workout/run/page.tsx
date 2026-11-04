@@ -5,6 +5,7 @@ import {
   currentDate,
   termsFor,
   workoutDates,
+  workoutRuns,
   type Workout,
 } from "@rocket/core";
 import Link from "next/link";
@@ -143,8 +144,17 @@ function RunWorkout({ user }: { user: CurrentUser }) {
   // Where and when, as at the top of the copied workout.
   // A workout run on several days is shown for today's run, or the nearest one.
   const date = currentDate(workoutDates(workout), localToday()) ?? workout.date;
+  const run = workoutRuns(workout).find((r) => r.date === date);
   const where = backblastParts(
-    { ...workout, date, title: "", notes: "", thang: "", introduction: "" },
+    {
+      ...workout,
+      ...run,
+      date,
+      title: "",
+      notes: "",
+      thang: "",
+      introduction: "",
+    },
     user.language,
   )[0]!.text;
   const thangs = workout.thangs?.length
@@ -213,11 +223,6 @@ function RunWorkout({ user }: { user: CurrentUser }) {
               </h2>
               {thangs.map((thang, index) => (
                 <div key={index} className="flex flex-col gap-2">
-                  {thangs.length > 1 && (
-                    <h3 className="text-[0.8em] font-semibold text-ink-soft">
-                      Thang {index + 1}
-                    </h3>
-                  )}
                   {thang.text.trim() && (
                     <p className="leading-relaxed whitespace-pre-wrap">
                       {thang.text.trim()}
@@ -236,9 +241,8 @@ function RunWorkout({ user }: { user: CurrentUser }) {
                   {thang.timer && (
                     <ThangTimer
                       timer={thang.timer}
-                      label={
-                        thangs.length > 1 ? `Thang ${index + 1}` : terms.thang
-                      }
+                      // Named by its first line in the pinned copy, since thangs aren't numbered.
+                      label={thang.text.trim().split("\n")[0] || terms.thang}
                     />
                   )}
                 </div>
