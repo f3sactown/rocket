@@ -3,7 +3,6 @@ import {
   attendeeFromName,
   copyText,
   copyWorkout,
-  formatTimer,
   thangText,
   paxList,
   qNames,
@@ -365,15 +364,10 @@ describe("thangs", () => {
     expect(thangText([{ text: "11s" }])).toBe("11s");
     expect(
       thangText([
-        { text: "11s", seconds: 600 },
+        { text: "11s", timer: { type: "countdown", seconds: 600 } },
         { text: " " },
-        { text: "Dora 1-2-3", seconds: 300 },
+        { text: "Dora 1-2-3", timer: { type: "stopwatch" } },
       ]),
     ).toBe("Thang 1:\n11s\n\nThang 2:\nDora 1-2-3");
-  });
-
-  it("formats timers as m:ss", () => {
-    expect(formatTimer(600)).toBe("10:00");
-    expect(formatTimer(45)).toBe("0:45");
   });
 });

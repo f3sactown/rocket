@@ -189,7 +189,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
                     {thang.text.trim()}
                   </p>
                 )}
-                {thang.seconds ? <ThangTimer seconds={thang.seconds} /> : null}
+                {thang.timer && <ThangTimer timer={thang.timer} />}
               </div>
             ))}
           </section>

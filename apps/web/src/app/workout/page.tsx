@@ -164,7 +164,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
             onClick={toggleArchive}
             className="link inline-flex items-center gap-1.5 hover:text-ink"
           >
-            <ArchiveIcon />
+            <ArchiveIcon className="size-4" />
             {archived ? "Unarchive" : "Archive"}
           </button>
         )}

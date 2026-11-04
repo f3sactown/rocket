@@ -1,4 +1,5 @@
 import { termsFor, type Language } from "./terms";
+import type { Timer } from "./timer";
 
 /** How someone attended a beatdown, which changes how their name is shown in the Name-o-rama. */
 export type AttendeeKind = "pax" | "visitor" | "fng" | "2.0";
@@ -53,14 +54,7 @@ export type Workout = Backblast;
 /** One part of The Thang, with an optional timer shown when running the workout. */
 export interface Thang {
   text: string;
-  /** How long it runs, in seconds, if it's timed. */
-  seconds?: number;
-}
-
-/** A timer length as m:ss, e.g. "5:00" or "0:45". */
-export function formatTimer(seconds: number): string {
-  const s = Math.max(0, Math.round(seconds));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  timer?: Timer;
 }
 
 /**

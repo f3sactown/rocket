@@ -50,7 +50,8 @@ export function ItemDashboard({
     <section className="card">
       <header className="flex items-start justify-between gap-4">
         <h1 className="card-title">{words.title}</h1>
-        <UserBadge user={user} />
+        {/* The Workouts page is for planning, so it skips the name and totals. */}
+        {kind === "backblast" && <UserBadge user={user} />}
       </header>
 
       {error ? (
