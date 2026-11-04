@@ -112,7 +112,9 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
 
   const { workout } = result;
   const mine = result.authorId === user.id;
+  // What's copied and shared leaves out the Q's notes; the page shows them in place for the Q.
   const text = formatBackblast(workout, user.language);
+  const shown = formatBackblast({ ...workout, notes }, user.language);
   return (
     <article className="card">
       <header className="flex items-start justify-between gap-4">
@@ -134,18 +136,8 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       </div>
 
       <pre className="panel overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
-        {text}
+        {shown}
       </pre>
-      {notes && (
-        <section className="flex flex-col gap-2 rounded-2xl border border-line p-4">
-          <h2 className="text-xs font-semibold tracking-wider text-accent uppercase">
-            Your notes · only you see these
-          </h2>
-          <p className="text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
-            {notes}
-          </p>
-        </section>
-      )}
 
       <Link href={`/workout/run?id=${id}`} className="btn w-full">
         <PlayIcon />

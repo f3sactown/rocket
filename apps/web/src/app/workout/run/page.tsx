@@ -245,21 +245,10 @@ function RunWorkout({ user }: { user: CurrentUser }) {
               ))}
             </section>
           )}
+          {section("Notes", workout.notes)}
           {section("Announcements", workout.announcements)}
           {section("Words of Wisdom", workout.wordsOfWisdom)}
         </div>
-        {workout.notes && (
-          <section className="flex flex-col gap-2 rounded-2xl border border-line p-4">
-            <h2 className="text-xs font-semibold tracking-wider text-accent uppercase">
-              Your notes · only you see these
-            </h2>
-            <p
-              className={`leading-relaxed whitespace-pre-wrap text-ink-soft ${sizeClass}`}
-            >
-              {workout.notes}
-            </p>
-          </section>
-        )}
         {(() => {
           const existing = backblasts.find((b) => b.date === date);
           const href = existing
