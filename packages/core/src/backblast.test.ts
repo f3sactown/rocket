@@ -3,6 +3,8 @@ import {
   attendeeFromName,
   copyText,
   copyWorkout,
+  currentDate,
+  workoutDates,
   thangText,
   paxList,
   qNames,
@@ -369,5 +371,23 @@ describe("thangs", () => {
         { text: "Dora 1-2-3", timer: { type: "stopwatch" } },
       ]),
     ).toBe("Thang 1:\n11s\n\nThang 2:\nDora 1-2-3");
+  });
+});
+
+describe("workout dates", () => {
+  it("lists every date once, earliest first", () => {
+    expect(
+      workoutDates({
+        date: "2026-11-10",
+        moreDates: ["2026-11-03", "2026-11-10"],
+      }),
+    ).toEqual(["2026-11-03", "2026-11-10"]);
+  });
+
+  it("picks today, else the latest past date, else the next one", () => {
+    const dates = ["2026-11-03", "2026-11-10", "2026-11-17"];
+    expect(currentDate(dates, "2026-11-10")).toBe("2026-11-10");
+    expect(currentDate(dates, "2026-11-12")).toBe("2026-11-10");
+    expect(currentDate(dates, "2026-11-01")).toBe("2026-11-03");
   });
 });

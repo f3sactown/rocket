@@ -144,9 +144,7 @@ export function AppNav() {
                     : "text-ink-soft hover:bg-hover hover:text-ink"
                 }`}
               >
-                <span className={current ? "text-accent" : "text-muted"}>
-                  {ICONS[link.href]}
-                </span>
+                <span className="text-accent">{ICONS[link.href]}</span>
                 {link.label}
               </Link>
             );

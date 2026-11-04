@@ -18,8 +18,10 @@ export default function NewBackblastPage() {
 /** A new backblast; with ?workout=…, it starts as a copy of that workout's sections. */
 function NewBackblast({ user }: { user: CurrentUser }) {
   // Read once: saving the first draft changes the address to its edit link, dropping ?workout=.
-  const workoutParam = useSearchParams().get("workout");
-  const [workoutId] = useState(workoutParam);
+  const params = useSearchParams();
+  const [workoutId] = useState(params.get("workout"));
+  // Which of the workout's days this backblast is for, when it's run on more than one.
+  const [date] = useState(params.get("date"));
   const blank: Backblast = {
     title: "",
     date: "",
@@ -46,7 +48,10 @@ function NewBackblast({ user }: { user: CurrentUser }) {
     <BackblastEditor
       key={workoutId}
       user={user}
-      initial={copyWorkout({ ...blank, workoutId }, from)}
+      initial={{
+        ...copyWorkout({ ...blank, workoutId }, from),
+        ...(date ? { date } : {}),
+      }}
     />
   );
 }

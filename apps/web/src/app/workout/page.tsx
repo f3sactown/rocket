@@ -1,6 +1,11 @@
 "use client";
 
-import { formatBackblast, formatDate, type Workout } from "@rocket/core";
+import {
+  formatBackblast,
+  formatDate,
+  workoutDates,
+  type Workout,
+} from "@rocket/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -12,10 +17,15 @@ import {
   CopyIcon,
   PencilIcon,
   PlayIcon,
+  PlusIcon,
   TrashIcon,
 } from "@/components/icons";
 import { ShareButton } from "@/components/share-button";
-import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
+import {
+  addWorkoutDate,
+  fromWorkoutRow,
+  loadWorkoutNotes,
+} from "@/lib/backblast";
 import { archive, deleteItem, unarchive } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 
@@ -43,7 +53,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
   const [notes, setNotes] = useState("");
   // Backblasts you've already written from this workout.
   const [backblasts, setBackblasts] = useState<
-    { id: string; title: string; status: string }[]
+    { id: string; title: string; status: string; date: string | null }[]
   >([]);
   const [archived, setArchived] = useState<boolean | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -70,7 +80,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       });
     supabase
       .from("backblasts")
-      .select("id, title, status")
+      .select("id, title, status, date")
       .eq("workout_id", id)
       .eq("author_id", user.id)
       .then(({ data }) => setBackblasts(data ?? []));
@@ -103,7 +113,6 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
   const { workout } = result;
   const mine = result.authorId === user.id;
   const text = formatBackblast(workout, user.language);
-  const existing = backblasts[0];
   return (
     <article className="card">
       <header className="flex items-start justify-between gap-4">
@@ -117,7 +126,11 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
 
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-ink">{workout.ao}</span>
-        <span className="text-ink-soft">{formatDate(workout.date)}</span>
+        <span className="text-ink-soft">
+          {formatDate(workout.date)}
+          {workoutDates(workout).length > 1 &&
+            ` + ${workoutDates(workout).length - 1} more`}
+        </span>
       </div>
 
       <pre className="panel overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
@@ -151,11 +164,19 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
             Edit
           </Link>
         )}
-        {/* Starts a new workout with this one's sections, for running it again on another day. */}
-        <Link href={`/workouts/new?from=${id}`} className="btn w-full">
-          <CopyIcon />
-          Reuse
-        </Link>
+        {mine ? (
+          // Running it again adds a date to this workout (below), rather than copying it.
+          <a href="#dates" className="btn w-full">
+            <CopyIcon />
+            Reuse
+          </a>
+        ) : (
+          // Someone else's workout can't be changed, so it's copied into your own.
+          <Link href={`/workouts/new?from=${id}`} className="btn w-full">
+            <CopyIcon />
+            Copy to my workouts
+          </Link>
+        )}
       </div>
       <div className="-mt-1 flex justify-center gap-6">
         {archived !== null && (
@@ -195,26 +216,132 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       </div>
       {actionError && <p className="text-sm text-accent">{actionError}</p>}
 
-      {existing ? (
+      <WorkoutDates
+        workoutId={id!}
+        workout={workout}
+        mine={mine}
+        backblasts={backblasts}
+        onDatesChange={(moreDates) =>
+          setResult((current) =>
+            current?.workout
+              ? { ...current, workout: { ...current.workout, moreDates } }
+              : current,
+          )
+        }
+      />
+    </article>
+  );
+}
+
+/** Where a date's backblast button goes: your backblast for that date, or a new one. */
+function backblastLink(
+  workoutId: string,
+  date: string,
+  backblasts: { id: string; status: string; date: string | null }[],
+) {
+  const existing = backblasts.find((b) => b.date === date);
+  if (!existing)
+    return {
+      href: `/backblasts/new?workout=${workoutId}&date=${date}`,
+      label: "Create backblast",
+    };
+  return existing.status === "draft"
+    ? {
+        href: `/backblasts/edit?id=${existing.id}`,
+        label: "Continue backblast",
+      }
+    : { href: `/backblast?id=${existing.id}`, label: "Open backblast" };
+}
+
+/**
+ * The days this workout is run, each with its backblast button, and (for its Q) a way to add
+ * another day to run it again.
+ */
+function WorkoutDates({
+  workoutId,
+  workout,
+  mine,
+  backblasts,
+  onDatesChange,
+}: {
+  workoutId: string;
+  workout: Workout;
+  mine: boolean;
+  backblasts: { id: string; status: string; date: string | null }[];
+  onDatesChange: (moreDates: string[]) => void;
+}) {
+  const dates = workoutDates(workout);
+  const [adding, setAdding] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function add() {
+    if (!adding) return;
+    setBusy(true);
+    setError(null);
+    try {
+      onDatesChange(await addWorkoutDate(workoutId, adding));
+      setAdding("");
+    } catch (e) {
+      setError((e as Error).message);
+    }
+    setBusy(false);
+  }
+
+  return (
+    <section id="dates" className="flex scroll-mt-4 flex-col gap-3">
+      {dates.length > 1 && (
+        <h2 className="text-lg font-semibold tracking-tight text-ink">Dates</h2>
+      )}
+      {dates.length === 1 ? (
         <Link
-          href={
-            existing.status === "draft"
-              ? `/backblasts/edit?id=${existing.id}`
-              : `/backblast?id=${existing.id}`
-          }
+          href={backblastLink(workoutId, dates[0]!, backblasts).href}
           className="btn w-full"
         >
           <ArrowIcon />
-          {existing.status === "draft"
-            ? "Continue your backblast"
-            : "Open your backblast"}
+          {backblastLink(workoutId, dates[0]!, backblasts).label}
         </Link>
       ) : (
-        <Link href={`/backblasts/new?workout=${id}`} className="btn w-full">
-          <ArrowIcon />
-          Create backblast
-        </Link>
+        <ul className="panel flex flex-col divide-y divide-line p-2">
+          {dates.map((date) => {
+            const link = backblastLink(workoutId, date, backblasts);
+            return (
+              <li
+                key={date}
+                className="flex items-center justify-between gap-3 px-2 py-2.5"
+              >
+                <span className="text-sm text-ink">{formatDate(date)}</span>
+                <Link href={link.href} className="btn px-3 py-1.5 text-sm">
+                  {link.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       )}
-    </article>
+      {mine && (
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="label flex flex-1 flex-col gap-1.5">
+            Run it again on
+            <input
+              type="date"
+              value={adding}
+              onChange={(e) => setAdding(e.target.value)}
+              className="input text-base"
+            />
+          </label>
+          <button
+            type="button"
+            disabled={!adding || busy}
+            onClick={add}
+            className="btn px-4 disabled:opacity-50"
+          >
+            <PlusIcon />
+            {busy ? "Adding…" : "Add date"}
+          </button>
+        </div>
+      )}
+      {error && <p className="text-sm text-accent">{error}</p>}
+    </section>
   );
 }

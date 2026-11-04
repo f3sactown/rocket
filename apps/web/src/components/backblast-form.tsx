@@ -373,7 +373,7 @@ export function BackblastForm({
     if (mode === "workout" && name === "thang") {
       const current = (
         backblast.thangs ?? [{ text: backblast.thang ?? "" }]
-      ).filter((t) => t.text.trim() || t.timer);
+      ).filter((t) => t.text.trim() || t.timer || t.music);
       return setThangs([...current, { text: body }]);
     }
     set(name, body);
@@ -388,7 +388,11 @@ export function BackblastForm({
     setCopying(false);
     if (typeof workout === "string") return setError(workout);
     edited.current = true;
-    setBackblast((current) => copyWorkout(current, workout));
+    // The backblast keeps its own date: a workout run on several days has one backblast each.
+    setBackblast((current) => ({
+      ...copyWorkout(current, workout),
+      date: current.date || workout.date,
+    }));
   }
 
   /**

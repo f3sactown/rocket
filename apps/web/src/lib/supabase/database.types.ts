@@ -137,6 +137,7 @@ export type Database = {
           warmup: string | null;
           thang: string | null;
           thangs: Json;
+          more_dates: string[];
           announcements: string | null;
           words_of_wisdom: string | null;
           created_at: string;
@@ -155,6 +156,7 @@ export type Database = {
           warmup?: string | null;
           thang?: string | null;
           thangs?: Json;
+          more_dates?: string[];
           announcements?: string | null;
           words_of_wisdom?: string | null;
           created_at?: string;
