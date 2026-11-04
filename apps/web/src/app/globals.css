@@ -212,6 +212,11 @@ body::before {
 }
 
 /* Launch animation (components/launch-splash.tsx). Always dark, like a night launch. */
+/* Turned off in Settings: hidden before first paint by the theme script. */
+:root[data-splash="off"] .splash {
+  display: none;
+}
+
 .splash {
   position: fixed;
   inset: 0;
