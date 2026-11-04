@@ -375,14 +375,14 @@ describe("thangs", () => {
         { text: "Run", music: { url: "https://youtu.be/xyz" } },
       ]),
     ).toBe(
-      "Thang 1:\nBurpees\n🎵 Eye of the Tiger 🎵 https://open.spotify.com/track/abc\n\nThang 2:\nRun\n🎵 https://youtu.be/xyz",
+      "Burpees\n🎵 Eye of the Tiger 🎵 https://open.spotify.com/track/abc\n\nRun\n🎵 https://youtu.be/xyz",
     );
     expect(thangText([{ text: "Solo", music: { url: "not a link" } }])).toBe(
       "Solo",
     );
   });
 
-  it("writes one thang as is and several numbered", () => {
+  it("writes thangs separated by blank lines", () => {
     expect(thangText([{ text: "11s" }])).toBe("11s");
     expect(
       thangText([
@@ -390,7 +390,7 @@ describe("thangs", () => {
         { text: " " },
         { text: "Dora 1-2-3", timer: { type: "stopwatch" } },
       ]),
-    ).toBe("Thang 1:\n11s\n\nThang 2:\nDora 1-2-3");
+    ).toBe("11s\n\nDora 1-2-3");
   });
 });
 
