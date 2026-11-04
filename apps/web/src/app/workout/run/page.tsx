@@ -1,10 +1,17 @@
 "use client";
 
-import { backblastParts, termsFor, type Workout } from "@rocket/core";
+import {
+  backblastParts,
+  currentDate,
+  termsFor,
+  workoutDates,
+  type Workout,
+} from "@rocket/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
+import { ArrowIcon } from "@/components/icons";
 import { ActiveTimer, ThangTimer } from "@/components/thang-timer";
 import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/client";
@@ -27,6 +34,13 @@ type Size = (typeof SIZES)[number]["value"];
 
 const SIZE_KEY = "rocket-run-size";
 
+/** Today's date (YYYY-MM-DD) where the user is. */
+function localToday(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 function savedSize(): Size {
   try {
     const value = localStorage.getItem(SIZE_KEY);
@@ -45,6 +59,10 @@ function RunWorkout({ user }: { user: CurrentUser }) {
   const id = useSearchParams().get("id");
   const [size, setSize] = useState<Size>(savedSize);
   const [activeTimer, setActiveTimer] = useState<string | null>(null);
+  // Your backblasts from this workout, to open the one for this run if it's started.
+  const [backblasts, setBackblasts] = useState<
+    { id: string; status: string; date: string | null }[]
+  >([]);
   const [result, setResult] = useState<{
     workout: Workout | null;
     error?: string;
@@ -68,6 +86,16 @@ function RunWorkout({ user }: { user: CurrentUser }) {
           error: error?.message,
         }),
       );
+  }, [id, user.id]);
+
+  useEffect(() => {
+    if (!id) return;
+    createClient()
+      .from("backblasts")
+      .select("id, status, date")
+      .eq("workout_id", id)
+      .eq("author_id", user.id)
+      .then(({ data }) => setBackblasts(data ?? []));
   }, [id, user.id]);
 
   // Keep the screen on while the workout is being run.
@@ -113,8 +141,10 @@ function RunWorkout({ user }: { user: CurrentUser }) {
   const { workout } = result;
   const terms = termsFor(user.language);
   // Where and when, as at the top of the copied workout.
+  // A workout run on several days is shown for today's run, or the nearest one.
+  const date = currentDate(workoutDates(workout), localToday()) ?? workout.date;
   const where = backblastParts(
-    { ...workout, title: "", notes: "", thang: "", introduction: "" },
+    { ...workout, date, title: "", notes: "", thang: "", introduction: "" },
     user.language,
   )[0]!.text;
   const thangs = workout.thangs?.length
@@ -193,6 +223,16 @@ function RunWorkout({ user }: { user: CurrentUser }) {
                       {thang.text.trim()}
                     </p>
                   )}
+                  {thang.music && (
+                    <a
+                      href={thang.music.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn self-start px-4 py-2 text-base"
+                    >
+                      ♫ {thang.music.title || "Play music"}
+                    </a>
+                  )}
                   {thang.timer && (
                     <ThangTimer
                       timer={thang.timer}
@@ -220,6 +260,24 @@ function RunWorkout({ user }: { user: CurrentUser }) {
             </p>
           </section>
         )}
+        {(() => {
+          const existing = backblasts.find((b) => b.date === date);
+          const href = existing
+            ? existing.status === "draft"
+              ? `/backblasts/edit?id=${existing.id}`
+              : `/backblast?id=${existing.id}`
+            : `/backblasts/new?workout=${id}&date=${date}`;
+          return (
+            <Link href={href} className="btn w-full">
+              <ArrowIcon />
+              {existing
+                ? existing.status === "draft"
+                  ? "Continue backblast"
+                  : "Open backblast"
+                : "Create backblast"}
+            </Link>
+          );
+        })()}
       </article>
     </ActiveTimer.Provider>
   );

@@ -43,6 +43,30 @@ export interface Backblast {
   secondF?: string;
   /** The workout this backblast was made from, if any. */
   workoutId?: string;
+  /** A workout's other dates (YYYY-MM-DD) when it's run again; `date` is its first. */
+  moreDates?: string[];
+}
+
+/** Every date a workout is run on, earliest first, without blanks or repeats. */
+export function workoutDates(
+  workout: Pick<Backblast, "date" | "moreDates">,
+): string[] {
+  return [
+    ...new Set([workout.date, ...(workout.moreDates ?? [])].filter(Boolean)),
+  ].sort();
+}
+
+/**
+ * The date of a workout to act on now: today if it's run today, else the latest one that has
+ * passed, else the next one coming up.
+ */
+export function currentDate(
+  dates: string[],
+  today: string,
+): string | undefined {
+  if (dates.includes(today)) return today;
+  const past = dates.filter((d) => d < today);
+  return past[past.length - 1] ?? dates[0];
 }
 
 /**
@@ -55,6 +79,8 @@ export type Workout = Backblast;
 export interface Thang {
   text: string;
   timer?: Timer;
+  /** A song or playlist to play during it, as a link (Spotify, YouTube, Apple Music…). */
+  music?: { url: string; title?: string };
 }
 
 /**

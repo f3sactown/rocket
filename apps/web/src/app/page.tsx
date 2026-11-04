@@ -154,9 +154,7 @@ function Totals({ user }: { user: CurrentUser }) {
           ? `Totals unavailable: ${stats.error}`
           : (region?.name ?? "")}
         {latest.value && (
-          <span className="block">
-            Updated since {formatDate(latest.value)}
-          </span>
+          <span className="block">Updated {formatDate(latest.value)}</span>
         )}
       </p>
     </div>

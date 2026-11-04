@@ -12,7 +12,7 @@ import {
 } from "react";
 
 /** A short beep, higher for the end, where the browser allows sound. */
-function beep(final: boolean) {
+function beep(final: boolean, tick = false) {
   try {
     const AudioContext =
       window.AudioContext ??
@@ -21,8 +21,8 @@ function beep(final: boolean) {
     const audio = new AudioContext();
     const tone = audio.createOscillator();
     const volume = audio.createGain();
-    tone.frequency.value = final ? 880 : 660;
-    const length = final ? 0.8 : 0.35;
+    tone.frequency.value = final ? 880 : tick ? 520 : 660;
+    const length = final ? 0.8 : tick ? 0.12 : 0.35;
     volume.gain.setValueAtTime(0.3, audio.currentTime);
     volume.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + length);
     tone.connect(volume).connect(audio.destination);
@@ -31,7 +31,7 @@ function beep(final: boolean) {
   } catch {
     // No sound; the screen still shows what's happening.
   }
-  navigator.vibrate?.(final ? [300, 150, 300] : 200);
+  if (!tick) navigator.vibrate?.(final ? [300, 150, 300] : 200);
 }
 
 /**
@@ -70,6 +70,8 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
   const phases = useMemo(() => timerPhases(JSON.parse(key) as Timer), [key]);
   const [phase, setPhase] = useState(0);
   const phaseRef = useRef(0);
+  // The second of the final countdown last ticked, so each is beeped once.
+  const ticked = useRef<number | null>(null);
   // Seconds left in the current stretch, or (for a stopwatch) seconds so far.
   const [count, setCount] = useState(phases[0]?.seconds ?? 0);
   const [running, setRunning] = useState(false);
@@ -87,6 +89,12 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
       }
       const left = Math.max(0, Math.ceil((mark.current - Date.now()) / 1000));
       setCount(left);
+      // A tick each second for the last 10 seconds before the timer ends.
+      const last = phaseRef.current === phases.length - 1;
+      if (last && left > 0 && left <= 10 && ticked.current !== left) {
+        ticked.current = left;
+        beep(false, true);
+      }
       if (left > 0) return;
       const next = phaseRef.current + 1;
       if (next >= phases.length) {
@@ -116,6 +124,7 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
 
   function reset(andStart = false) {
     setDone(false);
+    ticked.current = null;
     phaseRef.current = 0;
     setPhase(0);
     const first = timer.type === "stopwatch" ? 0 : (phases[0]?.seconds ?? 0);

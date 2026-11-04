@@ -68,7 +68,24 @@ export function ThangsInput({
             timer={thang.timer}
             onChange={(timer) => update(index, { timer })}
             name={rows.length > 1 ? `thang ${index + 1}` : "the thang"}
+            extra={
+              !thang.music && (
+                <button
+                  type="button"
+                  onClick={() => update(index, { music: { url: "" } })}
+                  className="link py-1 text-sm"
+                >
+                  <span className="text-accent">＋</span> Add music
+                </button>
+              )
+            }
           />
+          {thang.music && (
+            <MusicInput
+              music={thang.music}
+              onChange={(music) => update(index, { music })}
+            />
+          )}
         </div>
       ))}
       <button
@@ -87,22 +104,28 @@ function TimerInput({
   timer,
   onChange,
   name,
+  extra,
 }: {
   timer?: Timer;
   onChange: (timer: Timer | undefined) => void;
   name: string;
+  /** Shown beside "Add timer", e.g. "Add music". */
+  extra?: React.ReactNode;
 }) {
   const [choosing, setChoosing] = useState(false);
 
   if (!timer && !choosing)
     return (
-      <button
-        type="button"
-        onClick={() => setChoosing(true)}
-        className="link self-start py-1 text-sm"
-      >
-        <span className="text-accent">＋</span> Add timer
-      </button>
+      <div className="flex flex-wrap gap-x-5">
+        <button
+          type="button"
+          onClick={() => setChoosing(true)}
+          className="link py-1 text-sm"
+        >
+          <span className="text-accent">＋</span> Add timer
+        </button>
+        {extra}
+      </div>
     );
 
   if (!timer)
@@ -157,6 +180,57 @@ function TimerInput({
         </button>
       </div>
       <TimerSettings timer={timer} onChange={onChange} />
+      {extra}
+    </div>
+  );
+}
+
+/** A link to a song or playlist for the thang, with an optional name. */
+function MusicInput({
+  music,
+  onChange,
+}: {
+  music: NonNullable<Thang["music"]>;
+  onChange: (music: Thang["music"]) => void;
+}) {
+  const valid = /^https?:\/\/\S+$/i.test(music.url.trim());
+  return (
+    <div className="flex flex-col gap-2 rounded-xl bg-hover p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium text-ink">♫ Music</span>
+        <button
+          type="button"
+          onClick={() => onChange(undefined)}
+          className="link shrink-0 text-sm"
+        >
+          Remove
+        </button>
+      </div>
+      <label className="flex flex-col gap-1 text-xs text-ink-soft">
+        Link to a song or playlist
+        <input
+          type="url"
+          inputMode="url"
+          placeholder="https://open.spotify.com/…"
+          value={music.url}
+          onChange={(e) => onChange({ ...music, url: e.target.value })}
+          className="input py-1.5 text-base"
+        />
+        {music.url.trim() && !valid && (
+          <span className="text-accent">
+            Paste the full link, starting with https://
+          </span>
+        )}
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-ink-soft">
+        Name (optional)
+        <input
+          placeholder="Eye of the Tiger"
+          value={music.title ?? ""}
+          onChange={(e) => onChange({ ...music, title: e.target.value })}
+          className="input py-1.5 text-base"
+        />
+      </label>
     </div>
   );
 }
