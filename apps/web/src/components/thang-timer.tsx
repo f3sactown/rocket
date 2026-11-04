@@ -1,7 +1,15 @@
 "use client";
 
 import { formatTimer, timerLabel, timerPhases, type Timer } from "@rocket/core";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 /** A short beep, higher for the end, where the browser allows sound. */
 function beep(final: boolean) {
@@ -31,7 +39,32 @@ function beep(final: boolean) {
  * through their stretches (each round's work and rest, each EMOM minute), beeping as each one
  * ends and when the whole timer is done.
  */
-export function ThangTimer({ timer }: { timer: Timer }) {
+/**
+ * Which timer on the page was used last, so only that one is pinned to the top when it's
+ * scrolled out of view.
+ */
+export const ActiveTimer = createContext<{
+  active: string | null;
+  setActive: (id: string) => void;
+}>({ active: null, setActive: () => {} });
+
+export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
+  const id = useId();
+  const { active, setActive } = useContext(ActiveTimer);
+  const box = useRef<HTMLDivElement>(null);
+  // Whether the timer's box is on screen; when it isn't, a copy is pinned to the top.
+  const [onScreen, setOnScreen] = useState(true);
+
+  useEffect(() => {
+    const element = box.current;
+    if (!element) return;
+    const observer = new IntersectionObserver(([entry]) =>
+      setOnScreen(entry!.isIntersecting),
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
   // Keyed on the settings, so the list (and the ticking below) isn't rebuilt every second.
   const key = JSON.stringify(timer);
   const phases = useMemo(() => timerPhases(JSON.parse(key) as Timer), [key]);
@@ -72,6 +105,7 @@ export function ThangTimer({ timer }: { timer: Timer }) {
   }, [running, timer.type, phases]);
 
   function start() {
+    setActive(id);
     if (done) return reset(true);
     mark.current =
       timer.type === "stopwatch"
@@ -97,51 +131,79 @@ export function ThangTimer({ timer }: { timer: Timer }) {
     !done &&
     phase === 0 &&
     count === (timer.type === "stopwatch" ? 0 : (phases[0]?.seconds ?? 0));
+  const pause = () => setRunning(false);
+  const pinned = active === id && !onScreen && !fresh;
+  const controls = (
+    <span className="ml-auto flex gap-2 text-base">
+      {running ? (
+        <button type="button" onClick={pause} className="btn px-4 py-2">
+          {timer.type === "stopwatch" ? "Stop" : "Pause"}
+        </button>
+      ) : (
+        <button type="button" onClick={start} className="btn px-4 py-2">
+          {done ? "Again" : fresh ? "Start" : "Resume"}
+        </button>
+      )}
+      {!fresh && !done && (
+        <button type="button" onClick={() => reset()} className="link px-2">
+          Reset
+        </button>
+      )}
+    </span>
+  );
+
   return (
-    <div
-      className={`flex flex-col gap-2 rounded-2xl border px-4 py-3 ${
-        done
-          ? "border-accent bg-accent-soft"
-          : current?.rest
-            ? "border-line-strong bg-hover"
-            : "border-line"
-      }`}
-    >
-      <span className="text-[0.6em] font-medium text-muted">
-        {timerLabel(timer)}
-        {current?.label && !done && (
-          <span className="text-ink-soft"> · {current.label}</span>
-        )}
-      </span>
-      <div className="flex flex-wrap items-center gap-3">
-        <span
-          role="timer"
-          aria-live={done ? "assertive" : "off"}
-          className="font-mono text-[1.6em] leading-none text-ink tabular-nums"
+    <>
+      {pinned && (
+        // The timer in use, pinned to the top while its box is scrolled out of view.
+        <div
+          role="region"
+          aria-label="Current timer"
+          className={`fixed inset-x-3 top-3 z-30 mx-auto flex max-w-xl items-center gap-3 rounded-2xl border px-4 py-2.5 text-base shadow-xl backdrop-blur ${
+            done
+              ? "border-accent bg-accent-soft"
+              : "border-line-strong bg-surface-raised/95"
+          }`}
         >
-          {done ? "Time!" : formatTimer(count)}
-        </span>
-        <span className="ml-auto flex gap-2 text-base">
-          {running ? (
-            <button
-              type="button"
-              onClick={() => setRunning(false)}
-              className="btn px-4 py-2"
-            >
-              {timer.type === "stopwatch" ? "Stop" : "Pause"}
-            </button>
-          ) : (
-            <button type="button" onClick={start} className="btn px-4 py-2">
-              {done ? "Again" : fresh ? "Start" : "Resume"}
-            </button>
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate text-xs text-muted">
+              {label ?? timerLabel(timer)}
+              {current?.label && !done && ` · ${current.label}`}
+            </span>
+            <span className="font-mono text-2xl leading-tight text-ink tabular-nums">
+              {done ? "Time!" : formatTimer(count)}
+            </span>
+          </span>
+          {controls}
+        </div>
+      )}
+      <div
+        ref={box}
+        className={`flex flex-col gap-2 rounded-2xl border px-4 py-3 ${
+          done
+            ? "border-accent bg-accent-soft"
+            : current?.rest
+              ? "border-line-strong bg-hover"
+              : "border-line"
+        }`}
+      >
+        <span className="text-[0.6em] font-medium text-muted">
+          {timerLabel(timer)}
+          {current?.label && !done && (
+            <span className="text-ink-soft"> · {current.label}</span>
           )}
-          {!fresh && !done && (
-            <button type="button" onClick={() => reset()} className="link px-2">
-              Reset
-            </button>
-          )}
         </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span
+            role="timer"
+            aria-live={done ? "assertive" : "off"}
+            className="font-mono text-[1.6em] leading-none text-ink tabular-nums"
+          >
+            {done ? "Time!" : formatTimer(count)}
+          </span>
+          {controls}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

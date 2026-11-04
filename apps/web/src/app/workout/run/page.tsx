@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
-import { ThangTimer } from "@/components/thang-timer";
+import { ActiveTimer, ThangTimer } from "@/components/thang-timer";
 import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/client";
 
@@ -44,6 +44,7 @@ function savedSize(): Size {
 function RunWorkout({ user }: { user: CurrentUser }) {
   const id = useSearchParams().get("id");
   const [size, setSize] = useState<Size>(savedSize);
+  const [activeTimer, setActiveTimer] = useState<string | null>(null);
   const [result, setResult] = useState<{
     workout: Workout | null;
     error?: string;
@@ -133,82 +134,93 @@ function RunWorkout({ user }: { user: CurrentUser }) {
     );
 
   return (
-    <article className="card">
-      <div className="sticky top-2 z-10 -mx-1 flex flex-col gap-3 rounded-2xl bg-surface/95 p-1 backdrop-blur">
-        <div className="flex items-center justify-between gap-3">
-          <Link href={`/workout?id=${id}`} className="link text-sm">
-            ← Workout
-          </Link>
-          <span className="status text-sm">Running</span>
-        </div>
-        <div
-          role="radiogroup"
-          aria-label="Text size"
-          className="grid grid-cols-3 gap-1 rounded-full border border-line bg-panel p-1"
-        >
-          {SIZES.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              role="radio"
-              aria-checked={size === option.value}
-              onClick={() => choose(option.value)}
-              className={`rounded-full px-2 py-1.5 text-sm font-medium transition-colors ${
-                size === option.value
-                  ? "bg-surface-raised text-ink shadow-sm"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <h1 className="card-title">{workout.title}</h1>
-      <div className={`flex flex-col gap-6 text-ink ${sizeClass}`}>
-        <p className="leading-relaxed whitespace-pre-wrap text-ink-soft">
-          {where}
-        </p>
-        {section("Introduction", workout.introduction)}
-        {section(terms.warmup, workout.warmup)}
-        {thangs.length > 0 && (
-          <section className="flex flex-col gap-4">
-            <h2 className="text-[0.7em] font-semibold tracking-wider text-accent uppercase">
-              {terms.thang}
-            </h2>
-            {thangs.map((thang, index) => (
-              <div key={index} className="flex flex-col gap-2">
-                {thangs.length > 1 && (
-                  <h3 className="text-[0.8em] font-semibold text-ink-soft">
-                    Thang {index + 1}
-                  </h3>
-                )}
-                {thang.text.trim() && (
-                  <p className="leading-relaxed whitespace-pre-wrap">
-                    {thang.text.trim()}
-                  </p>
-                )}
-                {thang.timer && <ThangTimer timer={thang.timer} />}
-              </div>
+    <ActiveTimer.Provider
+      value={{ active: activeTimer, setActive: setActiveTimer }}
+    >
+      <article className="card">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <Link href={`/workout?id=${id}`} className="link text-sm">
+              ← Workout
+            </Link>
+            <span className="status text-sm">Running</span>
+          </div>
+          <div
+            role="radiogroup"
+            aria-label="Text size"
+            className="grid grid-cols-3 gap-1 rounded-full border border-line bg-panel p-1"
+          >
+            {SIZES.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={size === option.value}
+                onClick={() => choose(option.value)}
+                className={`rounded-full px-2 py-1.5 text-sm font-medium transition-colors ${
+                  size === option.value
+                    ? "bg-surface-raised text-ink shadow-sm"
+                    : "text-muted hover:text-ink"
+                }`}
+              >
+                {option.label}
+              </button>
             ))}
+          </div>
+        </div>
+
+        <h1 className="card-title">{workout.title}</h1>
+        <div className={`flex flex-col gap-6 text-ink ${sizeClass}`}>
+          <p className="leading-relaxed whitespace-pre-wrap text-ink-soft">
+            {where}
+          </p>
+          {section("Introduction", workout.introduction)}
+          {section(terms.warmup, workout.warmup)}
+          {thangs.length > 0 && (
+            <section className="flex flex-col gap-4">
+              <h2 className="text-[0.7em] font-semibold tracking-wider text-accent uppercase">
+                {terms.thang}
+              </h2>
+              {thangs.map((thang, index) => (
+                <div key={index} className="flex flex-col gap-2">
+                  {thangs.length > 1 && (
+                    <h3 className="text-[0.8em] font-semibold text-ink-soft">
+                      Thang {index + 1}
+                    </h3>
+                  )}
+                  {thang.text.trim() && (
+                    <p className="leading-relaxed whitespace-pre-wrap">
+                      {thang.text.trim()}
+                    </p>
+                  )}
+                  {thang.timer && (
+                    <ThangTimer
+                      timer={thang.timer}
+                      label={
+                        thangs.length > 1 ? `Thang ${index + 1}` : terms.thang
+                      }
+                    />
+                  )}
+                </div>
+              ))}
+            </section>
+          )}
+          {section("Announcements", workout.announcements)}
+          {section("Words of Wisdom", workout.wordsOfWisdom)}
+        </div>
+        {workout.notes && (
+          <section className="flex flex-col gap-2 rounded-2xl border border-line p-4">
+            <h2 className="text-xs font-semibold tracking-wider text-accent uppercase">
+              Your notes · only you see these
+            </h2>
+            <p
+              className={`leading-relaxed whitespace-pre-wrap text-ink-soft ${sizeClass}`}
+            >
+              {workout.notes}
+            </p>
           </section>
         )}
-        {section("Announcements", workout.announcements)}
-        {section("Words of Wisdom", workout.wordsOfWisdom)}
-      </div>
-      {workout.notes && (
-        <section className="flex flex-col gap-2 rounded-2xl border border-line p-4">
-          <h2 className="text-xs font-semibold tracking-wider text-accent uppercase">
-            Your notes · only you see these
-          </h2>
-          <p
-            className={`leading-relaxed whitespace-pre-wrap text-ink-soft ${sizeClass}`}
-          >
-            {workout.notes}
-          </p>
-        </section>
-      )}
-    </article>
+      </article>
+    </ActiveTimer.Provider>
   );
 }
