@@ -6,7 +6,6 @@ import {
   type Backblast,
   type Thang,
   type Workout,
-  type WorkoutRun,
 } from "@rocket/core";
 import { createClient } from "./supabase/client";
 import type { Database, Json } from "./supabase/database.types";
@@ -100,7 +99,6 @@ export function fromWorkoutRow(row: WorkoutRow, notes?: string): Workout {
       return thangs.length ? thangText(thangs) : (row.thang ?? undefined);
     })(),
     thangs: parseThangs(row.thangs, row.thang),
-    runs: parseRuns(row.runs),
     notes: notes || undefined,
     announcements: row.announcements ?? undefined,
     wordsOfWisdom: row.words_of_wisdom ?? undefined,
@@ -210,96 +208,4 @@ function parseMusic(value: unknown): Thang["music"] {
   return typeof title === "string" && title.trim()
     ? { url: url.trim(), title: title.trim() }
     : { url: url.trim() };
-}
-
-/** A workout's extra runs from the database, keeping only well-formed ones. */
-export function parseRuns(value: Json | unknown): WorkoutRun[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((item): WorkoutRun[] => {
-    if (!item || typeof item !== "object") return [];
-    const { date, ao, address, time } = item as Record<string, unknown>;
-    if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date))
-      return [];
-    const text = (v: unknown) =>
-      typeof v === "string" && v.trim() ? v.trim() : undefined;
-    return [
-      {
-        date,
-        ao: text(ao) ?? "",
-        ...(text(address) ? { address: text(address) } : {}),
-        ...(text(time) ? { time: text(time) } : {}),
-      },
-    ];
-  });
-}
-
-/**
- * Adds a run (a date, and where) to a workout so it can be run and written up again. Its author
- * only. Returns the workout's runs after the change.
- */
-export async function addWorkoutRun(
-  workoutId: string,
-  run: WorkoutRun,
-): Promise<WorkoutRun[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("workouts")
-    .select("date, runs")
-    .eq("id", workoutId)
-    .single();
-  if (error) throw error;
-  if (data.date === run.date)
-    throw new Error("The workout already runs that day.");
-  const runs = [
-    ...parseRuns(data.runs).filter((r) => r.date !== run.date),
-    run,
-  ].sort((a, b) => a.date.localeCompare(b.date));
-  const { error: saveError } = await supabase
-    .from("workouts")
-    .update({ runs: runs as unknown as Json })
-    .eq("id", workoutId);
-  if (saveError) throw saveError;
-  return runs;
-}
-
-/**
- * Removes one of a workout's runs by date. Removing its first run makes the next one first, so the
- * workout always keeps at least one.
- */
-export async function removeWorkoutRun(
-  workoutId: string,
-  date: string,
-): Promise<Workout> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("workouts")
-    .select("*")
-    .eq("id", workoutId)
-    .single();
-  if (error) throw error;
-  const runs = parseRuns(data.runs);
-  let update: Database["public"]["Tables"]["workouts"]["Update"];
-  if (data.date === date) {
-    const [next, ...rest] = [...runs].sort((a, b) =>
-      a.date.localeCompare(b.date),
-    );
-    if (!next) throw new Error("A workout needs at least one date.");
-    update = {
-      date: next.date,
-      ao: next.ao,
-      address: next.address ?? null,
-      time: next.time ?? null,
-      runs: rest as unknown as Json,
-    };
-  } else {
-    update = { runs: runs.filter((r) => r.date !== date) as unknown as Json };
-  }
-  const { data: saved, error: saveError } = await supabase
-    .from("workouts")
-    .update(update)
-    .eq("id", workoutId)
-    .select("*")
-    .single();
-  if (saveError) throw saveError;
-  return fromWorkoutRow(saved);
 }

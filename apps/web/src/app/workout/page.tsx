@@ -1,21 +1,10 @@
 "use client";
 
-import {
-  formatBackblast,
-  formatDate,
-  workoutDates,
-  workoutRuns,
-  type Workout,
-  type WorkoutRun,
-} from "@rocket/core";
+import { formatBackblast, formatDate, type Workout } from "@rocket/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
-import {
-  SignedIn,
-  type CurrentUser,
-  type SwipeAction,
-} from "@/components/auth-provider";
+import { Suspense, useEffect, useState } from "react";
+import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { CopyButton } from "@/components/copy-button";
 import {
   ArchiveIcon,
@@ -26,14 +15,7 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { ShareButton } from "@/components/share-button";
-import {
-  addWorkoutRun,
-  fromWorkoutRow,
-  loadWorkoutNotes,
-  removeWorkoutRun,
-} from "@/lib/backblast";
-import { ReuseWorkout } from "@/components/reuse-workout";
-import { SwipeRow } from "@/components/swipe-row";
+import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
 import { archive, deleteItem, unarchive } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 
@@ -64,11 +46,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     { id: string; title: string; status: string; date: string | null }[]
   >([]);
   const [archived, setArchived] = useState<boolean | null>(null);
-  const [reusing, setReusing] = useState(false);
-  // Every backblast made from this workout that you can see, to know which dates are written up.
-  const [allBackblasts, setAllBackblasts] = useState<{ date: string | null }[]>(
-    [],
-  );
+
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -97,11 +75,6 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       .eq("workout_id", id)
       .eq("author_id", user.id)
       .then(({ data }) => setBackblasts(data ?? []));
-    supabase
-      .from("backblasts")
-      .select("date")
-      .eq("workout_id", id)
-      .then(({ data }) => setAllBackblasts(data ?? []));
     supabase
       .from("workout_archives")
       .select("workout_id")
@@ -146,11 +119,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
 
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-ink">{workout.ao}</span>
-        <span className="text-ink-soft">
-          {formatDate(workout.date)}
-          {workoutDates(workout).length > 1 &&
-            ` + ${workoutDates(workout).length - 1} more`}
-        </span>
+        <span className="text-ink-soft">{formatDate(workout.date)}</span>
       </div>
 
       <pre className="panel overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
@@ -174,30 +143,11 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
             Edit
           </Link>
         )}
-        {mine ? (
-          // Running it again adds a date (and AO) to this workout, rather than copying it.
-          <button
-            type="button"
-            onClick={() => {
-              setReusing(true);
-              requestAnimationFrame(() =>
-                document
-                  .getElementById("dates")
-                  ?.scrollIntoView({ behavior: "smooth" }),
-              );
-            }}
-            className="btn w-full"
-          >
-            <CopyIcon />
-            Reuse
-          </button>
-        ) : (
-          // Someone else's workout can't be changed, so it's copied into your own.
-          <Link href={`/workouts/new?from=${id}`} className="btn w-full">
-            <CopyIcon />
-            Copy to my workouts
-          </Link>
-        )}
+        {/* Starts a new workout with this one's sections, for running it again. */}
+        <Link href={`/workouts/new?from=${id}`} className="btn w-full">
+          <CopyIcon />
+          Reuse
+        </Link>
       </div>
       <div className="-mt-1 flex justify-center gap-6">
         {archived !== null && (
@@ -237,205 +187,25 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       </div>
       {actionError && <p className="text-sm text-accent">{actionError}</p>}
 
-      <WorkoutDates
-        workoutId={id!}
-        workout={workout}
-        mine={mine}
-        backblasts={backblasts}
-        reusing={reusing}
-        onReusingChange={setReusing}
-        swipeLeft={user.swipeLeft}
-        written={allBackblasts.map((b) => b.date)}
-        onWorkoutChange={(update) =>
-          setResult((current) =>
-            current?.workout
-              ? { ...current, workout: { ...current.workout, ...update } }
-              : current,
-          )
-        }
-      />
+      {(() => {
+        // One backblast per workout: open yours if you've started it.
+        const existing = backblasts[0];
+        const href = !existing
+          ? `/backblasts/new?workout=${id}`
+          : existing.status === "draft"
+            ? `/backblasts/edit?id=${existing.id}`
+            : `/backblast?id=${existing.id}`;
+        return (
+          <Link href={href} className="btn w-full">
+            <ArrowIcon />
+            {!existing
+              ? "Create backblast"
+              : existing.status === "draft"
+                ? "Continue your backblast"
+                : "Open your backblast"}
+          </Link>
+        );
+      })()}
     </article>
-  );
-}
-
-/** Where a date's backblast button goes: your backblast for that date, or a new one. */
-function backblastLink(
-  workoutId: string,
-  date: string,
-  backblasts: { id: string; status: string; date: string | null }[],
-) {
-  const existing = backblasts.find((b) => b.date === date);
-  if (!existing)
-    return {
-      href: `/backblasts/new?workout=${workoutId}&date=${date}`,
-      label: "Create backblast",
-    };
-  return existing.status === "draft"
-    ? {
-        href: `/backblasts/edit?id=${existing.id}`,
-        label: "Continue backblast",
-      }
-    : { href: `/backblast?id=${existing.id}`, label: "Open backblast" };
-}
-
-/**
- * The days this workout is run, each with its backblast button. Its Q can add another day (and
- * AO) with Reuse, and remove a day nobody has written a backblast for.
- */
-function WorkoutDates({
-  workoutId,
-  workout,
-  mine,
-  backblasts,
-  written,
-  reusing,
-  onReusingChange,
-  onWorkoutChange,
-  swipeLeft,
-}: {
-  workoutId: string;
-  workout: Workout;
-  mine: boolean;
-  backblasts: { id: string; status: string; date: string | null }[];
-  /** The dates that have a backblast, by anyone. */
-  written: (string | null)[];
-  reusing: boolean;
-  onReusingChange: (reusing: boolean) => void;
-  onWorkoutChange: (update: Partial<Workout>) => void;
-  /** Which way the user swipes to delete (Settings). */
-  swipeLeft: SwipeAction;
-}) {
-  const runs = workoutRuns(workout);
-  const [error, setError] = useState<string | null>(null);
-
-  // The date just removed, offered back with Undo for a few seconds.
-  const [removed, setRemoved] = useState<WorkoutRun | null>(null);
-  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  async function remove(run: WorkoutRun) {
-    setError(null);
-    try {
-      const saved = await removeWorkoutRun(workoutId, run.date);
-      onWorkoutChange({
-        date: saved.date,
-        ao: saved.ao,
-        address: saved.address,
-        time: saved.time,
-        runs: saved.runs,
-      });
-      setRemoved(run);
-      if (undoTimer.current) clearTimeout(undoTimer.current);
-      undoTimer.current = setTimeout(() => setRemoved(null), 6000);
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  }
-
-  async function undo() {
-    if (!removed) return;
-    const run = removed;
-    setRemoved(null);
-    try {
-      onWorkoutChange({ runs: await addWorkoutRun(workoutId, run) });
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  }
-
-  // Swiping the way that deletes (set in Settings) removes a date.
-  const removeOption = (run: WorkoutRun) => ({
-    label: "Remove",
-    color: "#c8372d",
-    onCommit: () => remove(run),
-  });
-
-  return (
-    <section id="dates" className="flex scroll-mt-4 flex-col gap-3">
-      {runs.length > 1 && (
-        <h2 className="text-lg font-semibold tracking-tight text-ink">Dates</h2>
-      )}
-      {runs.length === 1 ? (
-        <Link
-          href={backblastLink(workoutId, runs[0]!.date, backblasts).href}
-          className="btn w-full"
-        >
-          <ArrowIcon />
-          {backblastLink(workoutId, runs[0]!.date, backblasts).label}
-        </Link>
-      ) : (
-        <ul className="panel flex flex-col divide-y divide-line p-2">
-          {runs.map((run) => {
-            const link = backblastLink(workoutId, run.date, backblasts);
-            const removable = mine && !written.includes(run.date);
-            return (
-              <li key={run.date}>
-                <SwipeRow
-                  left={
-                    removable && swipeLeft === "delete"
-                      ? removeOption(run)
-                      : undefined
-                  }
-                  right={
-                    removable && swipeLeft === "archive"
-                      ? removeOption(run)
-                      : undefined
-                  }
-                >
-                  <div className="flex items-center justify-between gap-3 px-2 py-2.5">
-                    <span className="flex min-w-0 flex-col">
-                      <span className="text-sm text-ink">
-                        {formatDate(run.date)}
-                      </span>
-                      <span className="truncate text-xs text-muted">
-                        {[run.ao, run.time].filter(Boolean).join(" · ")}
-                      </span>
-                    </span>
-                    <Link
-                      href={link.href}
-                      className="btn shrink-0 px-3 py-1.5 text-sm"
-                    >
-                      {link.label}
-                    </Link>
-                  </div>
-                </SwipeRow>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      {mine && reusing && (
-        <ReuseWorkout
-          taken={runs.map((r) => r.date)}
-          onCancel={() => onReusingChange(false)}
-          onAdd={async (run) => {
-            const added = await addWorkoutRun(workoutId, run);
-            onWorkoutChange({ runs: added });
-            onReusingChange(false);
-          }}
-        />
-      )}
-      {mine && runs.length > 1 && !removed && (
-        <p className="-mt-1 text-xs text-muted">
-          Swipe a date {swipeLeft === "delete" ? "left" : "right"} to remove it,
-          if it has no backblast.
-        </p>
-      )}
-      {removed && (
-        <div
-          role="status"
-          className="flex items-center justify-between gap-3 rounded-xl border border-line-strong px-3 py-2 text-sm"
-        >
-          <span className="text-ink">Removed {formatDate(removed.date)}</span>
-          <button
-            type="button"
-            onClick={undo}
-            className="font-semibold text-accent"
-          >
-            Undo
-          </button>
-        </div>
-      )}
-      {error && <p className="text-sm text-accent">{error}</p>}
-    </section>
   );
 }

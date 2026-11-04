@@ -1,6 +1,6 @@
 "use client";
 
-import { copyWorkout, workoutRuns, type Backblast } from "@rocket/core";
+import { copyWorkout, type Backblast } from "@rocket/core";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
@@ -15,27 +15,11 @@ export default function NewBackblastPage() {
   );
 }
 
-/** A backblast for one of the workout's runs: that day's date, AO, location and time. */
-function forRun(backblast: Backblast, workout: Backblast, date: string | null) {
-  const run = date && workoutRuns(workout).find((r) => r.date === date);
-  return run
-    ? {
-        ...backblast,
-        date: run.date,
-        ao: run.ao,
-        address: run.address,
-        time: run.time,
-      }
-    : backblast;
-}
-
 /** A new backblast; with ?workout=…, it starts as a copy of that workout's sections. */
 function NewBackblast({ user }: { user: CurrentUser }) {
   // Read once: saving the first draft changes the address to its edit link, dropping ?workout=.
   const params = useSearchParams();
   const [workoutId] = useState(params.get("workout"));
-  // Which of the workout's days this backblast is for, when it's run on more than one.
-  const [date] = useState(params.get("date"));
   const blank: Backblast = {
     title: "",
     date: "",
@@ -62,7 +46,7 @@ function NewBackblast({ user }: { user: CurrentUser }) {
     <BackblastEditor
       key={workoutId}
       user={user}
-      initial={forRun(copyWorkout({ ...blank, workoutId }, from), from, date)}
+      initial={copyWorkout({ ...blank, workoutId }, from)}
     />
   );
 }
