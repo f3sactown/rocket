@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   ACCENT_STORAGE_KEY,
   ACCENTS,
+  SPLASH_STORAGE_KEY,
   THEME_STORAGE_KEY,
   type Accent,
   type ThemePreference,
@@ -221,6 +222,57 @@ export function AccentPicker() {
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/** Whether the rocket launch animation plays when the app opens. Saved on this device. */
+export function SplashToggle() {
+  const [on, setOn] = useState(() => {
+    try {
+      return localStorage.getItem(SPLASH_STORAGE_KEY) !== "off";
+    } catch {
+      return true;
+    }
+  });
+
+  function toggle() {
+    const next = !on;
+    setOn(next);
+    try {
+      if (next) localStorage.removeItem(SPLASH_STORAGE_KEY);
+      else localStorage.setItem(SPLASH_STORAGE_KEY, "off");
+    } catch {
+      // Not saved; it still applies until the app is reopened.
+    }
+    if (next) delete document.documentElement.dataset.splash;
+    else document.documentElement.dataset.splash = "off";
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="flex flex-col">
+        <span className="label">Launch animation</span>
+        <span className="text-xs text-muted">
+          The rocket lifting off when the app opens.
+        </span>
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label="Launch animation"
+        onClick={toggle}
+        className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors ${
+          on ? "border-accent/60 bg-accent" : "border-line-strong bg-panel"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 size-5.5 rounded-full bg-white shadow transition-[left] ${
+            on ? "left-[calc(100%-1.5rem)]" : "left-0.5"
+          }`}
+        />
+      </button>
     </div>
   );
 }

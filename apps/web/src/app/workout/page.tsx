@@ -4,6 +4,7 @@ import {
   formatBackblast,
   formatDate,
   workoutDates,
+  workoutRuns,
   type Workout,
 } from "@rocket/core";
 import Link from "next/link";
@@ -17,15 +18,16 @@ import {
   CopyIcon,
   PencilIcon,
   PlayIcon,
-  PlusIcon,
   TrashIcon,
 } from "@/components/icons";
 import { ShareButton } from "@/components/share-button";
 import {
-  addWorkoutDate,
+  addWorkoutRun,
   fromWorkoutRow,
   loadWorkoutNotes,
+  removeWorkoutRun,
 } from "@/lib/backblast";
+import { ReuseWorkout } from "@/components/reuse-workout";
 import { archive, deleteItem, unarchive } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 
@@ -56,6 +58,11 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     { id: string; title: string; status: string; date: string | null }[]
   >([]);
   const [archived, setArchived] = useState<boolean | null>(null);
+  const [reusing, setReusing] = useState(false);
+  // Every backblast made from this workout that you can see, to know which dates are written up.
+  const [allBackblasts, setAllBackblasts] = useState<{ date: string | null }[]>(
+    [],
+  );
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -84,6 +91,11 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       .eq("workout_id", id)
       .eq("author_id", user.id)
       .then(({ data }) => setBackblasts(data ?? []));
+    supabase
+      .from("backblasts")
+      .select("date")
+      .eq("workout_id", id)
+      .then(({ data }) => setAllBackblasts(data ?? []));
     supabase
       .from("workout_archives")
       .select("workout_id")
@@ -157,11 +169,22 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
           </Link>
         )}
         {mine ? (
-          // Running it again adds a date to this workout (below), rather than copying it.
-          <a href="#dates" className="btn w-full">
+          // Running it again adds a date (and AO) to this workout, rather than copying it.
+          <button
+            type="button"
+            onClick={() => {
+              setReusing(true);
+              requestAnimationFrame(() =>
+                document
+                  .getElementById("dates")
+                  ?.scrollIntoView({ behavior: "smooth" }),
+              );
+            }}
+            className="btn w-full"
+          >
             <CopyIcon />
             Reuse
-          </a>
+          </button>
         ) : (
           // Someone else's workout can't be changed, so it's copied into your own.
           <Link href={`/workouts/new?from=${id}`} className="btn w-full">
@@ -213,10 +236,13 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         workout={workout}
         mine={mine}
         backblasts={backblasts}
-        onDatesChange={(moreDates) =>
+        reusing={reusing}
+        onReusingChange={setReusing}
+        written={allBackblasts.map((b) => b.date)}
+        onWorkoutChange={(update) =>
           setResult((current) =>
             current?.workout
-              ? { ...current, workout: { ...current.workout, moreDates } }
+              ? { ...current, workout: { ...current.workout, ...update } }
               : current,
           )
         }
@@ -246,92 +272,111 @@ function backblastLink(
 }
 
 /**
- * The days this workout is run, each with its backblast button, and (for its Q) a way to add
- * another day to run it again.
+ * The days this workout is run, each with its backblast button. Its Q can add another day (and
+ * AO) with Reuse, and remove a day nobody has written a backblast for.
  */
 function WorkoutDates({
   workoutId,
   workout,
   mine,
   backblasts,
-  onDatesChange,
+  written,
+  reusing,
+  onReusingChange,
+  onWorkoutChange,
 }: {
   workoutId: string;
   workout: Workout;
   mine: boolean;
   backblasts: { id: string; status: string; date: string | null }[];
-  onDatesChange: (moreDates: string[]) => void;
+  /** The dates that have a backblast, by anyone. */
+  written: (string | null)[];
+  reusing: boolean;
+  onReusingChange: (reusing: boolean) => void;
+  onWorkoutChange: (update: Partial<Workout>) => void;
 }) {
-  const dates = workoutDates(workout);
-  const [adding, setAdding] = useState("");
-  const [busy, setBusy] = useState(false);
+  const runs = workoutRuns(workout);
   const [error, setError] = useState<string | null>(null);
 
-  async function add() {
-    if (!adding) return;
-    setBusy(true);
+  async function remove(date: string) {
+    if (!confirm(`Remove ${formatDate(date)} from this workout?`)) return;
     setError(null);
     try {
-      onDatesChange(await addWorkoutDate(workoutId, adding));
-      setAdding("");
+      const saved = await removeWorkoutRun(workoutId, date);
+      onWorkoutChange({
+        date: saved.date,
+        ao: saved.ao,
+        address: saved.address,
+        time: saved.time,
+        runs: saved.runs,
+      });
     } catch (e) {
       setError((e as Error).message);
     }
-    setBusy(false);
   }
 
   return (
     <section id="dates" className="flex scroll-mt-4 flex-col gap-3">
-      {dates.length > 1 && (
+      {runs.length > 1 && (
         <h2 className="text-lg font-semibold tracking-tight text-ink">Dates</h2>
       )}
-      {dates.length === 1 ? (
+      {runs.length === 1 ? (
         <Link
-          href={backblastLink(workoutId, dates[0]!, backblasts).href}
+          href={backblastLink(workoutId, runs[0]!.date, backblasts).href}
           className="btn w-full"
         >
           <ArrowIcon />
-          {backblastLink(workoutId, dates[0]!, backblasts).label}
+          {backblastLink(workoutId, runs[0]!.date, backblasts).label}
         </Link>
       ) : (
         <ul className="panel flex flex-col divide-y divide-line p-2">
-          {dates.map((date) => {
-            const link = backblastLink(workoutId, date, backblasts);
+          {runs.map((run) => {
+            const link = backblastLink(workoutId, run.date, backblasts);
+            const removable = mine && !written.includes(run.date);
             return (
               <li
-                key={date}
+                key={run.date}
                 className="flex items-center justify-between gap-3 px-2 py-2.5"
               >
-                <span className="text-sm text-ink">{formatDate(date)}</span>
-                <Link href={link.href} className="btn px-3 py-1.5 text-sm">
-                  {link.label}
-                </Link>
+                <span className="flex min-w-0 flex-col">
+                  <span className="text-sm text-ink">
+                    {formatDate(run.date)}
+                  </span>
+                  <span className="truncate text-xs text-muted">
+                    {[run.ao, run.time].filter(Boolean).join(" · ")}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-3">
+                  {removable && (
+                    <button
+                      type="button"
+                      aria-label={`Remove ${formatDate(run.date)}`}
+                      onClick={() => remove(run.date)}
+                      className="link inline-flex items-center gap-1 text-sm hover:text-accent"
+                    >
+                      <TrashIcon />
+                      Remove
+                    </button>
+                  )}
+                  <Link href={link.href} className="btn px-3 py-1.5 text-sm">
+                    {link.label}
+                  </Link>
+                </span>
               </li>
             );
           })}
         </ul>
       )}
-      {mine && (
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="label flex flex-1 flex-col gap-1.5">
-            Run it again on
-            <input
-              type="date"
-              value={adding}
-              onChange={(e) => setAdding(e.target.value)}
-              className="input text-base"
-            />
-          </label>
-          <button
-            type="button"
-            disabled={!adding || busy}
-            onClick={add}
-            className="btn px-4 disabled:opacity-50"
-          >
-            <PlusIcon />
-            {busy ? "Adding…" : "Add date"}
-          </button>
-        </div>
+      {mine && reusing && (
+        <ReuseWorkout
+          taken={runs.map((r) => r.date)}
+          onCancel={() => onReusingChange(false)}
+          onAdd={async (run) => {
+            const added = await addWorkoutRun(workoutId, run);
+            onWorkoutChange({ runs: added });
+            onReusingChange(false);
+          }}
+        />
       )}
       {error && <p className="text-sm text-accent">{error}</p>}
     </section>

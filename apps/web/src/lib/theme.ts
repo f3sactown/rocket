@@ -6,6 +6,9 @@ export type Accent = "f3" | "fia" | "blue" | "green" | "orange";
 
 export const ACCENT_STORAGE_KEY = "rocket-accent";
 
+/** Set to "off" on a device to skip the launch animation. */
+export const SPLASH_STORAGE_KEY = "rocket-splash";
+
 /** The rocket's trim in an accent: nose and fin edges, fins and porthole ring, stripe. */
 export interface RocketColors {
   light: string;
@@ -58,7 +61,8 @@ export const ACCENTS: {
 /**
  * Runs before first paint (inlined in the page head) so the page never flashes the wrong look.
  * Sets <html data-theme> to the saved choice, or to the OS theme when there's none, and
- * <html data-accent> to the saved accent color.
+ * <html data-accent> to the saved accent color, and <html data-splash="off"> when the launch
+ * animation is turned off.
  */
 export const themeScript = `(() => {
   try {
@@ -68,5 +72,6 @@ export const themeScript = `(() => {
     root.dataset.theme = light ? "light" : "dark";
     var a = localStorage.getItem("${ACCENT_STORAGE_KEY}");
     if (${JSON.stringify(["fia", "blue", "green", "orange"])}.indexOf(a) >= 0) root.dataset.accent = a;
+    if (localStorage.getItem("${SPLASH_STORAGE_KEY}") === "off") root.dataset.splash = "off";
   } catch (e) {}
 })();`;

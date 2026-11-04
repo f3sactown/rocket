@@ -10,7 +10,11 @@ import {
 } from "@/components/auth-provider";
 import { PasswordInput } from "@/components/password-input";
 import { RegionSettings } from "@/components/region-settings";
-import { AccentPicker, ThemeSwitcher } from "@/components/theme-switcher";
+import {
+  AccentPicker,
+  SplashToggle,
+  ThemeSwitcher,
+} from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
@@ -254,6 +258,7 @@ function Settings({ user }: { user: CurrentUser }) {
           <span className="label">Accent color</span>
           <AccentPicker />
         </div>
+        <SplashToggle />
       </Section>
 
       <Section

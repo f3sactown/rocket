@@ -399,7 +399,11 @@ describe("workout dates", () => {
     expect(
       workoutDates({
         date: "2026-11-10",
-        moreDates: ["2026-11-03", "2026-11-10"],
+        ao: "Talko Tuesday",
+        runs: [
+          { date: "2026-11-03", ao: "The Rock" },
+          { date: "2026-11-10", ao: "The Rock" },
+        ],
       }),
     ).toEqual(["2026-11-03", "2026-11-10"]);
   });
