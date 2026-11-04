@@ -13,7 +13,7 @@ import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { CopyButton } from "@/components/copy-button";
 import { CountPanel } from "@/components/count-panel";
 import { ShareButton } from "@/components/share-button";
-import { PencilIcon } from "@/components/icons";
+import { ArchiveIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { fromRow } from "@/lib/backblast";
 import { archive, unarchive } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
@@ -136,8 +136,9 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
           <button
             type="button"
             onClick={toggleArchive}
-            className="link hover:text-ink"
+            className="link inline-flex items-center gap-1.5 hover:text-ink"
           >
+            <ArchiveIcon />
             {archived ? "Unarchive" : "Archive"}
           </button>
         )}
@@ -155,8 +156,9 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
               if (error) setDeleteError(error.message);
               else router.push("/backblasts");
             }}
-            className="link hover:text-accent"
+            className="link inline-flex items-center gap-1.5 hover:text-accent"
           >
+            <TrashIcon />
             Delete backblast
           </button>
         )}

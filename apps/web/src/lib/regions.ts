@@ -34,6 +34,8 @@ export interface Region {
   created_by: string | null;
   /** When the nightly sync last copied the sheet into Supabase; null until the first sync. */
   synced_at: string | null;
+  /** The newest post date in the attendance records, as of the last nightly sync. */
+  latest_post_on?: string | null;
   /** Why the last sync failed, if it did (the previous copy is kept). */
   sync_error: string | null;
 }
@@ -90,7 +92,7 @@ export function loadRegions(refresh = false): Promise<Region[]> {
       createClient()
         .from("regions")
         .select(
-          "id, name, sheet_id, language, config, created_by, synced_at, sync_error",
+          "id, name, sheet_id, language, config, created_by, synced_at, sync_error, latest_post_on",
         )
         .order("name"),
     ).then(({ data, error }) => {
@@ -401,4 +403,27 @@ export function nextDateOn(
   );
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** A sheet date as YYYY-MM-DD: the API sends dates as "Date(2026,9,31)", with months from 0. */
+function sheetDate(value: string): string | null {
+  const match = /^Date\((\d+),(\d+),(\d+)/.exec(value);
+  if (match)
+    return `${match[1]}-${String(Number(match[2]) + 1).padStart(2, "0")}-${match[3]!.padStart(2, "0")}`;
+  return /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : null;
+}
+
+/** The most recent post date (YYYY-MM-DD) in the region's attendance records, if any. */
+export function loadLatestPost(region: Region): Promise<string | null> {
+  if (region.synced_at) return Promise.resolve(region.latest_post_on ?? null);
+  const { sheet, date } = region.config.attendance;
+  return cached(`latest:${region.id}`, async () => {
+    const cols = await columns(region.sheet_id, sheet, { date });
+    const table = await querySheet(
+      region.sheet_id,
+      sheet,
+      `select max(${cols.date})`,
+    );
+    return sheetDate(rows(table)[0]?.[0] ?? "");
+  });
 }

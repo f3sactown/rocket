@@ -6,7 +6,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { CopyButton } from "@/components/copy-button";
-import { ArrowIcon, PencilIcon, PlayIcon } from "@/components/icons";
+import {
+  ArchiveIcon,
+  ArrowIcon,
+  CopyIcon,
+  PencilIcon,
+  PlayIcon,
+  TrashIcon,
+} from "@/components/icons";
 import { ShareButton } from "@/components/share-button";
 import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
 import { archive, deleteItem, unarchive } from "@/lib/backblast-list";
@@ -131,44 +138,33 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         <PlayIcon />
         Run workout
       </Link>
-      {existing ? (
-        <Link
-          href={
-            existing.status === "draft"
-              ? `/backblasts/edit?id=${existing.id}`
-              : `/backblast?id=${existing.id}`
-          }
-          className="btn w-full"
-        >
-          <ArrowIcon />
-          {existing.status === "draft"
-            ? "Continue your backblast"
-            : "Open your backblast"}
-        </Link>
-      ) : (
-        <Link href={`/backblasts/new?workout=${id}`} className="btn w-full">
-          <ArrowIcon />
-          Create backblast
-        </Link>
-      )}
-
       <div className="grid grid-cols-2 gap-3">
         <CopyButton text={text} />
         <ShareButton title={workout.title} text={text} />
       </div>
-      {mine && (
-        <Link href={`/workouts/edit?id=${id}`} className="btn -mt-2 w-full">
-          <PencilIcon />
-          Edit workout
+      <div
+        className={`-mt-2 grid gap-3 ${mine ? "grid-cols-2" : "grid-cols-1"}`}
+      >
+        {mine && (
+          <Link href={`/workouts/edit?id=${id}`} className="btn w-full">
+            <PencilIcon />
+            Edit
+          </Link>
+        )}
+        {/* Starts a new workout with this one's sections, for running it again on another day. */}
+        <Link href={`/workouts/new?from=${id}`} className="btn w-full">
+          <CopyIcon />
+          Reuse
         </Link>
-      )}
+      </div>
       <div className="-mt-1 flex justify-center gap-6">
         {archived !== null && (
           <button
             type="button"
             onClick={toggleArchive}
-            className="link hover:text-ink"
+            className="link inline-flex items-center gap-1.5 hover:text-ink"
           >
+            <ArchiveIcon />
             {archived ? "Unarchive" : "Archive"}
           </button>
         )}
@@ -190,13 +186,35 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
                 setActionError((error as Error).message);
               }
             }}
-            className="link hover:text-accent"
+            className="link inline-flex items-center gap-1.5 hover:text-accent"
           >
+            <TrashIcon />
             Delete workout
           </button>
         )}
       </div>
       {actionError && <p className="text-sm text-accent">{actionError}</p>}
+
+      {existing ? (
+        <Link
+          href={
+            existing.status === "draft"
+              ? `/backblasts/edit?id=${existing.id}`
+              : `/backblast?id=${existing.id}`
+          }
+          className="btn w-full"
+        >
+          <ArrowIcon />
+          {existing.status === "draft"
+            ? "Continue your backblast"
+            : "Open your backblast"}
+        </Link>
+      ) : (
+        <Link href={`/backblasts/new?workout=${id}`} className="btn w-full">
+          <ArrowIcon />
+          Create backblast
+        </Link>
+      )}
     </article>
   );
 }

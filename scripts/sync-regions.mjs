@@ -24,9 +24,9 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
   process.exit(1);
 }
 
-async function supabase(path, body) {
+async function supabase(path, body, method) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method: body === undefined ? "GET" : "POST",
+    method: method ?? (body === undefined ? "GET" : "POST"),
     headers: {
       apikey: SERVICE_KEY,
       Authorization: `Bearer ${SERVICE_KEY}`,
@@ -78,6 +78,16 @@ async function query(sheetId, tab, tq) {
 }
 
 const text = (value) => String(value ?? "").trim();
+
+/** A sheet date as YYYY-MM-DD: the API sends dates as "Date(2026,9,31)", with months from 0. */
+function sheetDate(value) {
+  const match = /^Date\((\d+),(\d+),(\d+)/.exec(text(value));
+  if (match)
+    return `${match[1]}-${String(Number(match[2]) + 1).padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+  return /^\d{4}-\d{2}-\d{2}/.test(text(value))
+    ? text(value).slice(0, 10)
+    : null;
+}
 const quote = (s) => (s.includes('"') ? `'${s}'` : `"${s}"`);
 
 /** Column letters for header names in a tab; throws naming any that are missing. */
@@ -186,7 +196,11 @@ async function readRegion({ sheet_id: id, config }) {
     (s) => s.pax,
   );
 
-  return { sites, roster, regulars, stats };
+  // The newest post date, to show how current the sheet is.
+  const latest = await query(id, a.sheet, `select max(${att.date})`);
+  const latestPostOn = sheetDate(latest.rows[0]?.[0]);
+
+  return { sites, roster, regulars, stats, latestPostOn };
 }
 
 const regions = await supabase(
@@ -203,8 +217,13 @@ for (const region of regions) {
       p_regulars: data.regulars,
       p_stats: data.stats,
     });
+    await supabase(
+      `regions?id=eq.${region.id}`,
+      { latest_post_on: data.latestPostOn },
+      "PATCH",
+    );
     console.log(
-      `${region.name}: ${data.sites.length} AOs, ${data.roster.length} PAX, ${data.regulars.length} regulars, ${data.stats.length} totals`,
+      `${region.name}: ${data.sites.length} AOs, ${data.roster.length} PAX, ${data.regulars.length} regulars, ${data.stats.length} totals, latest post ${data.latestPostOn ?? "none"}`,
     );
   } catch (error) {
     failures++;

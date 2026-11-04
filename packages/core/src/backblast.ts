@@ -27,6 +27,11 @@ export interface Backblast {
   introduction?: string;
   warmup?: string;
   thang?: string;
+  /**
+   * A workout's thangs, each with an optional timer for running it. When set, `thang` is these
+   * written out (see thangText).
+   */
+  thangs?: Thang[];
   /** Anything else about the workout, after The Thang. */
   notes?: string;
   /** Everyone who posted besides the Q. */
@@ -44,6 +49,31 @@ export interface Backblast {
  * attendance or COT sections, and its notes are its own. A backblast is made from it.
  */
 export type Workout = Backblast;
+
+/** One part of The Thang, with an optional timer shown when running the workout. */
+export interface Thang {
+  text: string;
+  /** How long it runs, in seconds, if it's timed. */
+  seconds?: number;
+}
+
+/** A timer length as m:ss, e.g. "5:00" or "0:45". */
+export function formatTimer(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+/**
+ * The thangs written out for The Thang: one as is, several numbered ("Thang 1:", "Thang 2:")
+ * with blank lines between. Timers aren't included; they're for running the workout.
+ */
+export function thangText(thangs: Thang[]): string {
+  const filled = thangs.filter((t) => t.text.trim());
+  if (filled.length <= 1) return filled[0]?.text.trim() ?? "";
+  return filled
+    .map((t, index) => `Thang ${index + 1}:\n${t.text.trim()}`)
+    .join("\n\n");
+}
 
 /** The workout sections a backblast copies from its workout (everything but the notes). */
 export const WORKOUT_SECTIONS = [
