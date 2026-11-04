@@ -9,6 +9,9 @@ import {
   backblastParts,
   copyText,
   copyWorkout,
+  formatDate,
+  thangText,
+  type Thang,
   WORKOUT_SECTIONS,
   formatBackblast,
   termsFor,
@@ -23,6 +26,7 @@ import { loadRoster, loadSites, nextDateOn, sitesByDay } from "@/lib/regions";
 import { useLoad, useUserRegion } from "@/lib/use-region";
 import { AttendanceInput } from "./attendance-input";
 import { QPicker } from "./q-picker";
+import { ThangsInput } from "./thangs-input";
 import { Regulars } from "./regulars";
 import { useAuth } from "./auth-provider";
 import { ArrowIcon, SkipIcon, TrashIcon } from "./icons";
@@ -183,6 +187,13 @@ function stepsFor(language: Language, mode: FormMode): Step[] {
       ];
 }
 
+/** Today's date (YYYY-MM-DD) where the user is. */
+function localToday(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 /** The workout's part of a backblast as text: where and when, then its sections (not the notes). */
 function workoutText(backblast: Backblast, language: Language): string {
   const workout: Backblast = {
@@ -291,6 +302,9 @@ export function BackblastForm({
   const lastStep = steps.length - 1;
   const step = steps[stepIndex]!;
   const allText = useMemo(() => stepsFor(language, "workout"), [language]);
+  // A backblast is written after its workout, so it can't be finished before the workout's date.
+  const tooEarly =
+    mode === "backblast" && !!backblast.date && backblast.date > localToday();
   const [copying, setCopying] = useState(false);
 
   // Report edits (not the initial render) so the draft can be saved.
@@ -320,6 +334,12 @@ export function BackblastForm({
       );
       return;
     }
+    if (tooEarly) {
+      setError(
+        `This backblast can be finished on ${formatDate(backblast.date)}, the day of the workout.`,
+      );
+      return;
+    }
     if (mode === "backblast" && qNames(backblast).length === 0) {
       setError("Choose the Q on the Name-o-rama page first.");
       return;
@@ -337,6 +357,27 @@ export function BackblastForm({
     edited.current = true;
     setBackblast((current) => ({ ...current, [key]: value }));
   };
+
+  /** Sets the workout's thangs and the written-out Thang text that goes with them. */
+  function setThangs(thangs: Thang[]) {
+    edited.current = true;
+    setBackblast((current) => ({
+      ...current,
+      thangs,
+      thang: thangText(thangs),
+    }));
+  }
+
+  /** Loads a saved template into a section; on a workout, a Thang template becomes a new thang. */
+  function loadTemplate(name: TextKey, body: string) {
+    if (mode === "workout" && name === "thang") {
+      const current = (
+        backblast.thangs ?? [{ text: backblast.thang ?? "" }]
+      ).filter((t) => t.text.trim() || t.seconds);
+      return setThangs([...current, { text: body }]);
+    }
+    set(name, body);
+  }
 
   /** Replaces the Workout page's sections with the workout's current ones. */
   async function copyAgain() {
@@ -524,7 +565,7 @@ export function BackblastForm({
               body={backblast[step.name] ?? ""}
               templates={templates}
               builtIns={step.builtIns}
-              onLoad={(body) => set(step.name, body)}
+              onLoad={(body) => loadTemplate(step.name, body)}
               onTemplatesChange={setTemplates}
             />
           )}
@@ -601,16 +642,27 @@ export function BackblastForm({
             </div>
           ))}
 
-        {step.kind === "text" && (
-          <textarea
-            key={step.name}
-            aria-label={step.title}
-            placeholder={step.hint}
-            value={backblast[step.name] ?? ""}
-            onChange={(e) => set(step.name, e.target.value)}
-            className="input min-h-[40vh] flex-1 resize-y text-base leading-relaxed"
-          />
-        )}
+        {step.kind === "text" &&
+          mode === "workout" &&
+          step.name === "thang" && (
+            <ThangsInput
+              value={backblast.thangs ?? [{ text: backblast.thang ?? "" }]}
+              onChange={setThangs}
+              placeholder={step.hint}
+            />
+          )}
+
+        {step.kind === "text" &&
+          !(mode === "workout" && step.name === "thang") && (
+            <textarea
+              key={step.name}
+              aria-label={step.title}
+              placeholder={step.hint}
+              value={backblast[step.name] ?? ""}
+              onChange={(e) => set(step.name, e.target.value)}
+              className="input min-h-[40vh] flex-1 resize-y text-base leading-relaxed"
+            />
+          )}
 
         {step.kind === "attendance" && (
           <>
@@ -645,6 +697,13 @@ export function BackblastForm({
 
         {step.kind === "review" && (
           <>
+            {tooEarly && (
+              <p className="rounded-xl border border-line px-3 py-2 text-sm text-ink-soft">
+                You can finish this backblast on{" "}
+                <span className="text-ink">{formatDate(backblast.date)}</span>,
+                the day of the workout. It&apos;s saved as a draft until then.
+              </p>
+            )}
             <ul className="flex flex-wrap gap-2">
               {steps.slice(0, lastStep).map((s, index) => {
                 const filled = isFilled(s, backblast);
@@ -726,8 +785,8 @@ export function BackblastForm({
         ) : (
           <button
             type="submit"
-            disabled={saving}
-            className="btn gap-2 px-4 text-base whitespace-nowrap"
+            disabled={saving || tooEarly}
+            className="btn gap-2 px-4 text-base whitespace-nowrap disabled:opacity-50"
           >
             <ArrowIcon />
             {saving ? "Saving…" : saveLabel}

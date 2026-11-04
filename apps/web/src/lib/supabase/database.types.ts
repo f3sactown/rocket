@@ -136,6 +136,7 @@ export type Database = {
           introduction: string | null;
           warmup: string | null;
           thang: string | null;
+          thangs: Json;
           announcements: string | null;
           words_of_wisdom: string | null;
           created_at: string;
@@ -153,6 +154,7 @@ export type Database = {
           introduction?: string | null;
           warmup?: string | null;
           thang?: string | null;
+          thangs?: Json;
           announcements?: string | null;
           words_of_wisdom?: string | null;
           created_at?: string;
@@ -254,6 +256,7 @@ export type Database = {
           created_at: string;
           synced_at: string | null;
           sync_error: string | null;
+          latest_post_on: string | null;
         };
         Insert: {
           id?: string;

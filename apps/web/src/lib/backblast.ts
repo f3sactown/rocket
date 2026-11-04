@@ -1,4 +1,11 @@
-import type { Attendee, AttendeeKind, Backblast, Workout } from "@rocket/core";
+import {
+  thangText,
+  type Attendee,
+  type AttendeeKind,
+  type Backblast,
+  type Thang,
+  type Workout,
+} from "@rocket/core";
 import { createClient } from "./supabase/client";
 import type { Database, Json } from "./supabase/database.types";
 
@@ -85,6 +92,7 @@ export function fromWorkoutRow(row: WorkoutRow, notes?: string): Workout {
     introduction: row.introduction ?? undefined,
     warmup: row.warmup ?? undefined,
     thang: row.thang ?? undefined,
+    thangs: parseThangs(row.thangs, row.thang),
     notes: notes || undefined,
     announcements: row.announcements ?? undefined,
     wordsOfWisdom: row.words_of_wisdom ?? undefined,
@@ -103,7 +111,13 @@ export function toWorkoutInsert(
     time: text(workout.time),
     introduction: text(workout.introduction),
     warmup: text(workout.warmup),
-    thang: text(workout.thang),
+    // The written-out text goes in `thang`, for backblasts and the output.
+    thang: workout.thangs
+      ? text(thangText(workout.thangs))
+      : text(workout.thang),
+    thangs: (workout.thangs ?? []).filter(
+      (t) => t.text.trim() || t.seconds,
+    ) as unknown as Json,
     announcements: text(workout.announcements),
     words_of_wisdom: text(workout.wordsOfWisdom),
   };
@@ -142,4 +156,25 @@ export async function saveWorkoutNotes(workoutId: string, body: string) {
       { onConflict: "workout_id" },
     );
   if (error) throw error;
+}
+
+/** A workout's thangs from the database, or its older single thang text as one thang. */
+export function parseThangs(
+  value: Json | unknown,
+  thang?: string | null,
+): Thang[] {
+  const list = Array.isArray(value)
+    ? value.flatMap((item): Thang[] => {
+        if (!item || typeof item !== "object") return [];
+        const { text, seconds } = item as Record<string, unknown>;
+        if (typeof text !== "string") return [];
+        return [
+          typeof seconds === "number" && seconds > 0
+            ? { text, seconds }
+            : { text },
+        ];
+      })
+    : [];
+  if (list.length) return list;
+  return thang?.trim() ? [{ text: thang }] : [];
 }

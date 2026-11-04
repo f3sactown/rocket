@@ -1,10 +1,11 @@
 "use client";
 
-import { formatBackblast, type Workout } from "@rocket/core";
+import { backblastParts, termsFor, type Workout } from "@rocket/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
+import { ThangTimer } from "@/components/thang-timer";
 import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/client";
 
@@ -109,8 +110,27 @@ function RunWorkout({ user }: { user: CurrentUser }) {
     );
 
   const { workout } = result;
-  const text = formatBackblast({ ...workout, notes: "" }, user.language);
+  const terms = termsFor(user.language);
+  // Where and when, as at the top of the copied workout.
+  const where = backblastParts(
+    { ...workout, title: "", notes: "", thang: "", introduction: "" },
+    user.language,
+  )[0]!.text;
+  const thangs = workout.thangs?.length
+    ? workout.thangs
+    : workout.thang
+      ? [{ text: workout.thang }]
+      : [];
   const sizeClass = SIZES.find((s) => s.value === size)!.className;
+  const section = (title: string, text: string | undefined) =>
+    text?.trim() && (
+      <section key={title} className="flex flex-col gap-1">
+        <h2 className="text-[0.7em] font-semibold tracking-wider text-accent uppercase">
+          {title}
+        </h2>
+        <p className="leading-relaxed whitespace-pre-wrap">{text.trim()}</p>
+      </section>
+    );
 
   return (
     <article className="card">
@@ -146,11 +166,37 @@ function RunWorkout({ user }: { user: CurrentUser }) {
       </div>
 
       <h1 className="card-title">{workout.title}</h1>
-      <pre
-        className={`font-sans leading-relaxed whitespace-pre-wrap text-ink ${sizeClass}`}
-      >
-        {text}
-      </pre>
+      <div className={`flex flex-col gap-6 text-ink ${sizeClass}`}>
+        <p className="leading-relaxed whitespace-pre-wrap text-ink-soft">
+          {where}
+        </p>
+        {section("Introduction", workout.introduction)}
+        {section(terms.warmup, workout.warmup)}
+        {thangs.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <h2 className="text-[0.7em] font-semibold tracking-wider text-accent uppercase">
+              {terms.thang}
+            </h2>
+            {thangs.map((thang, index) => (
+              <div key={index} className="flex flex-col gap-2">
+                {thangs.length > 1 && (
+                  <h3 className="text-[0.8em] font-semibold text-ink-soft">
+                    Thang {index + 1}
+                  </h3>
+                )}
+                {thang.text.trim() && (
+                  <p className="leading-relaxed whitespace-pre-wrap">
+                    {thang.text.trim()}
+                  </p>
+                )}
+                {thang.seconds ? <ThangTimer seconds={thang.seconds} /> : null}
+              </div>
+            ))}
+          </section>
+        )}
+        {section("Announcements", workout.announcements)}
+        {section("Words of Wisdom", workout.wordsOfWisdom)}
+      </div>
       {workout.notes && (
         <section className="flex flex-col gap-2 rounded-2xl border border-line p-4">
           <h2 className="text-xs font-semibold tracking-wider text-accent uppercase">

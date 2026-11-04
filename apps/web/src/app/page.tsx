@@ -1,12 +1,13 @@
 "use client";
 
+import { formatDate } from "@rocket/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
 import { PlusIcon } from "@/components/icons";
 import { loadLists, type ListItem } from "@/lib/backblast-list";
-import { loadPaxStats } from "@/lib/regions";
+import { loadLatestPost, loadPaxStats } from "@/lib/regions";
 import { useLoad, useUserRegion } from "@/lib/use-region";
 
 export default function Home() {
@@ -117,6 +118,9 @@ function Totals({ user }: { user: CurrentUser }) {
     region?.id,
     user.name,
   ]);
+  const latest = useLoad(region ? () => loadLatestPost(region) : null, [
+    region?.id,
+  ]);
   if (region === null)
     return (
       <Link href="/settings" className="link">
@@ -149,6 +153,11 @@ function Totals({ user }: { user: CurrentUser }) {
         {stats.error
           ? `Totals unavailable: ${stats.error}`
           : (region?.name ?? "")}
+        {latest.value && (
+          <span className="block">
+            Sheet updated through {formatDate(latest.value)}
+          </span>
+        )}
       </p>
     </div>
   );
