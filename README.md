@@ -1,7 +1,38 @@
 # 🚀 Rocket
 
-A suite of tools for F3 PAX. The first tool is a **backblast builder**: sign in, write up a
-beatdown, and copy a Slack-ready backblast. Backblasts are shared with every signed-in user.
+A suite of tools for F3 (and FiA) PAX at [rocket.f3sactown.com](https://rocket.f3sactown.com).
+Rocket helps a Q plan a **workout**, run it, and then write and share the **backblast**.
+
+## What it does
+
+- **Home:** your total posts and Qs from your region's sheet (with the date the sheet was last
+  updated), your drafts, and the most recent workouts and backblasts.
+- **Workouts** are written first: Basics (title, AO, date, time), Introduction, Warm-o-rama,
+  The Thang, Notes, Announcements and Words of Wisdom.
+  - The Thang can hold several thangs. Each can have a **timer** (Countdown, Stopwatch, AMRAP,
+    Intervals or EMOM) and **music** (a link to a song or playlist, shown as 🎵 Title 🎵 in the
+    output).
+  - A workout's **Notes** are private to its Q: stored in their own table only the author can read,
+    and left out of anything copied or shared.
+  - **Run workout** shows the whole workout to lead from, in Normal, Large or Extra large text, with
+    each timer's countdown (beeping through the last 10 seconds). The timer in use pins to the top
+    when scrolled away, and the screen stays awake.
+  - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
+    choose again.
+- **Backblasts** are made from a finished workout with **Create backblast**. The backblast holds
+  its own copy of the workout's sections, which can be edited without changing the workout
+  (**Update from workout** copies it again). Its pages are Workout, Notes, Name-o-rama (Qs and
+  PAX, with roster suggestions and the AO's regulars), Third F, Second F and Review.
+  - A backblast can't be finished before its workout's date.
+  - **Copy** and **Share** produce Slack-ready text (Event Data, Workout Details, COT), ending with a
+    plain comma-separated list of everyone who posted.
+- **Templates:** any section can be saved as a template, and one per section can be starred as the
+  default that fills new workouts or backblasts.
+- **Lists:** swipe to archive or delete (directions set in Settings), with Undo. **Archive** lists
+  what you've archived; **Search** finds workouts and backblasts by any word, with matches
+  highlighted.
+- **Settings:** name, email, password, region, F3 or FiA wording, theme, accent color, the launch
+  animation, and swipe directions.
 
 ## Stack
 
@@ -16,7 +47,9 @@ beatdown, and copy a Slack-ready backblast. Backblasts are shared with every sig
 apps/
   web/            Next.js app, exported as a static site
 packages/
-  core/           Shared F3 domain types and logic (e.g. backblast formatting)
+  core/           Shared F3 domain types and logic (backblast formatting, timers, thangs)
+scripts/
+  sync-regions.mjs  Nightly copy of each region's Google Sheet into Supabase
 supabase/
   config.toml     Local Supabase settings
   migrations/     SQL migrations: tables and row-level security policies
@@ -30,8 +63,12 @@ The app runs entirely in the browser, so access rules live in the database as ro
 (`supabase/migrations`). They hold no matter which app or client talks to Supabase:
 
 - Signed-out visitors can't read anything.
-- Signed-in users can read every profile and backblast.
-- Only a backblast's author can edit or delete it.
+- Signed-in users can read every profile, and every finished workout and backblast. Drafts are
+  visible only to their author.
+- Only the author can edit or delete a workout or backblast.
+- A workout's notes (`workout_notes`) can be read and written only by the workout's author.
+- Archiving is personal (`workout_archives`, `backblast_archives`): it hides an item from your own
+  lists only.
 
 ## Getting started
 
@@ -98,27 +135,36 @@ Never commit or expose the **secret / service-role key** — it bypasses row-lev
 ## Regions and Google Sheets
 
 Each user picks a **region** (at sign-up or in Settings). A region points at a Google Sheet, and
-Rocket reads it from the browser to suggest AOs (and fill in their address), suggest PAX names, show
-the regulars at an AO over the last 3 months, and show a user's total posts and Qs.
+Rocket uses it to list AOs by weekday (filling in their location, time and next date), suggest PAX
+names, show the regulars at an AO over the last 3 months, show a user's total posts and Qs, and
+show the newest post date in the attendance records.
 
 - The sheet must be shared so **anyone with the link can view** it.
 - Each region records which tabs and column headers hold its AOs, roster and attendance; F3 SacTown
   is set up by `supabase/migrations/20261101000000_regions.sql`. Others can be added in Settings,
   with a **Check sheet** button that confirms every column exists.
 - **Nightly sync:** `.github/workflows/sync-regions.yml` runs `scripts/sync-regions.mjs` every
-  night (about 3am Pacific, or on demand from the Actions tab). It copies each region's active AOs,
-  roster, regulars per AO (last 3 months) and all-time totals per PAX into Supabase tables, and the
-  app reads those. A region that hasn't synced yet is read from its sheet live. A failed sync keeps
+  night (about 2–3am Pacific, or on demand from the Actions tab). It copies each region's active
+  AOs, roster, regulars per AO (last 3 months), all-time totals per PAX and the newest post date
+  into Supabase, and the app reads those. A region that hasn't synced yet is read from its sheet live. A failed sync keeps
   the previous copy and shows the error in Settings.
 - The sync needs the repository **secret** `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project
   Settings → API Keys → secret key) alongside the `SUPABASE_URL` variable.
 - Sheets are read with Google's Visualization API (`apps/web/src/lib/sheets.ts` in the app,
   `scripts/sync-regions.mjs` for the sync), so only the rows a query needs are downloaded.
 
+## Database changes
+
+Each change to the database is a file in `supabase/migrations`. On the hosted project, apply new
+ones with `pnpm db:push`, or paste them into the Supabase SQL Editor in filename order. A pull request
+that adds one says so, and should be merged only after the migration has run.
+
 ## Versions and releases
 
-Rocket is in **alpha** (`0.1.0-alpha.N`). Versions and the [changelog](CHANGELOG.md) are managed
-automatically from commit messages; see [RELEASING.md](RELEASING.md).
+Rocket is in **alpha** (`0.1.0-alpha.N`); the running version and build number show in the footer.
+Versions and the [changelog](CHANGELOG.md) are meant to be managed automatically from commit
+messages (see [RELEASING.md](RELEASING.md)). Until GitHub Actions is allowed to open pull requests
+(Settings → Actions → General), each release is bumped by hand.
 
 ## License
 
