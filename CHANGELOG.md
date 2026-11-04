@@ -4,6 +4,24 @@ All notable changes to Rocket are recorded here. This file is maintained automat
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commit](https://www.conventionalcommits.org) messages; see [RELEASING.md](RELEASING.md).
 
+## [0.1.0-alpha.2](https://github.com/f3sactown/rocket/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-11-04)
+
+### Features
+
+* **Home:** a new first page with your posts and Qs, the sheet's last update date, your drafts, and
+  the most recent workouts and backblasts.
+* **Run workout:** the whole workout in three text sizes, with timers (Countdown, Stopwatch,
+  AMRAP, Intervals, EMOM) that beep through the last 10 seconds and pin to the top when scrolled
+  away, music links, and the screen kept awake.
+* **Thangs:** several per workout, each with an optional timer and music, separated by blank lines
+  in the output with songs shown as 🎵 Title 🎵.
+* **Workouts:** private Notes for the Q, Publish workout, Reuse to start a new workout from an
+  existing one, and defaults for every section's templates.
+* **Backblasts:** made from a workout with an editable copy of its sections, and can't be finished
+  before the workout's date.
+* **Settings:** turn the launch animation off; menu icons in the accent color.
+
+
 ## [0.1.0-alpha.1](https://github.com/f3sactown/rocket/compare/v0.1.0-alpha.0...v0.1.0-alpha.1) (2026-11-03)
 
 ### Features
