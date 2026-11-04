@@ -155,7 +155,7 @@ function Totals({ user }: { user: CurrentUser }) {
           : (region?.name ?? "")}
         {latest.value && (
           <span className="block">
-            Sheet updated through {formatDate(latest.value)}
+            Updated since {formatDate(latest.value)}
           </span>
         )}
       </p>
