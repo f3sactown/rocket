@@ -7,7 +7,6 @@ import type { CurrentUser } from "./auth-provider";
 import { BackblastList } from "./backblast-list";
 import { PlusIcon } from "./icons";
 import { SignOutButton } from "./sign-out-button";
-import { UserBadge } from "./user-badge";
 
 const WORDS = {
   workout: {
@@ -50,8 +49,6 @@ export function ItemDashboard({
     <section className="card">
       <header className="flex items-start justify-between gap-4">
         <h1 className="card-title">{words.title}</h1>
-        {/* The Workouts page is for planning, so it skips the name and totals. */}
-        {kind === "backblast" && <UserBadge user={user} />}
       </header>
 
       {error ? (
