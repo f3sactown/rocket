@@ -6,9 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { CopyButton } from "@/components/copy-button";
-import { ArrowIcon, PencilIcon } from "@/components/icons";
+import { ArrowIcon, PencilIcon, PlayIcon } from "@/components/icons";
 import { ShareButton } from "@/components/share-button";
-import { fromWorkoutRow } from "@/lib/backblast";
+import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
 import { archive, deleteItem, unarchive } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 
@@ -32,6 +32,8 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     status?: string;
     error?: string;
   } | null>(null);
+  // The Q's private notes, readable only by the workout's author.
+  const [notes, setNotes] = useState("");
   // Backblasts you've already written from this workout.
   const [backblasts, setBackblasts] = useState<
     { id: string; title: string; status: string }[]
@@ -47,7 +49,9 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       .select("*, author:profiles!workouts_author_id_fkey(name)")
       .eq("id", id)
       .maybeSingle()
-      .then(({ data, error }) =>
+      .then(({ data, error }) => {
+        if (data?.author_id === user.id)
+          loadWorkoutNotes(data.id).then(setNotes);
         setResult({
           workout: data && fromWorkoutRow(data),
           authorId: data?.author_id,
@@ -55,8 +59,8 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
             ?.name,
           status: data?.status,
           error: error?.message,
-        }),
-      );
+        });
+      });
     supabase
       .from("backblasts")
       .select("id, title, status")
@@ -112,7 +116,21 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       <pre className="panel overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
         {text}
       </pre>
+      {notes && (
+        <section className="flex flex-col gap-2 rounded-2xl border border-line p-4">
+          <h2 className="text-xs font-semibold tracking-wider text-accent uppercase">
+            Your notes · only you see these
+          </h2>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
+            {notes}
+          </p>
+        </section>
+      )}
 
+      <Link href={`/workout/run?id=${id}`} className="btn w-full">
+        <PlayIcon />
+        Run workout
+      </Link>
       {existing ? (
         <Link
           href={

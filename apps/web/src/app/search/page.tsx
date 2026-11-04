@@ -42,7 +42,6 @@ const WORKOUT_COLUMNS = [
   "introduction",
   "warmup",
   "thang",
-  "notes",
   "announcements",
   "words_of_wisdom",
 ] as const;

@@ -165,7 +165,10 @@ function stepsFor(language: Language, mode: FormMode): Step[] {
         text("introduction"),
         text("warmup"),
         text("thang"),
-        text("notes"),
+        {
+          ...text("notes"),
+          hint: "Notes for you as the Q only. No one else sees them, and they're left out when the workout is copied or shared.",
+        },
         text("announcements"),
         text("wordsOfWisdom"),
         { ...kind("review"), hint: "The workout as it will be copied." },
@@ -680,7 +683,8 @@ export function BackblastForm({
               title={backblast.title}
               text={
                 mode === "workout"
-                  ? formatBackblast(backblast, language)
+                  ? // The workout's notes are the Q's own, so they aren't shared.
+                    formatBackblast({ ...backblast, notes: "" }, language)
                   : copyText(backblast, language)
               }
               className="btn w-full px-4 text-base"

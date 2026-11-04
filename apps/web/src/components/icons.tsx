@@ -293,3 +293,16 @@ export function HomeIcon() {
     </svg>
   );
 }
+
+export function PlayIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="size-[18px]"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M8 5.5v13a.75.75 0 0 0 1.14.64l10.4-6.5a.75.75 0 0 0 0-1.28L9.14 4.86A.75.75 0 0 0 8 5.5z" />
+    </svg>
+  );
+}

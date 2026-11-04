@@ -9,19 +9,20 @@ export interface SectionTemplate {
   section: string;
   name: string;
   body: string;
-  /** Pre-fills this section in new backblasts. At most one per section. */
+  /** Pre-fills this section in new workouts or backblasts. At most one per section. */
   is_default: boolean;
 }
 
 /** The columns the app reads for a template. */
 export const TEMPLATE_COLUMNS = "id, section, name, body, is_default";
 
-/**
- * Sections that are usually the same each time, so a saved template can be their default.
- * (Warm-o-rama, The Thang, Announcements and Words of Wisdom change every beatdown.)
- */
+/** Sections whose saved templates can be marked the default: all of them. */
 export const DEFAULTABLE_SECTIONS = [
   "introduction",
+  "warmup",
+  "thang",
+  "announcements",
+  "wordsOfWisdom",
   "attendees",
   "thirdF",
   "secondF",
@@ -30,7 +31,7 @@ export const DEFAULTABLE_SECTIONS = [
 /** Templates that ship with the app, offered alongside the user's own. */
 export type BuiltInTemplate = Pick<SectionTemplate, "name" | "body">;
 
-/** Save and load buttons for one backblast section, with their inline panels. */
+/** Save and load buttons for one workout or backblast section, with their inline panels. */
 export function SectionTemplates({
   userId,
   section,
@@ -201,7 +202,7 @@ export function SectionTemplates({
             <ul className="flex flex-col gap-1">
               {DEFAULTABLE_SECTIONS.includes(section) && mine.length > 0 && (
                 <li className="px-2 pb-1 text-xs text-muted">
-                  Star a template to fill it in on every new backblast.
+                  Star a template to fill it in every time you start a new one.
                 </li>
               )}
               {builtIns.map((t) => (
@@ -308,7 +309,9 @@ function TemplateRow({
               ? `Stop using ${name} as the default`
               : `Make ${name} the default`
           }
-          title={isDefault ? "Default for new backblasts" : "Make default"}
+          title={
+            isDefault ? "Filled in when you start a new one" : "Make default"
+          }
           aria-pressed={isDefault}
           onClick={onToggleDefault}
           className={`rounded-lg p-1.5 transition-colors ${

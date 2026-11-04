@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastEditor } from "@/components/backblast-editor";
-import { fromWorkoutRow } from "@/lib/backblast";
+import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/client";
 
 // A query parameter instead of /workouts/[id]/edit, because a static site can't serve dynamic paths.
@@ -31,7 +31,7 @@ function EditWorkout({ user }: { user: CurrentUser }) {
       .select("*")
       .eq("id", id)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         // Only the author can edit; anyone else is shown the finished workout instead.
         if (data && data.author_id !== user.id && data.status === "published")
           router.replace(`/workout?id=${data.id}`);
@@ -39,7 +39,10 @@ function EditWorkout({ user }: { user: CurrentUser }) {
           setLoaded(
             data && data.author_id === user.id
               ? {
-                  workout: fromWorkoutRow(data),
+                  workout: fromWorkoutRow(
+                    data,
+                    await loadWorkoutNotes(data.id),
+                  ),
                   published: data.status === "published",
                 }
               : null,
