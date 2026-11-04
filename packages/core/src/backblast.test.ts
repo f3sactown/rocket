@@ -362,6 +362,26 @@ describe("copyWorkout", () => {
 });
 
 describe("thangs", () => {
+  it("adds each thang's music title and link", () => {
+    expect(
+      thangText([
+        {
+          text: "Burpees",
+          music: {
+            url: "https://open.spotify.com/track/abc",
+            title: "Eye of the Tiger",
+          },
+        },
+        { text: "Run", music: { url: "https://youtu.be/xyz" } },
+      ]),
+    ).toBe(
+      "Thang 1:\nBurpees\nMusic: Eye of the Tiger - https://open.spotify.com/track/abc\n\nThang 2:\nRun\nMusic: https://youtu.be/xyz",
+    );
+    expect(thangText([{ text: "Solo", music: { url: "not a link" } }])).toBe(
+      "Solo",
+    );
+  });
+
   it("writes one thang as is and several numbered", () => {
     expect(thangText([{ text: "11s" }])).toBe("11s");
     expect(

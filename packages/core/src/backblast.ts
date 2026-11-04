@@ -83,15 +83,26 @@ export interface Thang {
   music?: { url: string; title?: string };
 }
 
+/** A thang's music as a line of text, e.g. "Music: Eye of the Tiger - https://…". */
+function musicLine(music: Thang["music"]): string | undefined {
+  const url = music?.url.trim();
+  if (!url || !/^https?:\/\//i.test(url)) return undefined;
+  const title = music?.title?.trim();
+  return `Music: ${title ? `${title} - ` : ""}${url}`;
+}
+
 /**
  * The thangs written out for The Thang: one as is, several numbered ("Thang 1:", "Thang 2:")
- * with blank lines between. Timers aren't included; they're for running the workout.
+ * with blank lines between, each followed by its music (title and link) when it has some.
+ * Timers aren't included; they're for running the workout.
  */
 export function thangText(thangs: Thang[]): string {
-  const filled = thangs.filter((t) => t.text.trim());
-  if (filled.length <= 1) return filled[0]?.text.trim() ?? "";
-  return filled
-    .map((t, index) => `Thang ${index + 1}:\n${t.text.trim()}`)
+  const parts = thangs
+    .map((t) => [t.text.trim(), musicLine(t.music)].filter(Boolean).join("\n"))
+    .filter(Boolean);
+  if (parts.length <= 1) return parts[0] ?? "";
+  return parts
+    .map((part, index) => `Thang ${index + 1}:\n${part}`)
     .join("\n\n");
 }
 

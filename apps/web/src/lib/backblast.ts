@@ -92,7 +92,12 @@ export function fromWorkoutRow(row: WorkoutRow, notes?: string): Workout {
     attendees: [],
     introduction: row.introduction ?? undefined,
     warmup: row.warmup ?? undefined,
-    thang: row.thang ?? undefined,
+    // Written out from the thangs each time, so it's current (music included) even for
+    // workouts saved before the text changed.
+    thang: (() => {
+      const thangs = parseThangs(row.thangs, row.thang);
+      return thangs.length ? thangText(thangs) : (row.thang ?? undefined);
+    })(),
     thangs: parseThangs(row.thangs, row.thang),
     moreDates: row.more_dates ?? [],
     notes: notes || undefined,
