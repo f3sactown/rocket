@@ -92,18 +92,15 @@ function musicLine(music: Thang["music"]): string | undefined {
 }
 
 /**
- * The thangs written out for The Thang: one as is, several numbered ("Thang 1:", "Thang 2:")
- * with blank lines between, each followed by its music (title and link) when it has some.
+ * The thangs written out for The Thang, separated by blank lines, each followed by its music
+ * (title and link) when it has some.
  * Timers aren't included; they're for running the workout.
  */
 export function thangText(thangs: Thang[]): string {
   const parts = thangs
     .map((t) => [t.text.trim(), musicLine(t.music)].filter(Boolean).join("\n"))
     .filter(Boolean);
-  if (parts.length <= 1) return parts[0] ?? "";
-  return parts
-    .map((part, index) => `Thang ${index + 1}:\n${part}`)
-    .join("\n\n");
+  return parts.join("\n\n");
 }
 
 /** The workout sections a backblast copies from its workout (everything but the notes). */
