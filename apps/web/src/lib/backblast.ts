@@ -1,4 +1,5 @@
 import {
+  parseTimer,
   thangText,
   type Attendee,
   type AttendeeKind,
@@ -116,7 +117,7 @@ export function toWorkoutInsert(
       ? text(thangText(workout.thangs))
       : text(workout.thang),
     thangs: (workout.thangs ?? []).filter(
-      (t) => t.text.trim() || t.seconds,
+      (t) => t.text.trim() || t.timer,
     ) as unknown as Json,
     announcements: text(workout.announcements),
     words_of_wisdom: text(workout.wordsOfWisdom),
@@ -166,13 +167,15 @@ export function parseThangs(
   const list = Array.isArray(value)
     ? value.flatMap((item): Thang[] => {
         if (!item || typeof item !== "object") return [];
-        const { text, seconds } = item as Record<string, unknown>;
+        const { text, timer, seconds } = item as Record<string, unknown>;
         if (typeof text !== "string") return [];
-        return [
-          typeof seconds === "number" && seconds > 0
-            ? { text, seconds }
-            : { text },
-        ];
+        // Thangs saved before there were kinds of timer had just a countdown length.
+        const parsed =
+          parseTimer(timer) ??
+          (typeof seconds === "number" && seconds > 0
+            ? ({ type: "countdown", seconds } as const)
+            : undefined);
+        return [parsed ? { text, timer: parsed } : { text }];
       })
     : [];
   if (list.length) return list;

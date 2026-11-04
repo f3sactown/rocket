@@ -187,11 +187,16 @@ export function SearchIcon() {
   );
 }
 
-export function ArchiveIcon() {
+/** An archive box; `className` sets its size (menu size by default). */
+export function ArchiveIcon({
+  className = "size-[18px]",
+}: {
+  className?: string;
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="size-[18px]"
+      className={className}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"

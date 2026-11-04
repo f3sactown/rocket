@@ -373,7 +373,7 @@ export function BackblastForm({
     if (mode === "workout" && name === "thang") {
       const current = (
         backblast.thangs ?? [{ text: backblast.thang ?? "" }]
-      ).filter((t) => t.text.trim() || t.seconds);
+      ).filter((t) => t.text.trim() || t.timer);
       return setThangs([...current, { text: body }]);
     }
     set(name, body);
