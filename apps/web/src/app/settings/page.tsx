@@ -10,6 +10,7 @@ import {
   type HomeSection,
   type SwipeAction,
 } from "@/components/auth-provider";
+import { AccountData } from "@/components/account-data";
 import { PasswordInput } from "@/components/password-input";
 import { RegionSettings } from "@/components/region-settings";
 import {
@@ -275,6 +276,13 @@ function Settings({ user }: { user: CurrentUser }) {
         description="Swipe a backblast in a list to act on it. You can only delete your own. Saved to your account."
       >
         <SwipePicker swipeLeft={user.swipeLeft} />
+      </Section>
+
+      <Section
+        title="Your data"
+        description="Take your data with you, bring it back, or start fresh."
+      >
+        <AccountData />
       </Section>
 
       <Section

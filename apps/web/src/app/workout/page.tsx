@@ -43,6 +43,8 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     workout: Workout | null;
     authorId?: string;
     authorName?: string;
+    /** Who wrote the first workout in a chain of reuses, when that's someone else. */
+    originalAuthorName?: string;
     status?: string;
     error?: string;
   } | null>(null);
@@ -65,7 +67,9 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     const supabase = createClient();
     supabase
       .from("workouts")
-      .select("*, author:profiles!workouts_author_id_fkey(name)")
+      .select(
+        "*, author:profiles!workouts_author_id_fkey(name), original_author:profiles!workouts_original_author_id_fkey(name)",
+      )
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -77,6 +81,12 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
           authorId: data?.author_id,
           authorName: (data as { author?: { name: string } } | null)?.author
             ?.name,
+          originalAuthorName:
+            data?.original_author_id &&
+            data.original_author_id !== data.author_id
+              ? ((data as { original_author?: { name: string } | null })
+                  .original_author?.name ?? "a former member")
+              : undefined,
           status: data?.status,
           error: error?.message,
         });
@@ -132,6 +142,14 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
           </span>
         )}
       </header>
+      {result.originalAuthorName && (
+        <p className="-mt-2 text-sm text-ink-soft">
+          Originally by{" "}
+          <span className="font-medium text-ink">
+            {result.originalAuthorName}
+          </span>
+        </p>
+      )}
 
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-ink">{workout.ao}</span>

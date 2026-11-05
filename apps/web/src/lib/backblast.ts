@@ -101,6 +101,7 @@ export function fromWorkoutRow(row: WorkoutRow, notes?: string): Workout {
     thangs: parseThangs(row.thangs, row.thang),
     visibility: row.visibility ?? "public",
     reusedFrom: row.reused_from ?? undefined,
+    originalAuthorId: row.original_author_id ?? undefined,
     notes: notes || undefined,
     announcements: row.announcements ?? undefined,
     wordsOfWisdom: row.words_of_wisdom ?? undefined,
@@ -134,6 +135,7 @@ export function toWorkoutInsert(
     announcements: text(workout.announcements),
     words_of_wisdom: text(workout.wordsOfWisdom),
     reused_from: workout.reusedFrom ?? null,
+    original_author_id: workout.originalAuthorId ?? null,
   };
 }
 

@@ -50,6 +50,8 @@ function NewWorkout({ user }: { user: CurrentUser }) {
           time: undefined,
           // Counted as a reuse of the original.
           reusedFrom: data.id,
+          // A reuse of a reuse still credits whoever wrote the first one.
+          originalAuthorId: data.original_author_id ?? data.author_id,
         });
       });
   }, [fromId, user.id]);
