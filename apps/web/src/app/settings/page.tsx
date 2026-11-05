@@ -5,7 +5,9 @@ import { LANGUAGES, termsFor, type Language } from "@rocket/core";
 import {
   SignedIn,
   useTerms,
+  HOME_SECTIONS,
   type CurrentUser,
+  type HomeSection,
   type SwipeAction,
 } from "@/components/auth-provider";
 import { PasswordInput } from "@/components/password-input";
@@ -262,6 +264,13 @@ function Settings({ user }: { user: CurrentUser }) {
       </Section>
 
       <Section
+        title="Home screen"
+        description="Choose what Home shows. Saved to your account."
+      >
+        <HomeSectionsPicker sections={user.homeSections} />
+      </Section>
+
+      <Section
         title="Swipe actions"
         description="Swipe a backblast in a list to act on it. You can only delete your own. Saved to your account."
       >
@@ -287,6 +296,63 @@ function Settings({ user }: { user: CurrentUser }) {
         </button>
       </Section>
     </section>
+  );
+}
+
+/** Switches for each section Home can show. */
+function HomeSectionsPicker({ sections }: { sections: HomeSection[] }) {
+  const [chosen, setChosen] = useState(sections);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggle(section: HomeSection) {
+    const next = chosen.includes(section)
+      ? chosen.filter((s) => s !== section)
+      : [...chosen, section];
+    const before = chosen;
+    setChosen(next);
+    setError(null);
+    const { error } = await createClient().auth.updateUser({
+      data: { home_sections: next },
+    });
+    if (error) {
+      setChosen(before);
+      setError(error.message);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      {HOME_SECTIONS.map((option) => {
+        const on = chosen.includes(option.value);
+        return (
+          <div
+            key={option.value}
+            className="flex items-center justify-between gap-3 py-1.5"
+          >
+            <span className="text-sm text-ink">{option.label}</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={on}
+              aria-label={option.label}
+              onClick={() => toggle(option.value)}
+              className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors ${
+                on
+                  ? "border-accent/60 bg-accent"
+                  : "border-line-strong bg-panel"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 size-5.5 rounded-full bg-white shadow transition-[left] ${
+                  on ? "left-[calc(100%-1.5rem)]" : "left-0.5"
+                }`}
+              />
+            </button>
+          </div>
+        );
+      })}
+      {error && <p className="text-sm text-accent">{error}</p>}
+    </div>
   );
 }
 

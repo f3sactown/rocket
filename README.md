@@ -6,7 +6,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 ## What it does
 
 - **Home:** your total posts and Qs from your region's sheet (with the date the sheet was last
-  updated), your drafts, and the most recent workouts and backblasts.
+  updated), your drafts, trending workouts, and the most recent workouts and backblasts. Which of
+  these show is chosen in Settings → Home screen (all but trending, to start).
 - **Workouts** are written first: Basics (title, AO, date, time), Introduction, Warm-o-rama,
   The Thang, Notes, Announcements and Words of Wisdom.
   - The Thang can hold several thangs. Each can have a **timer** (Countdown, Stopwatch, AMRAP,
@@ -22,8 +23,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - A finished workout is **public** by default: anyone signed in can see, like and reuse it. Its Q
     can make it **private** on its page. **Likes:** one per person, on other people's public
     workouts.
-- **Discover** shows public workouts from every Q, grouped as Most liked, Most reused, At your
-  region's AOs and Newest, with like buttons.
+- **Discover** shows public workouts from every Q, grouped as Trending (likes and reuses on the
+  last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
+  Newest, with like buttons.
 - **Backblasts** are made from a finished workout with **Create backblast**, or from **New
   backblast**, which lists the finished, unarchived workouts that don't have a backblast yet to pick
   from, or starts one without a workout. The backblast holds
@@ -43,7 +45,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   what you've archived; **Search** finds workouts and backblasts by any word, with matches
   highlighted.
 - **Settings:** name, email, password, region, F3 or FiA wording, theme, accent color, the launch
-  animation, and swipe directions.
+  animation, what Home shows, and swipe directions.
 
 ## Stack
 

@@ -1,18 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
-import { WorkoutStatsBar } from "@/components/workout-stats";
-import { asItems, listColumns, type ListItem } from "@/lib/backblast-list";
+import { WorkoutCards } from "@/components/workout-card";
+import type { ListItem } from "@/lib/backblast-list";
+import { loadPublicWorkouts, trending } from "@/lib/discover";
 import { loadSites } from "@/lib/regions";
-import { createClient } from "@/lib/supabase/client";
 import { useLoad, useUserRegion } from "@/lib/use-region";
-import {
-  loadWorkoutStats,
-  NO_STATS,
-  type WorkoutStats,
-} from "@/lib/workout-social";
+import { NO_STATS, type WorkoutStats } from "@/lib/workout-social";
 
 export default function DiscoverPage() {
   return <SignedIn>{(user) => <Discover user={user} />}</SignedIn>;
@@ -21,22 +16,9 @@ export default function DiscoverPage() {
 /** How many workouts each group shows. */
 const PER_GROUP = 8;
 
-/** Public workouts from everyone, newest first. */
-async function loadPublicWorkouts(): Promise<ListItem[]> {
-  const { data, error } = await createClient()
-    .from("workouts")
-    .select(listColumns("workout"))
-    .eq("status", "published")
-    .eq("visibility", "public")
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(300);
-  if (error) throw new Error(error.message);
-  return asItems("workout", data);
-}
-
 /**
- * Public workouts to browse, in groups: most liked, most reused, at your region's AOs, and newest.
+ * Public workouts to browse, in groups: trending, most liked, most reused, at your region's AOs,
+ * and newest.
  * Like someone else's straight from the list.
  */
 function Discover({ user }: { user: CurrentUser }) {
@@ -47,12 +29,13 @@ function Discover({ user }: { user: CurrentUser }) {
   const sites = useLoad(region ? () => loadSites(region) : null, [region?.id]);
 
   useEffect(() => {
-    loadPublicWorkouts()
-      .then(async (list) => {
-        setStats(await loadWorkoutStats(list.map((w) => w.id)));
-        setWorkouts(list);
-      })
-      .catch((e: Error) => setError(e.message));
+    loadPublicWorkouts().then(
+      (loaded) => {
+        setStats(loaded.stats);
+        setWorkouts(loaded.workouts);
+      },
+      (e: Error) => setError(e.message),
+    );
   }, [user.id]);
 
   const groups = useMemo(() => {
@@ -62,6 +45,7 @@ function Discover({ user }: { user: CurrentUser }) {
       (sites.value ?? []).map((site) => site.name.toLowerCase()),
     );
     return [
+      { title: "Trending", items: trending(workouts, stats) },
       {
         title: "Most liked",
         items: workouts
@@ -112,41 +96,14 @@ function Discover({ user }: { user: CurrentUser }) {
             <h2 className="px-1 text-lg font-semibold tracking-tight text-ink">
               {group.title}
             </h2>
-            <ul className="panel flex flex-col divide-y divide-line p-2">
-              {group.items.map((workout) => (
-                <li key={workout.id}>
-                  <Link
-                    href={`/workout?id=${workout.id}`}
-                    className="flex flex-col gap-1.5 rounded-xl px-3 py-3 transition-colors hover:bg-hover"
-                  >
-                    <span className="flex items-baseline justify-between gap-3">
-                      <span className="truncate font-medium text-ink">
-                        {workout.title || "Untitled workout"}
-                      </span>
-                      <span className="shrink-0 font-mono text-xs text-ink-soft">
-                        {workout.date}
-                      </span>
-                    </span>
-                    <span className="truncate text-sm text-muted">
-                      {[workout.ao, workout.author?.name]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </span>
-                    <WorkoutStatsBar
-                      compact
-                      workoutId={workout.id}
-                      stats={stats.get(workout.id) ?? NO_STATS}
-                      canLike={workout.author_id !== user.id}
-                      onChange={(next) =>
-                        setStats((current) =>
-                          new Map(current).set(workout.id, next),
-                        )
-                      }
-                    />
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <WorkoutCards
+              workouts={group.items}
+              stats={stats}
+              userId={user.id}
+              onStatsChange={(id, next) =>
+                setStats((current) => new Map(current).set(id, next))
+              }
+            />
           </div>
         ))
       )}
