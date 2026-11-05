@@ -7,7 +7,11 @@ import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
 import { PlusIcon } from "@/components/icons";
 import { WorkoutCards } from "@/components/workout-card";
-import { loadLists, type ListItem } from "@/lib/backblast-list";
+import {
+  loadFutureWorkouts,
+  loadLists,
+  type ListItem,
+} from "@/lib/backblast-list";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
 import type { WorkoutStats } from "@/lib/workout-social";
 import { loadLatestPost, loadPaxStats } from "@/lib/regions";
@@ -22,12 +26,14 @@ const RECENT = 5;
 
 /**
  * The first page. It shows the sections chosen in Settings → Home screen, in a fixed order: your
- * totals, your drafts, trending workouts, and the latest workouts and backblasts.
+ * totals, your drafts, your future workouts, trending workouts, and the latest workouts and
+ * backblasts.
  */
 function HomePage({ user }: { user: CurrentUser }) {
   const show = new Set(user.homeSections);
   const [lists, setLists] = useState<{
     drafts: ListItem[];
+    future: ListItem[];
     workouts: ListItem[];
     backblasts: ListItem[];
   } | null>(null);
@@ -37,22 +43,26 @@ function HomePage({ user }: { user: CurrentUser }) {
     stats: Map<string, WorkoutStats>;
   } | null>(null);
   const wantsTrending = show.has("trending");
+  // With Future workouts shown, Recent workouts keeps to ones dated today or earlier.
+  const wantsFuture = show.has("upcoming");
   const sources = user.publicSources.join();
 
   useEffect(() => {
     Promise.all([
-      loadLists("workout", user.id, RECENT),
+      loadLists("workout", user.id, RECENT, wantsFuture),
       loadLists("backblast", user.id, RECENT),
+      wantsFuture ? loadFutureWorkouts(user.id, RECENT) : [],
     ]).then(
-      ([workouts, backblasts]) =>
+      ([workouts, backblasts, future]) =>
         setLists({
           drafts: [...workouts.drafts, ...backblasts.drafts],
+          future,
           workouts: workouts.published,
           backblasts: backblasts.published,
         }),
       (e: Error) => setError(e.message),
     );
-  }, [user.id]);
+  }, [user.id, wantsFuture]);
 
   useEffect(() => {
     if (!wantsTrending) return;
@@ -79,6 +89,20 @@ function HomePage({ user }: { user: CurrentUser }) {
           {show.has("drafts") && lists.drafts.length > 0 && (
             <Recent title="Your drafts">
               <BackblastList user={user} groups={[{ items: lists.drafts }]} />
+            </Recent>
+          )}
+          {wantsFuture && (
+            <Recent title="Future workouts" href="/workouts">
+              <BackblastList
+                user={user}
+                groups={[
+                  {
+                    items: lists.future,
+                    empty:
+                      "Nothing planned yet. Workouts dated after today show here.",
+                  },
+                ]}
+              />
             </Recent>
           )}
           {wantsTrending && (

@@ -34,11 +34,12 @@ function publicSourcesFrom(value: unknown): Language[] {
 
 /** The sections Home can show. */
 export type HomeSection =
-  "totals" | "drafts" | "trending" | "workouts" | "backblasts";
+  "totals" | "drafts" | "upcoming" | "trending" | "workouts" | "backblasts";
 
 export const HOME_SECTIONS: { value: HomeSection; label: string }[] = [
   { value: "totals", label: "Posts and Qs" },
   { value: "drafts", label: "Your drafts" },
+  { value: "upcoming", label: "Future workouts" },
   { value: "trending", label: "Trending workouts" },
   { value: "workouts", label: "Recent workouts" },
   { value: "backblasts", label: "Recent backblasts" },
@@ -48,6 +49,7 @@ export const HOME_SECTIONS: { value: HomeSection; label: string }[] = [
 export const DEFAULT_HOME_SECTIONS: HomeSection[] = [
   "totals",
   "drafts",
+  "upcoming",
   "workouts",
   "backblasts",
 ];

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ListItem } from "./backblast-list";
+import { localToday as today, type ListItem } from "./backblast-list";
 import { createClient } from "./supabase/client";
 import { useLoad } from "./use-region";
 
@@ -14,13 +14,6 @@ async function loadBackblastedWorkoutIds(): Promise<Set<string>> {
     .limit(5000);
   if (error) throw new Error(error.message);
   return new Set((data ?? []).map((row) => row.workout_id as string));
-}
-
-/** Today as YYYY-MM-DD in local time, to compare with workout dates. */
-function today(): string {
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
 /**
