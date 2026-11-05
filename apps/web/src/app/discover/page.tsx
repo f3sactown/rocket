@@ -26,6 +26,8 @@ function Discover({ user }: { user: CurrentUser }) {
   const [workouts, setWorkouts] = useState<ListItem[] | null>(null);
   const [stats, setStats] = useState<Map<string, WorkoutStats>>(new Map());
   const [error, setError] = useState<string | null>(null);
+  // Your own workouts are left out unless you ask for them.
+  const [includeOwn, setIncludeOwn] = useState(false);
   const region = useUserRegion();
   // Compared as text, since each sign-in refresh brings a new array.
   const sources = user.publicSources.join();
@@ -43,47 +45,59 @@ function Discover({ user }: { user: CurrentUser }) {
 
   const groups = useMemo(() => {
     if (!workouts) return [];
+    const shown = includeOwn
+      ? workouts
+      : workouts.filter((w) => w.author_id !== user.id);
     const statsOf = (w: ListItem) => stats.get(w.id) ?? NO_STATS;
     const aos = new Set(
       (sites.value ?? []).map((site) => site.name.toLowerCase()),
     );
     return [
-      { title: "Trending", items: trending(workouts, stats) },
+      { title: "Trending", items: trending(shown, stats) },
       {
         title: "Most liked",
-        items: workouts
+        items: shown
           .filter((w) => statsOf(w).likes > 0)
           .sort((a, b) => statsOf(b).likes - statsOf(a).likes),
       },
       {
         title: "Most reused",
-        items: workouts
+        items: shown
           .filter((w) => statsOf(w).reuses > 0)
           .sort((a, b) => statsOf(b).reuses - statsOf(a).reuses),
       },
       {
         title: region ? `At ${region.name} AOs` : "",
         items: aos.size
-          ? workouts.filter((w) => aos.has(w.ao.trim().toLowerCase()))
+          ? shown.filter((w) => aos.has(w.ao.trim().toLowerCase()))
           : [],
       },
-      { title: "Newest", items: workouts },
+      { title: "Newest", items: shown },
     ]
       .filter((group) => group.title && group.items.length > 0)
       .map((group) => ({ ...group, items: group.items.slice(0, PER_GROUP) }));
     // Sorting reads `stats`, which changes as people like things; keep the order stable by only
     // regrouping when the list itself loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workouts, sites.value, region?.name]);
+  }, [workouts, sites.value, region?.name, includeOwn, user.id]);
 
   return (
     <section className="card">
       <header className="flex flex-col gap-1">
         <h1 className="card-title">Discover</h1>
         <p className="text-sm text-muted">
-          Public workouts from every Q. Like the ones you enjoy, and Reuse one
+          Public workouts from other Qs. Like the ones you enjoy, and Reuse one
           to run it yourself.
         </p>
+        <label className="mt-2 flex items-center gap-2 self-start text-sm text-ink-soft">
+          <input
+            type="checkbox"
+            checked={includeOwn}
+            onChange={(e) => setIncludeOwn(e.target.checked)}
+            className="h-4 w-4 accent-[var(--color-accent)]"
+          />
+          Include my workouts
+        </label>
       </header>
       {error ? (
         <p className="panel px-3 py-8 text-center text-accent">{error}</p>
