@@ -9,6 +9,7 @@ import {
   ArchiveIcon,
   CloseIcon,
   CompassIcon,
+  DocumentIcon,
   DumbbellIcon,
   HomeIcon,
   GearIcon,
@@ -18,16 +19,25 @@ import {
 } from "./icons";
 import { RocketArt } from "./rocket-art";
 
-const LINKS = [
+/** Menu entries, in order. `sub` ones are indented under the entry above them. */
+const LINKS: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  sub?: boolean;
+  match: (path: string) => boolean;
+}[] = [
   {
     href: "/",
     label: "Home",
-    match: (path: string) => path === "/",
+    icon: <HomeIcon />,
+    match: (path) => path === "/",
   },
   {
     href: "/workouts",
     label: "Workouts",
-    match: (path: string) =>
+    icon: <DumbbellIcon />,
+    match: (path) =>
       path === "/workouts" ||
       path === "/workouts/" ||
       path.startsWith("/workout/") ||
@@ -36,46 +46,50 @@ const LINKS = [
   {
     href: "/workouts/new",
     label: "New workout",
-    match: (path: string) => path.startsWith("/workouts/new"),
-  },
-  {
-    href: "/discover",
-    label: "Discover",
-    match: (path: string) => path.startsWith("/discover"),
+    icon: <PlusIcon />,
+    sub: true,
+    match: (path) => path.startsWith("/workouts/new"),
   },
   {
     href: "/backblasts",
     label: "Backblasts",
-    match: (path: string) =>
-      path.startsWith("/backblast/") || path.startsWith("/backblasts"),
+    icon: <DocumentIcon />,
+    match: (path) =>
+      path.startsWith("/backblast/") ||
+      (path.startsWith("/backblasts") && !path.startsWith("/backblasts/new")),
   },
   {
-    href: "/search",
-    label: "Search",
-    match: (path: string) => path.startsWith("/search"),
+    href: "/backblasts/new",
+    label: "New backblast",
+    icon: <PlusIcon />,
+    sub: true,
+    match: (path) => path.startsWith("/backblasts/new"),
+  },
+  {
+    href: "/discover",
+    label: "Discover",
+    icon: <CompassIcon />,
+    match: (path) => path.startsWith("/discover"),
   },
   {
     href: "/archive",
     label: "Archive",
-    match: (path: string) => path.startsWith("/archive"),
+    icon: <ArchiveIcon />,
+    match: (path) => path.startsWith("/archive"),
+  },
+  {
+    href: "/search",
+    label: "Search",
+    icon: <SearchIcon />,
+    match: (path) => path.startsWith("/search"),
   },
   {
     href: "/settings",
     label: "Settings",
-    match: (path: string) => path.startsWith("/settings"),
+    icon: <GearIcon />,
+    match: (path) => path.startsWith("/settings"),
   },
 ];
-
-const ICONS: Record<string, React.ReactNode> = {
-  "/workouts": <DumbbellIcon />,
-  "/workouts/new": <PlusIcon />,
-  "/": <HomeIcon />,
-  "/discover": <CompassIcon />,
-  "/backblasts": "☰",
-  "/search": <SearchIcon />,
-  "/archive": <ArchiveIcon />,
-  "/settings": <GearIcon />,
-};
 
 /** Top bar with the app name and a menu to every page. Shown only when signed in. */
 export function AppNav() {
@@ -145,13 +159,18 @@ export function AppNav() {
                 href={link.href}
                 onClick={() => setOpen(false)}
                 aria-current={current ? "page" : undefined}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 rounded-xl py-2.5 pr-3 text-sm font-medium transition-colors ${
+                  link.sub ? "pl-9" : "pl-3"
+                } ${
                   current
                     ? "bg-accent-soft text-ink"
                     : "text-ink-soft hover:bg-hover hover:text-ink"
                 }`}
               >
-                <span className="text-accent">{ICONS[link.href]}</span>
+                {/* A fixed-width slot, so every label lines up whatever the icon's size. */}
+                <span className="flex w-5 shrink-0 justify-center text-accent">
+                  {link.icon}
+                </span>
                 {link.label}
               </Link>
             );
