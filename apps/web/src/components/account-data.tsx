@@ -277,7 +277,8 @@ function ResetAccount() {
         Start over: deletes all your workouts, backblasts, saved templates,
         archive and likes, and puts your settings back to the defaults. You stay
         signed in with the same login and name. Export first if you might want
-        any of it back.
+        any of it back: importing that export restores it, including the likes
+        and reuses others gave your workouts.
       </p>
       {!open ? (
         <button

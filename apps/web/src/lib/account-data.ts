@@ -412,6 +412,15 @@ export async function runImport(
           "original_author_id",
         ]);
         result.added++;
+        // A workout deleted here (on its own or by a reset) gets back the likes and reuses
+        // others gave it. A "Keep both" copy doesn't: the original still has them.
+        if (!conflict) {
+          const { error } = await supabase.rpc("restore_workout_links", {
+            p_old: workout.id,
+            p_new: id,
+          });
+          if (error) throw new Error(error.message);
+        }
       }
       workoutIds.set(workout.id, id);
       if (notes && !(conflict && options.choices.workouts === "keep")) {

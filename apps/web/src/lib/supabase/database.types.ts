@@ -368,6 +368,10 @@ export type Database = {
           liked: boolean;
         }[];
       };
+      restore_workout_links: {
+        Args: { p_old: string; p_new: string };
+        Returns: undefined;
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
