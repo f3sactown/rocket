@@ -114,6 +114,7 @@ function Discover({ user }: { user: CurrentUser }) {
               {group.title}
             </h2>
             <WorkoutCards
+              tiles
               workouts={group.items}
               stats={stats}
               userId={user.id}

@@ -21,7 +21,7 @@ export async function loadPublicWorkouts(
   const { data, error } = await createClient()
     .from("workouts")
     .select(
-      `${listColumns("workout")}, author_region:profiles!workouts_author_id_fkey(region:regions!profiles_region_id_fkey(language))`,
+      `${listColumns("workout")}, author_region:profiles!workouts_author_id_fkey(region:regions!profiles_region_id_fkey(language, name))`,
     )
     .eq("status", "published")
     .eq("visibility", "public")
@@ -30,14 +30,21 @@ export async function loadPublicWorkouts(
     .limit(300);
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as unknown as {
-    author_region: { region: { language: Language } | null } | null;
+    author_region: {
+      region: { language: Language; name: string } | null;
+    } | null;
   }[];
   const workouts = asItems(
     "workout",
-    rows.filter((row) => {
-      const language = row.author_region?.region?.language;
-      return !language || sources.includes(language);
-    }),
+    rows
+      .filter((row) => {
+        const language = row.author_region?.region?.language;
+        return !language || sources.includes(language);
+      })
+      .map(({ author_region, ...row }) => ({
+        ...row,
+        authorRegion: author_region?.region?.name ?? null,
+      })),
   );
   return { workouts, stats: await loadWorkoutStats(workouts.map((w) => w.id)) };
 }

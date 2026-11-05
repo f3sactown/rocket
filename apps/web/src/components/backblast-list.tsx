@@ -9,9 +9,19 @@ import {
   unarchive,
   type ListItem,
 } from "@/lib/backblast-list";
+import { useNeedsBackblast } from "@/lib/needs-backblast";
 import type { CurrentUser, SwipeAction } from "./auth-provider";
 import { Highlight } from "./highlight";
 import { SwipeRow, type SwipeOption } from "./swipe-row";
+
+/** Marks one of your past workouts that doesn't have a finished backblast yet. */
+export function NeedsBackblastBadge() {
+  return (
+    <span className="shrink-0 rounded-full border border-accent/50 bg-accent-soft px-2 py-0.5 text-[0.65rem] font-semibold whitespace-nowrap text-accent">
+      Needs backblast
+    </span>
+  );
+}
 
 function untitled(item: ListItem) {
   return item.kind === "workout" ? "Untitled workout" : "Untitled backblast";
@@ -70,6 +80,10 @@ export function BackblastList({
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const current = useRef<Pending | null>(null);
+  const needsBackblast = useNeedsBackblast(
+    groups.flatMap((group) => group.items),
+    user.id,
+  );
 
   const hide = (id: string, on: boolean) =>
     setHidden((set) => {
@@ -199,6 +213,7 @@ export function BackblastList({
                         item={item}
                         highlight={highlight}
                         snippet={snippets?.[item.id]}
+                        needsBackblast={needsBackblast(item)}
                       />
                     </SwipeRow>
                   </li>
@@ -241,10 +256,12 @@ function Row({
   item,
   highlight,
   snippet,
+  needsBackblast,
 }: {
   item: ListItem;
   highlight: string[];
   snippet?: string;
+  needsBackblast: boolean;
 }) {
   const draft = item.status === "draft";
   return (
@@ -279,7 +296,10 @@ function Row({
       {draft ? (
         <span className="status">Draft</span>
       ) : (
-        <span className="font-mono text-sm text-ink-soft">{item.date}</span>
+        <span className="flex shrink-0 flex-col items-end gap-1">
+          <span className="font-mono text-sm text-ink-soft">{item.date}</span>
+          {needsBackblast && <NeedsBackblastBadge />}
+        </span>
       )}
     </Link>
   );
