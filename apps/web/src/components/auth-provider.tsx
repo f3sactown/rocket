@@ -19,6 +19,17 @@ export interface CurrentUser {
   swipeLeft: SwipeAction;
   /** Which sections the Home page shows, in order. */
   homeSections: HomeSection[];
+  /** Whose public workouts Discover and Trending show: F3's, FiA's or both (the default). */
+  publicSources: Language[];
+}
+
+/** Both F3 and FiA, which public workouts show until the user narrows it in Settings. */
+export const ALL_PUBLIC_SOURCES: Language[] = ["f3", "fia"];
+
+function publicSourcesFrom(value: unknown): Language[] {
+  if (!Array.isArray(value)) return ALL_PUBLIC_SOURCES;
+  const chosen = ALL_PUBLIC_SOURCES.filter((s) => value.includes(s));
+  return chosen.length ? chosen : ALL_PUBLIC_SOURCES;
 }
 
 /** The sections Home can show. */
@@ -71,6 +82,7 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
     swipeLeft:
       user.user_metadata?.swipe_left === "archive" ? "archive" : "delete",
     homeSections: homeSectionsFrom(user.user_metadata?.home_sections),
+    publicSources: publicSourcesFrom(user.user_metadata?.public_sources),
     regionId:
       typeof user.user_metadata?.region_id === "string"
         ? user.user_metadata.region_id

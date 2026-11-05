@@ -26,6 +26,7 @@ const ACCOUNT_KEYS = [
   "swipe_left",
   "home_sections",
   "region_id",
+  "public_sources",
 ] as const;
 
 /** Everything a user owns, as written to an export file. */
@@ -614,6 +615,7 @@ export async function resetAccount(): Promise<void> {
       swipe_left: null,
       home_sections: null,
       region_id: null,
+      public_sources: null,
     },
   });
   if (error) throw new Error(error.message);

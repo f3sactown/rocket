@@ -1,3 +1,4 @@
+import type { Language } from "@rocket/core";
 import { asItems, listColumns, type ListItem } from "./backblast-list";
 import { createClient } from "./supabase/client";
 import {
@@ -6,21 +7,38 @@ import {
   type WorkoutStats,
 } from "./workout-social";
 
-/** Public workouts from everyone, newest first, with their like and reuse counts. */
-export async function loadPublicWorkouts(): Promise<{
+/**
+ * Public workouts from everyone, newest first, with their like and reuse counts. A workout counts
+ * as F3 or FiA by its author's region; only those from `sources` are kept, plus any whose author
+ * has no region (so they can't be told apart).
+ */
+export async function loadPublicWorkouts(
+  sources: Language[] = ["f3", "fia"],
+): Promise<{
   workouts: ListItem[];
   stats: Map<string, WorkoutStats>;
 }> {
   const { data, error } = await createClient()
     .from("workouts")
-    .select(listColumns("workout"))
+    .select(
+      `${listColumns("workout")}, author_region:profiles!workouts_author_id_fkey(region:regions!profiles_region_id_fkey(language))`,
+    )
     .eq("status", "published")
     .eq("visibility", "public")
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(300);
   if (error) throw new Error(error.message);
-  const workouts = asItems("workout", data);
+  const rows = (data ?? []) as unknown as {
+    author_region: { region: { language: Language } | null } | null;
+  }[];
+  const workouts = asItems(
+    "workout",
+    rows.filter((row) => {
+      const language = row.author_region?.region?.language;
+      return !language || sources.includes(language);
+    }),
+  );
   return { workouts, stats: await loadWorkoutStats(workouts.map((w) => w.id)) };
 }
 
