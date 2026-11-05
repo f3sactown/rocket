@@ -128,7 +128,7 @@ function TimerInput({
 
   if (!timer && !choosing)
     return (
-      <div className="flex flex-wrap gap-x-5">
+      <div className="flex flex-wrap items-center gap-x-5">
         <button
           type="button"
           onClick={() => setChoosing(true)}
@@ -140,60 +140,70 @@ function TimerInput({
       </div>
     );
 
+  // "Add music" and "Library" sit together on one row under the timer, whatever its state.
+  const extras = extra && (
+    <div className="flex flex-wrap items-center gap-x-5">{extra}</div>
+  );
+
   if (!timer)
     return (
-      <div className="flex flex-col gap-2 rounded-xl bg-hover p-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-ink">
-            Which kind of timer?
-          </span>
-          <button
-            type="button"
-            onClick={() => setChoosing(false)}
-            className="link text-sm"
-          >
-            Cancel
-          </button>
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {TIMER_TYPES.map((option) => (
+      <>
+        <div className="flex flex-col gap-2 rounded-xl bg-hover p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-ink">
+              Which kind of timer?
+            </span>
             <button
-              key={option.type}
               type="button"
-              onClick={() => {
-                setChoosing(false);
-                onChange(newTimer(option.type));
-              }}
-              className="flex flex-col items-start gap-0.5 rounded-xl border border-line bg-panel px-3 py-2 text-left transition-colors hover:border-accent/60"
+              onClick={() => setChoosing(false)}
+              className="link text-sm"
             >
-              <span className="text-sm font-medium text-ink">
-                {option.label}
-              </span>
-              <span className="text-xs text-muted">{option.description}</span>
+              Cancel
             </button>
-          ))}
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {TIMER_TYPES.map((option) => (
+              <button
+                key={option.type}
+                type="button"
+                onClick={() => {
+                  setChoosing(false);
+                  onChange(newTimer(option.type));
+                }}
+                className="flex flex-col items-start gap-0.5 rounded-xl border border-line bg-panel px-3 py-2 text-left transition-colors hover:border-accent/60"
+              >
+                <span className="text-sm font-medium text-ink">
+                  {option.label}
+                </span>
+                <span className="text-xs text-muted">{option.description}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+        {extras}
+      </>
     );
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-hover p-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-ink">
-          {timerLabel(timer)}
-        </span>
-        <button
-          type="button"
-          aria-label={`Remove the timer for ${name}`}
-          onClick={() => onChange(undefined)}
-          className="link shrink-0 text-sm"
-        >
-          Remove
-        </button>
+    <>
+      <div className="flex flex-col gap-3 rounded-xl bg-hover p-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium text-ink">
+            {timerLabel(timer)}
+          </span>
+          <button
+            type="button"
+            aria-label={`Remove the timer for ${name}`}
+            onClick={() => onChange(undefined)}
+            className="link shrink-0 text-sm"
+          >
+            Remove
+          </button>
+        </div>
+        <TimerSettings timer={timer} onChange={onChange} />
       </div>
-      <TimerSettings timer={timer} onChange={onChange} />
-      {extra}
-    </div>
+      {extras}
+    </>
   );
 }
 
