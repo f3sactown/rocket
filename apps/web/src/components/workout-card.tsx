@@ -16,7 +16,7 @@ function byline(workout: ListItem): string {
 
 /**
  * Public workouts with their likes and reuses (like button on others'), as a list or, with
- * `tiles`, a grid of tiles that also names each author's region.
+ * `tiles`, a grid of tiles (for Discover, without the "Needs backblast" badge).
  */
 export function WorkoutCards({
   workouts,
@@ -31,7 +31,8 @@ export function WorkoutCards({
   onStatsChange: (id: string, stats: WorkoutStats) => void;
   tiles?: boolean;
 }) {
-  const needsBackblast = useNeedsBackblast(workouts, userId);
+  // Discover's tiles never flag a workout as needing a backblast, even your own.
+  const needsBackblast = useNeedsBackblast(tiles ? [] : workouts, userId);
   const statsBar = (workout: ListItem) => (
     <WorkoutStatsBar
       compact
@@ -59,11 +60,6 @@ export function WorkoutCards({
                 <span className="truncate text-muted">{byline(workout)}</span>
                 <span className="font-mono text-muted">{workout.date}</span>
               </span>
-              {needsBackblast(workout) && (
-                <span className="self-start">
-                  <NeedsBackblastBadge />
-                </span>
-              )}
               <span className="mt-auto pt-1">{statsBar(workout)}</span>
             </Link>
           </li>
