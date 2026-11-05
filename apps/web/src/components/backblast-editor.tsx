@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   loadWorkout,
-  parseAttendees,
   saveWorkoutNotes,
   toInsert,
   toWorkoutInsert,
@@ -30,7 +29,7 @@ const WORKOUT_DEFAULTS = [
  */
 function defaultSections(mode: FormMode, backblast: Backblast): string[] {
   if (mode === "workout") return WORKOUT_DEFAULTS;
-  const own = ["attendees", "thirdF", "secondF"];
+  const own = ["thirdF", "secondF"];
   return backblast.workoutId ? own : [...own, ...WORKOUT_DEFAULTS];
 }
 
@@ -44,24 +43,16 @@ function withDefaults(
   for (const template of templates) {
     if (!template.is_default) continue;
     if (!defaultSections(mode, backblast).includes(template.section)) continue;
-    if (template.section === "attendees") {
-      try {
-        filled.attendees = parseAttendees(JSON.parse(template.body));
-      } catch {
-        // Ignore a malformed roster rather than blocking the form.
-      }
-    } else {
-      const section = template.section as
-        | "introduction"
-        | "warmup"
-        | "thang"
-        | "announcements"
-        | "wordsOfWisdom"
-        | "thirdF"
-        | "secondF";
-      // Only an empty section is filled, so nothing already written is replaced.
-      if (!filled[section]?.trim()) filled[section] = template.body;
-    }
+    const section = template.section as
+      | "introduction"
+      | "warmup"
+      | "thang"
+      | "announcements"
+      | "wordsOfWisdom"
+      | "thirdF"
+      | "secondF";
+    // Only an empty section is filled, so nothing already written is replaced.
+    if (!filled[section]?.trim()) filled[section] = template.body;
   }
   return filled;
 }
