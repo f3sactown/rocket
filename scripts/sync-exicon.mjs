@@ -1,10 +1,13 @@
-// Copies F3 Nation's Exicon (exercises and routines) from the F3 Codex into Supabase, once a week.
+// Copies the exercise and routine Library into Supabase, once a week, from two sources:
+//   - F3: F3 Nation's Exicon on the F3 Codex (the list its Exicon page loads).
+//   - FiA: FiA's Exicon, a Google Sheet shared so anyone with the link can view it.
 // Runs in GitHub Actions (.github/workflows/sync-exicon.yml) with the service-role key, which can
-// replace the read-only `exicon_entries` table. The Codex's own Exicon page loads the same list.
+// replace the read-only `exicon_entries` table. Each source is replaced on its own, so one failing
+// leaves the other (and its own previous copy) in place.
 //
 //   SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/sync-exicon.mjs
 //
-// EXICON_URL overrides where the list is read from (for tests).
+// EXICON_URL and SHEETS_BASE override where the lists are read from (for tests).
 
 const SUPABASE_URL = process.env.SUPABASE_URL
   ? new URL(process.env.SUPABASE_URL).origin
@@ -13,6 +16,10 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const EXICON_URL =
   process.env.EXICON_URL ?? "https://codex.f3nation.com/api/exicon";
 const CODEX = "https://codex.f3nation.com";
+const SHEETS_BASE = process.env.SHEETS_BASE || "https://docs.google.com";
+/** FiA's Exicon. Its Lexicon tab has Name, Category and Description; Lexirades 21 adds more. */
+const FIA_SHEET = "1-aBi3UGOwhGChtKEFdVjikbqfcCWP35mcoKqqxqKssI";
+const FIA_URL = `https://docs.google.com/spreadsheets/d/${FIA_SHEET}/edit`;
 
 const ENTITIES = {
   amp: "&",
@@ -93,11 +100,40 @@ const names = (list) =>
     .filter((name) => typeof name === "string" && name.trim())
     .map((name) => name.trim());
 
-async function main() {
-  if (!SUPABASE_URL || !SERVICE_KEY)
+/** Replaces one source's entries in Supabase. */
+async function save(source, entries) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/rpc/replace_exicon_entries`,
+    {
+      method: "POST",
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ p_source: source, p_entries: entries }),
+    },
+  );
+  if (!response.ok)
+    throw new Error(`Supabase: ${response.status} ${await response.text()}`);
+}
+
+/** Refuses a list too short to be real, so a broken read doesn't wipe the library. */
+function enough(entries, minimum, source) {
+  if (entries.length < minimum)
     throw new Error(
-      "Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to run the Exicon sync.",
+      `Only ${entries.length} ${source} entries came back; keeping the current library.`,
     );
+  return entries;
+}
+
+function summary(entries) {
+  const routines = entries.filter((e) => e.is_routine).length;
+  return `${entries.length} entries (${entries.length - routines} exercises, ${routines} routines)`;
+}
+
+/** F3 Nation's Exicon, from the F3 Codex. */
+export async function readF3() {
   const response = await fetch(EXICON_URL, {
     headers: {
       Accept: "application/json",
@@ -106,7 +142,7 @@ async function main() {
   });
   if (!response.ok)
     throw new Error(
-      `Couldn't read the Exicon: ${response.status} ${EXICON_URL}`,
+      `Couldn't read the F3 Exicon: ${response.status} ${EXICON_URL}`,
     );
   const raw = await response.json();
   const list = Array.isArray(raw) ? raw : (raw.entries ?? raw.data ?? []);
@@ -127,30 +163,119 @@ async function main() {
         url: `${CODEX}/exicon/${encodeURIComponent(e.id)}`,
       };
     });
-  // A broken or empty response shouldn't wipe out last week's library.
-  if (entries.length < 50)
-    throw new Error(
-      `Only ${entries.length} entries came back; keeping the current library.`,
-    );
+  return enough(entries, 50, "F3");
+}
 
-  const save = await fetch(
-    `${SUPABASE_URL}/rest/v1/rpc/replace_exicon_entries`,
-    {
-      method: "POST",
-      headers: {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${SERVICE_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ p_entries: entries }),
-    },
+/** Reads every row of a sheet tab with Google's Visualization API, keyed by column header. */
+async function readTab(sheetId, tab) {
+  const params = new URLSearchParams({
+    tqx: "out:json",
+    headers: "1",
+    sheet: tab,
+    tq: "select *",
+  });
+  const response = await fetch(
+    `${SHEETS_BASE}/spreadsheets/d/${encodeURIComponent(sheetId)}/gviz/tq?${params}`,
   );
-  if (!save.ok)
-    throw new Error(`Supabase: ${save.status} ${await save.text()}`);
-  const routines = entries.filter((e) => e.is_routine).length;
-  console.log(
-    `Synced ${entries.length} Exicon entries (${entries.length - routines} exercises, ${routines} routines).`,
+  const text = await response.text();
+  const start = text.indexOf("(");
+  const end = text.lastIndexOf(")");
+  if (!response.ok || start < 0 || end < start)
+    throw new Error(
+      `Couldn't read the "${tab}" tab of the FiA Exicon. Make sure the sheet is shared so anyone with the link can view it.`,
+    );
+  const result = JSON.parse(text.slice(start + 1, end));
+  if (result.status === "error")
+    throw new Error(
+      result.errors?.[0]?.detailed_message ?? "FiA Exicon query failed",
+    );
+  const labels = result.table.cols.map((col) =>
+    String(col.label ?? "")
+      .trim()
+      .toLowerCase(),
   );
+  return result.table.rows.map((row) =>
+    Object.fromEntries(
+      labels.map((label, i) => [label, String(row.c?.[i]?.v ?? "").trim()]),
+    ),
+  );
+}
+
+/** A name on one line: "Jumping Jack Toe Touch\n(JJTT)" becomes "Jumping Jack Toe Touch (JJTT)". */
+const oneLine = (text) => text.replace(/\s+/g, " ").trim();
+
+const slug = (text) =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+/**
+ * Tags for a FiA category, matching F3's tag names where they mean the same thing. Returns null
+ * for a TERM (vocabulary, not an exercise), which is left out.
+ */
+export function fiaTags(category) {
+  const c = category.toLowerCase().trim();
+  if (!c || c === "term") return null;
+  const tags = [];
+  if (c.includes("ab")) tags.push("Core");
+  if (c.includes("warm")) tags.push("Warm-Up");
+  if (c.includes("partner")) tags.push("Partner");
+  if (c.includes("routine")) tags.push("Routine");
+  return tags;
+}
+
+/** FiA's Exicon, from its Google Sheet. */
+export async function readFia() {
+  const entries = new Map();
+  const add = (name, description, tags) => {
+    const clean = oneLine(name);
+    const id = `fia-${slug(clean)}`;
+    if (!clean || !slug(clean) || entries.has(id)) return;
+    entries.set(id, {
+      id,
+      name: clean,
+      description: description.trim(),
+      aliases: [],
+      tags,
+      is_routine: tags.includes("Routine"),
+      video_url: "",
+      url: FIA_URL,
+    });
+  };
+  for (const row of await readTab(FIA_SHEET, "Lexicon")) {
+    const tags = fiaTags(row.category ?? "");
+    if (tags) add(row.name ?? "", row.description ?? "", tags);
+  }
+  // Exercises collected for the 2021 Lexirades.
+  for (const row of await readTab(FIA_SHEET, "lexirades 21"))
+    add(row["lexirade exercise"] ?? "", row.description ?? "", [
+      "Lexirades 21",
+    ]);
+  return enough([...entries.values()], 20, "FiA");
+}
+
+async function main() {
+  if (!SUPABASE_URL || !SERVICE_KEY)
+    throw new Error(
+      "Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to run the Exicon sync.",
+    );
+  let failures = 0;
+  for (const [source, label, read] of [
+    ["f3", "F3", readF3],
+    ["fia", "FiA", readFia],
+  ]) {
+    try {
+      const entries = await read();
+      await save(source, entries);
+      console.log(`${label}: synced ${summary(entries)}.`);
+    } catch (error) {
+      failures++;
+      console.log(`::error::${label}: ${error.message}`);
+    }
+  }
+  // Fail the run when either source failed, so it shows red; the other one still synced.
+  if (failures) process.exit(1);
 }
 
 // Run when called directly (not when imported by a test).

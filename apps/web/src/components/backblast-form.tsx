@@ -567,6 +567,27 @@ export function BackblastForm({
           <h2 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-ink">
             {step.title}
           </h2>
+          {step.kind === "text" &&
+            mode === "workout" &&
+            (step.name === "warmup" || step.name === "thang") && (
+              // The exercise and routine library, top right beside the templates. On The Thang it
+              // adds to the last thang.
+              <LibraryButton
+                onAdd={(text) => {
+                  if (step.name === "warmup")
+                    return set("warmup", appendText(backblast.warmup, text));
+                  const thangs = backblast.thangs?.length
+                    ? backblast.thangs
+                    : [{ text: backblast.thang ?? "" }];
+                  const last = thangs.length - 1;
+                  setThangs(
+                    thangs.map((t, i) =>
+                      i === last ? { ...t, text: appendText(t.text, text) } : t,
+                    ),
+                  );
+                }}
+              />
+            )}
           {step.kind === "text" && !step.noTemplates && (
             <SectionTemplates
               userId={userId}
@@ -682,18 +703,6 @@ export function BackblastForm({
               value={backblast.thangs ?? [{ text: backblast.thang ?? "" }]}
               onChange={setThangs}
               placeholder={step.hint}
-            />
-          )}
-
-        {step.kind === "text" &&
-          mode === "workout" &&
-          step.name === "warmup" && (
-            <LibraryButton
-              tags={["Warm-Up"]}
-              onAdd={(text) =>
-                set("warmup", appendText(backblast.warmup, text))
-              }
-              className="-mb-2 self-start"
             />
           )}
 

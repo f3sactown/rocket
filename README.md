@@ -26,9 +26,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - A backblast can't be finished before its workout's date.
   - **Copy** and **Share** produce Slack-ready text (Event Data, Workout Details, COT), ending with a
     plain comma-separated list of everyone who posted.
-- **Library:** on a workout's Warm-o-rama and on each thang, **Library** opens F3 Nation's Exicon
-  (exercises and routines) to search, filter by Exercises / Routines and by tag (Warm-Up is chosen
-  on the Warm-o-rama), read, and add by name or with its description.
+- **Library:** on a workout's Warm-o-rama and The Thang pages, **Library** (top right) opens the
+  F3 and FiA Exicons together: search, choose the source (F3, FiA or both), Exercises / Routines and
+  tags, read an entry, and add it by name or with its description (on The Thang, to the last
+  thang). Each entry carries an F3 or FiA badge in that organization's color.
 - **Templates:** any section can be saved as a template, and one per section can be starred as the
   default that fills new workouts or backblasts.
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. **Archive** lists
@@ -53,7 +54,7 @@ packages/
   core/           Shared F3 domain types and logic (backblast formatting, timers, thangs)
 scripts/
   sync-regions.mjs  Nightly copy of each region's Google Sheet into Supabase
-  sync-exicon.mjs   Weekly copy of the F3 Exicon into Supabase for the Library
+  sync-exicon.mjs   Weekly copy of the F3 and FiA Exicons into Supabase for the Library
 supabase/
   config.toml     Local Supabase settings
   migrations/     SQL migrations: tables and row-level security policies
@@ -159,19 +160,24 @@ show the newest post date in the attendance records.
 
 ## Exicon library
 
-The Library is a copy of F3 Nation's Exicon from the [F3 Codex](https://codex.f3nation.com/exicon).
+The Library is a weekly copy of two Exicons:
 
-- **Weekly sync:** `.github/workflows/sync-exicon.yml` runs `scripts/sync-exicon.mjs` every Monday
-  (about 2am Pacific, or on demand from the Actions tab). It reads the list the Codex's Exicon page
-  loads (`https://codex.f3nation.com/api/exicon`), turns each description into plain text, and
-  replaces the `exicon_entries` table in one step. An entry tagged "Routine" is a routine; the rest
-  are exercises.
-- If the Codex returns an error or a nearly empty list, the sync fails and the previous library
-  stays.
-- It uses the same `SUPABASE_URL` variable and `SUPABASE_SERVICE_ROLE_KEY` secret as the region sync.
-  Signed-in users can only read the library.
-- The Codex list isn't a documented API, so a change on their side could break the sync; the
-  workflow run shows the error. Each entry links back to its Codex page.
+- **F3:** F3 Nation's Exicon from the [F3 Codex](https://codex.f3nation.com/exicon), read from the
+  list its Exicon page loads (`https://codex.f3nation.com/api/exicon`). An entry tagged "Routine" is
+  a routine; the rest are exercises. Descriptions are turned into plain text.
+- **FiA:** FiA's Exicon, a
+  [Google Sheet](https://docs.google.com/spreadsheets/d/1-aBi3UGOwhGChtKEFdVjikbqfcCWP35mcoKqqxqKssI/edit)
+  that must stay shared so anyone with the link can view it. Its **Lexicon** tab (Name, Category,
+  Description) gives exercises and routines; **TERM** rows (vocabulary) are left out, and the "Ab",
+  "Warm up" and "Partner" categories become the Core, Warm-Up and Partner tags. Its **Lexirades 21**
+  tab adds exercises tagged "Lexirades 21".
+
+`.github/workflows/sync-exicon.yml` runs `scripts/sync-exicon.mjs` every Monday (about 2am Pacific,
+or on demand from the Actions tab). Each source replaces its own rows in `exicon_entries`, so if one
+fails (an error, or a nearly empty list) the other still updates and the failed one keeps last
+week's copy; the run shows red with the reason. It uses the same `SUPABASE_URL` variable and
+`SUPABASE_SERVICE_ROLE_KEY` secret as the region sync. Signed-in users can only read the library.
+The Codex list isn't a documented API, so a change on their side could break the F3 half.
 
 ## Database changes
 

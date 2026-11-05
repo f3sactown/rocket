@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { entryText, loadLibrary, type LibraryEntry } from "@/lib/library";
+import {
+  entryText,
+  loadLibrary,
+  type LibraryEntry,
+  type LibrarySource,
+} from "@/lib/library";
+import { ACCENTS } from "@/lib/theme";
 import { useLoad } from "@/lib/use-region";
 import { BookIcon, CloseIcon } from "./icons";
 
@@ -12,6 +18,33 @@ const KINDS: { value: Kind; label: string }[] = [
   { value: "exercise", label: "Exercises" },
   { value: "routine", label: "Routines" },
 ];
+
+/** The sources, each badged in its organization's color. */
+const SOURCES: { value: LibrarySource; label: string; color: string }[] = [
+  {
+    value: "f3",
+    label: "F3",
+    color: ACCENTS.find((a) => a.value === "f3")!.swatch,
+  },
+  {
+    value: "fia",
+    label: "FiA",
+    color: ACCENTS.find((a) => a.value === "fia")!.swatch,
+  },
+];
+
+/** A small F3 or FiA badge in that organization's color. */
+function SourceBadge({ source }: { source: LibrarySource }) {
+  const { label, color } = SOURCES.find((s) => s.value === source)!;
+  return (
+    <span
+      className="shrink-0 rounded-full px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-black"
+      style={{ background: color }}
+    >
+      {label}
+    </span>
+  );
+}
 
 /** How many results show before "Show more". */
 const PAGE = 40;
@@ -72,6 +105,8 @@ function LibraryPicker({
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<Kind>("all");
   const [tags, setTags] = useState<string[]>(initialTags);
+  // Both sources to start; at least one stays on.
+  const [sources, setSources] = useState<LibrarySource[]>(["f3", "fia"]);
   const [shown, setShown] = useState(PAGE);
   const [open, setOpen] = useState<string | null>(null);
 
@@ -101,6 +136,7 @@ function LibraryPicker({
   const results = useMemo(() => {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
     return entries.filter((entry) => {
+      if (!sources.includes(entry.source)) return false;
       if (kind === "routine" && !entry.isRoutine) return false;
       if (kind === "exercise" && entry.isRoutine) return false;
       if (!tags.every((tag) => entry.tags.includes(tag))) return false;
@@ -110,7 +146,18 @@ function LibraryPicker({
         .toLowerCase();
       return words.every((word) => text.includes(word));
     });
-  }, [entries, kind, tags, query]);
+  }, [entries, kind, tags, query, sources]);
+
+  function toggleSource(source: LibrarySource) {
+    setShown(PAGE);
+    setSources((current) =>
+      current.includes(source)
+        ? current.length > 1
+          ? current.filter((s) => s !== source)
+          : current
+        : [...current, source],
+    );
+  }
 
   function toggleTag(tag: string) {
     setShown(PAGE);
@@ -144,9 +191,18 @@ function LibraryPicker({
                 rel="noreferrer"
                 className="underline"
               >
-                F3 Exicon
-              </a>
-              , updated weekly.
+                F3
+              </a>{" "}
+              and{" "}
+              <a
+                href="https://docs.google.com/spreadsheets/d/1-aBi3UGOwhGChtKEFdVjikbqfcCWP35mcoKqqxqKssI/edit"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                FiA
+              </a>{" "}
+              Exicons, updated weekly.
             </p>
           </div>
           <button
@@ -171,6 +227,33 @@ function LibraryPicker({
           }}
           className="input text-base"
         />
+        <div
+          aria-label="Sources"
+          className="flex items-center gap-2 text-xs text-ink-soft"
+        >
+          <span>From</span>
+          {SOURCES.map((option) => {
+            const on = sources.includes(option.value);
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggleSource(option.value)}
+                className={`rounded-full border px-3 py-1 font-bold transition-colors ${
+                  on ? "text-black" : "border-line text-muted"
+                }`}
+                style={
+                  on
+                    ? { background: option.color, borderColor: option.color }
+                    : undefined
+                }
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
         <div
           role="radiogroup"
           aria-label="Exercises or routines"
@@ -303,20 +386,18 @@ function Entry({
         onClick={onToggle}
         className="flex w-full flex-col items-start gap-0.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-hover"
       >
-        <span className="flex w-full items-baseline justify-between gap-2">
+        <span className="flex w-full items-center justify-between gap-2">
           <span className="font-medium text-ink">{entry.name}</span>
-          {entry.isRoutine && (
-            <span className="shrink-0 text-xs text-accent">Routine</span>
-          )}
+          <SourceBadge source={entry.source} />
         </span>
         {entry.aliases.length > 0 && (
           <span className="text-xs text-muted">
             Also: {entry.aliases.join(", ")}
           </span>
         )}
-        <span className="text-xs text-muted">
-          {entry.tags.filter((t) => t.toLowerCase() !== "routine").join(" · ")}
-        </span>
+        {entry.tags.length > 0 && (
+          <span className="text-xs text-muted">{entry.tags.join(" · ")}</span>
+        )}
       </button>
       {open && (
         <div className="flex flex-col gap-3 px-2 pb-3">
@@ -348,7 +429,7 @@ function Entry({
               rel="noreferrer"
               className="link ml-auto text-xs"
             >
-              F3 Codex ↗
+              {entry.source === "fia" ? "FiA Exicon ↗" : "F3 Codex ↗"}
             </a>
             {entry.videoUrl && (
               <a
