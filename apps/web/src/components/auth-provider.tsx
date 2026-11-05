@@ -17,6 +17,36 @@ export interface CurrentUser {
   regionId: string | null;
   /** What swiping a backblast to the left does; swiping right does the other. */
   swipeLeft: SwipeAction;
+  /** Which sections the Home page shows, in order. */
+  homeSections: HomeSection[];
+}
+
+/** The sections Home can show. */
+export type HomeSection =
+  "totals" | "drafts" | "trending" | "workouts" | "backblasts";
+
+export const HOME_SECTIONS: { value: HomeSection; label: string }[] = [
+  { value: "totals", label: "Posts and Qs" },
+  { value: "drafts", label: "Your drafts" },
+  { value: "trending", label: "Trending workouts" },
+  { value: "workouts", label: "Recent workouts" },
+  { value: "backblasts", label: "Recent backblasts" },
+];
+
+/** What Home shows until the user changes it in Settings. */
+export const DEFAULT_HOME_SECTIONS: HomeSection[] = [
+  "totals",
+  "drafts",
+  "workouts",
+  "backblasts",
+];
+
+function homeSectionsFrom(value: unknown): HomeSection[] {
+  if (!Array.isArray(value)) return DEFAULT_HOME_SECTIONS;
+  const known = new Set(HOME_SECTIONS.map((s) => s.value));
+  return HOME_SECTIONS.map((s) => s.value).filter(
+    (s) => known.has(s) && value.includes(s),
+  );
 }
 
 export type SwipeAction = "delete" | "archive";
@@ -40,6 +70,7 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
     // Like Mail: swipe left to delete, right to archive, unless the user swapped them.
     swipeLeft:
       user.user_metadata?.swipe_left === "archive" ? "archive" : "delete",
+    homeSections: homeSectionsFrom(user.user_metadata?.home_sections),
     regionId:
       typeof user.user_metadata?.region_id === "string"
         ? user.user_metadata.region_id

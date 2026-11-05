@@ -6,7 +6,10 @@ import { useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
 import { PlusIcon } from "@/components/icons";
+import { WorkoutCards } from "@/components/workout-card";
 import { loadLists, type ListItem } from "@/lib/backblast-list";
+import { loadPublicWorkouts, trending } from "@/lib/discover";
+import type { WorkoutStats } from "@/lib/workout-social";
 import { loadLatestPost, loadPaxStats } from "@/lib/regions";
 import { useLoad, useUserRegion } from "@/lib/use-region";
 
@@ -17,14 +20,23 @@ export default function Home() {
 /** How many of each kind the home page shows. */
 const RECENT = 5;
 
-/** The first page: your totals, your drafts, and the latest workouts and backblasts. */
+/**
+ * The first page. It shows the sections chosen in Settings → Home screen, in a fixed order: your
+ * totals, your drafts, trending workouts, and the latest workouts and backblasts.
+ */
 function HomePage({ user }: { user: CurrentUser }) {
+  const show = new Set(user.homeSections);
   const [lists, setLists] = useState<{
     drafts: ListItem[];
     workouts: ListItem[];
     backblasts: ListItem[];
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hot, setHot] = useState<{
+    workouts: ListItem[];
+    stats: Map<string, WorkoutStats>;
+  } | null>(null);
+  const wantsTrending = show.has("trending");
 
   useEffect(() => {
     Promise.all([
@@ -41,12 +53,21 @@ function HomePage({ user }: { user: CurrentUser }) {
     );
   }, [user.id]);
 
+  useEffect(() => {
+    if (!wantsTrending) return;
+    loadPublicWorkouts().then(
+      ({ workouts, stats }) =>
+        setHot({ workouts: trending(workouts, stats).slice(0, RECENT), stats }),
+      () => setHot({ workouts: [], stats: new Map() }),
+    );
+  }, [wantsTrending, user.id]);
+
   return (
     <section className="card">
       <header className="flex flex-col gap-1">
         <h1 className="card-title">Hey, {user.name}</h1>
       </header>
-      <Totals user={user} />
+      {show.has("totals") && <Totals user={user} />}
 
       {error ? (
         <p className="panel px-3 py-8 text-center text-accent">{error}</p>
@@ -54,25 +75,57 @@ function HomePage({ user }: { user: CurrentUser }) {
         <p className="panel px-3 py-8 text-center text-muted">Loading…</p>
       ) : (
         <>
-          {lists.drafts.length > 0 && (
+          {show.has("drafts") && lists.drafts.length > 0 && (
             <Recent title="Your drafts">
               <BackblastList user={user} groups={[{ items: lists.drafts }]} />
             </Recent>
           )}
-          <Recent title="Recent workouts" href="/workouts">
-            <BackblastList
-              user={user}
-              groups={[{ items: lists.workouts, empty: "No workouts yet." }]}
-            />
-          </Recent>
-          <Recent title="Recent backblasts" href="/backblasts">
-            <BackblastList
-              user={user}
-              groups={[
-                { items: lists.backblasts, empty: "No backblasts yet." },
-              ]}
-            />
-          </Recent>
+          {wantsTrending && (
+            <Recent title="Trending workouts" href="/discover">
+              {!hot ? (
+                <p className="panel px-3 py-8 text-center text-muted">
+                  Loading…
+                </p>
+              ) : hot.workouts.length === 0 ? (
+                <p className="panel px-3 py-8 text-center text-muted">
+                  Nothing trending yet.
+                </p>
+              ) : (
+                <WorkoutCards
+                  workouts={hot.workouts}
+                  stats={hot.stats}
+                  userId={user.id}
+                  onStatsChange={(id, next) =>
+                    setHot(
+                      (current) =>
+                        current && {
+                          ...current,
+                          stats: new Map(current.stats).set(id, next),
+                        },
+                    )
+                  }
+                />
+              )}
+            </Recent>
+          )}
+          {show.has("workouts") && (
+            <Recent title="Recent workouts" href="/workouts">
+              <BackblastList
+                user={user}
+                groups={[{ items: lists.workouts, empty: "No workouts yet." }]}
+              />
+            </Recent>
+          )}
+          {show.has("backblasts") && (
+            <Recent title="Recent backblasts" href="/backblasts">
+              <BackblastList
+                user={user}
+                groups={[
+                  { items: lists.backblasts, empty: "No backblasts yet." },
+                ]}
+              />
+            </Recent>
+          )}
         </>
       )}
 
