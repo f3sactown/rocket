@@ -22,7 +22,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
     choose again. Each workout shows how many times it's been reused (counting archived copies).
     A reused workout credits the Q who wrote the first one (`workouts.original_author_id`), even
-    when it's a reuse of a reuse: its page shows "Originally by" them.
+    when it's a reuse of a reuse: its page shows "Originally by" them and their region.
   - A finished workout is **public** by default: anyone signed in can see, like and reuse it. Its Q
     can make it **private** on its page: it disappears for everyone else (Discover, Trending, lists
     and search) but keeps its likes and reuse count, which only its Q sees until it's public again. **Likes:** one per person, on other people's public

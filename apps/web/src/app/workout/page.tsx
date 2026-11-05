@@ -35,6 +35,16 @@ export default function WorkoutPage() {
   );
 }
 
+/** The original author's name and, when they have one, their region: "Tinman • F3 SacTown". */
+function originalAuthor(
+  author: { name: string; region?: { name: string } | null } | null | undefined,
+): string {
+  if (!author) return "a former member";
+  return author.region?.name
+    ? `${author.name} • ${author.region.name}`
+    : author.name;
+}
+
 /** A finished workout, with a button to write its backblast. */
 function WorkoutDetail({ user }: { user: CurrentUser }) {
   const router = useRouter();
@@ -68,7 +78,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     supabase
       .from("workouts")
       .select(
-        "*, author:profiles!workouts_author_id_fkey(name), original_author:profiles!workouts_original_author_id_fkey(name)",
+        "*, author:profiles!workouts_author_id_fkey(name), original_author:profiles!workouts_original_author_id_fkey(name, region:regions!profiles_region_id_fkey(name))",
       )
       .eq("id", id)
       .maybeSingle()
@@ -84,8 +94,16 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
           originalAuthorName:
             data?.original_author_id &&
             data.original_author_id !== data.author_id
-              ? ((data as { original_author?: { name: string } | null })
-                  .original_author?.name ?? "a former member")
+              ? originalAuthor(
+                  (
+                    data as {
+                      original_author?: {
+                        name: string;
+                        region?: { name: string } | null;
+                      } | null;
+                    }
+                  ).original_author,
+                )
               : undefined,
           status: data?.status,
           error: error?.message,
