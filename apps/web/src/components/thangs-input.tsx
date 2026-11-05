@@ -9,6 +9,7 @@ import {
   type Timer,
 } from "@rocket/core";
 import { useState } from "react";
+import { LibraryButton } from "./library-picker";
 
 /** Reads a time typed as minutes ("5") or m:ss ("4:30"); null if it isn't one. */
 export function parseTime(value: string): number | null {
@@ -69,15 +70,26 @@ export function ThangsInput({
             onChange={(timer) => update(index, { timer })}
             name={rows.length > 1 ? `thang ${index + 1}` : "the thang"}
             extra={
-              !thang.music && (
-                <button
-                  type="button"
-                  onClick={() => update(index, { music: { url: "" } })}
-                  className="link py-1 text-sm"
-                >
-                  <span className="text-accent">＋</span> Add music
-                </button>
-              )
+              <>
+                {!thang.music && (
+                  <button
+                    type="button"
+                    onClick={() => update(index, { music: { url: "" } })}
+                    className="link py-1 text-sm"
+                  >
+                    <span className="text-accent">＋</span> Add music
+                  </button>
+                )}
+                <LibraryButton
+                  onAdd={(text) =>
+                    update(index, {
+                      text: thang.text.trim()
+                        ? `${thang.text.trimEnd()}\n${text}`
+                        : text,
+                    })
+                  }
+                />
+              </>
             }
           />
           {thang.music && (

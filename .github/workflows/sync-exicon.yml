@@ -1,0 +1,26 @@
+name: Sync Exicon library
+
+# Once a week, copy F3 Nation's Exicon (exercises and routines) from codex.f3nation.com into
+# Supabase for the workout Library.
+on:
+  schedule:
+    # Mondays at 09:41 UTC, about 2am Pacific.
+    - cron: "41 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/sync-exicon.mjs
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          # Supabase → Project Settings → API Keys → secret key. Keep it a secret, never a variable.
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

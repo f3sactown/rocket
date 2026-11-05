@@ -26,6 +26,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - A backblast can't be finished before its workout's date.
   - **Copy** and **Share** produce Slack-ready text (Event Data, Workout Details, COT), ending with a
     plain comma-separated list of everyone who posted.
+- **Library:** on a workout's Warm-o-rama and on each thang, **Library** opens F3 Nation's Exicon
+  (exercises and routines) to search, filter by Exercises / Routines and by tag (Warm-Up is chosen
+  on the Warm-o-rama), read, and add by name or with its description.
 - **Templates:** any section can be saved as a template, and one per section can be starred as the
   default that fills new workouts or backblasts.
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. **Archive** lists
@@ -50,6 +53,7 @@ packages/
   core/           Shared F3 domain types and logic (backblast formatting, timers, thangs)
 scripts/
   sync-regions.mjs  Nightly copy of each region's Google Sheet into Supabase
+  sync-exicon.mjs   Weekly copy of the F3 Exicon into Supabase for the Library
 supabase/
   config.toml     Local Supabase settings
   migrations/     SQL migrations: tables and row-level security policies
@@ -152,6 +156,22 @@ show the newest post date in the attendance records.
   Settings → API Keys → secret key) alongside the `SUPABASE_URL` variable.
 - Sheets are read with Google's Visualization API (`apps/web/src/lib/sheets.ts` in the app,
   `scripts/sync-regions.mjs` for the sync), so only the rows a query needs are downloaded.
+
+## Exicon library
+
+The Library is a copy of F3 Nation's Exicon from the [F3 Codex](https://codex.f3nation.com/exicon).
+
+- **Weekly sync:** `.github/workflows/sync-exicon.yml` runs `scripts/sync-exicon.mjs` every Monday
+  (about 2am Pacific, or on demand from the Actions tab). It reads the list the Codex's Exicon page
+  loads (`https://codex.f3nation.com/api/exicon`), turns each description into plain text, and
+  replaces the `exicon_entries` table in one step. An entry tagged "Routine" is a routine; the rest
+  are exercises.
+- If the Codex returns an error or a nearly empty list, the sync fails and the previous library
+  stays.
+- It uses the same `SUPABASE_URL` variable and `SUPABASE_SERVICE_ROLE_KEY` secret as the region sync.
+  Signed-in users can only read the library.
+- The Codex list isn't a documented API, so a change on their side could break the sync; the
+  workflow run shows the error. Each entry links back to its Codex page.
 
 ## Database changes
 

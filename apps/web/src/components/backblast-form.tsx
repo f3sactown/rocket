@@ -25,6 +25,7 @@ import { parseAttendees } from "@/lib/backblast";
 import { loadRoster, loadSites, nextDateOn, sitesByDay } from "@/lib/regions";
 import { useLoad, useUserRegion } from "@/lib/use-region";
 import { AttendanceInput } from "./attendance-input";
+import { LibraryButton } from "./library-picker";
 import { QPicker } from "./q-picker";
 import { ThangsInput } from "./thangs-input";
 import { Regulars } from "./regulars";
@@ -185,6 +186,12 @@ function stepsFor(language: Language, mode: FormMode): Step[] {
         text("secondF"),
         kind("review"),
       ];
+}
+
+/** Text with more added on its own line. */
+export function appendText(current: string | undefined, more: string): string {
+  const text = current?.trimEnd() ?? "";
+  return text ? `${text}\n${more}` : more;
 }
 
 /** Today's date (YYYY-MM-DD) where the user is. */
@@ -675,6 +682,18 @@ export function BackblastForm({
               value={backblast.thangs ?? [{ text: backblast.thang ?? "" }]}
               onChange={setThangs}
               placeholder={step.hint}
+            />
+          )}
+
+        {step.kind === "text" &&
+          mode === "workout" &&
+          step.name === "warmup" && (
+            <LibraryButton
+              tags={["Warm-Up"]}
+              onAdd={(text) =>
+                set("warmup", appendText(backblast.warmup, text))
+              }
+              className="-mb-2 self-start"
             />
           )}
 
