@@ -10,8 +10,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Workouts** are written first: Basics (title, AO, date, time), Introduction, Warm-o-rama,
   The Thang, Notes, Announcements and Words of Wisdom.
   - The Thang can hold several thangs. Each can have a **timer** (Countdown, Stopwatch, AMRAP,
-    Intervals or EMOM) and **music** (a link to a song or playlist, shown as 🎵 Title 🎵 in the
-    output).
+    Intervals or EMOM) and **music** (a link to a song or playlist, shown in the output as 🎵 Title 🎵
+    with the link on the next line).
   - A workout's **Notes** are private to its Q: stored in their own table only the author can read,
     and left out of anything copied or shared.
   - **Run workout** shows the whole workout to lead from, in Normal, Large or Extra large text, with
@@ -147,8 +147,10 @@ names, show the regulars at an AO over the last 3 months, show a user's total po
 show the newest post date in the attendance records.
 
 - The sheet must be shared so **anyone with the link can view** it.
-- Each region records which tabs and column headers hold its AOs, roster and attendance; F3 SacTown
-  is set up by `supabase/migrations/20261101000000_regions.sql`. Others can be added in Settings,
+- Each region records which tabs and column headers hold its AOs, roster and attendance, and its
+  organization: choosing a region switches the user to its wording and colors. **F3 SacTown** (F3)
+  is set up by `supabase/migrations/20261101000000_regions.sql` and **FiA SacTown** (FiA) by
+  `supabase/migrations/20261105020000_fia_sactown_region.sql`. Others can be added in Settings,
   with a **Check sheet** button that confirms every column exists.
 - **Nightly sync:** `.github/workflows/sync-regions.yml` runs `scripts/sync-regions.mjs` every
   night (about 2–3am Pacific, or on demand from the Actions tab). It copies each region's active

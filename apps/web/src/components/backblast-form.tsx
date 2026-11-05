@@ -665,7 +665,7 @@ export function BackblastForm({
                   <textarea
                     value={backblast[name] ?? ""}
                     onChange={(e) => set(name, e.target.value)}
-                    className="input min-h-28 resize-y text-base leading-relaxed"
+                    className="input min-h-56 resize-y text-base leading-relaxed"
                   />
                 </label>
               ))}

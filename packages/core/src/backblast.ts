@@ -59,12 +59,13 @@ export interface Thang {
   music?: { url: string; title?: string };
 }
 
-/** A thang's music as a line of text, e.g. "🎵 Eye of the Tiger 🎵 https://…". */
+/** A thang's music as text, e.g. "🎵 Eye of the Tiger 🎵" with its link on the next line. */
 function musicLine(music: Thang["music"]): string | undefined {
   const url = music?.url.trim();
   if (!url || !/^https?:\/\//i.test(url)) return undefined;
   const title = music?.title?.trim();
-  return title ? `🎵 ${title} 🎵 ${url}` : `🎵 ${url}`;
+  // The link goes on its own line under a named song.
+  return title ? `🎵 ${title} 🎵\n${url}` : `🎵 ${url}`;
 }
 
 /**
