@@ -134,7 +134,7 @@ function ChooseWorkout({
       </div>
       <button type="button" onClick={onWithout} className="btn w-full">
         <PlusIcon />
-        Without a workout
+        New backblast
       </button>
     </section>
   );
