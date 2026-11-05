@@ -1,5 +1,6 @@
 "use client";
 
+import type { Language } from "@rocket/core";
 import { useEffect, useMemo, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { WorkoutCards } from "@/components/workout-card";
@@ -26,17 +27,19 @@ function Discover({ user }: { user: CurrentUser }) {
   const [stats, setStats] = useState<Map<string, WorkoutStats>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const region = useUserRegion();
+  // Compared as text, since each sign-in refresh brings a new array.
+  const sources = user.publicSources.join();
   const sites = useLoad(region ? () => loadSites(region) : null, [region?.id]);
 
   useEffect(() => {
-    loadPublicWorkouts().then(
+    loadPublicWorkouts(sources.split(",") as Language[]).then(
       (loaded) => {
         setStats(loaded.stats);
         setWorkouts(loaded.workouts);
       },
       (e: Error) => setError(e.message),
     );
-  }, [user.id]);
+  }, [user.id, sources]);
 
   const groups = useMemo(() => {
     if (!workouts) return [];

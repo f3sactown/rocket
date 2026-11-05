@@ -31,6 +31,21 @@
     inset 0 1px 0 rgb(255 255 255 / 0.06), 0 10px 24px -10px rgb(0 0 0 / 0.7);
 }
 
+/*
+ * Library F3 and FiA badges in each organization's color, except when that color is the accent:
+ * then the badge turns violet so it doesn't read as an accent highlight.
+ */
+:root {
+  --badge-f3: #a78bfa;
+  --badge-fia: #2dd4bf;
+}
+:root[data-accent] {
+  --badge-f3: #e0544a;
+}
+:root[data-accent="fia"] {
+  --badge-fia: #a78bfa;
+}
+
 /* Rocket trim per accent (see ACCENTS in lib/theme.ts). F3 red is the default. */
 :root {
   --rocket-light: #ec8a81;

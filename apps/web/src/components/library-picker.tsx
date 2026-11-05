@@ -7,7 +7,6 @@ import {
   type LibraryEntry,
   type LibrarySource,
 } from "@/lib/library";
-import { ACCENTS } from "@/lib/theme";
 import { useLoad } from "@/lib/use-region";
 import { BookIcon, CloseIcon } from "./icons";
 
@@ -19,17 +18,20 @@ const KINDS: { value: Kind; label: string }[] = [
   { value: "routine", label: "Routines" },
 ];
 
-/** The sources, each badged in its organization's color. */
+/**
+ * The sources, each badged in its organization's color, or violet when that color is the accent
+ * (see --badge-* in globals.css, which follow the accent as it changes).
+ */
 const SOURCES: { value: LibrarySource; label: string; color: string }[] = [
   {
     value: "f3",
     label: "F3",
-    color: ACCENTS.find((a) => a.value === "f3")!.swatch,
+    color: "var(--badge-f3)",
   },
   {
     value: "fia",
     label: "FiA",
-    color: ACCENTS.find((a) => a.value === "fia")!.swatch,
+    color: "var(--badge-fia)",
   },
 ];
 

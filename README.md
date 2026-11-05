@@ -29,7 +29,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     workouts.
 - **Discover** shows public workouts from every Q, grouped as Trending (likes and reuses on the
   last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
-  Newest, with like buttons.
+  Newest, with like buttons. Settings → Public workouts chooses F3's, FiA's or both (the default),
+  going by each author's region; authors with no region always show. Trending on Home follows it.
 - **Backblasts** are made from a finished workout with **Create backblast**, or from **New
   backblast**, which lists the finished, unarchived workouts that don't have a backblast yet to pick
   from, or starts one without a workout. The backblast holds
@@ -42,14 +43,15 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Library:** at the top right of a workout's Warm-o-rama, and with each thang on The Thang,
   **Library** opens the F3 and FiA Exicons together: search, choose the source (F3, FiA or both),
   Exercises / Routines and tags, read an entry, and add it by name or with its description. Each
-  entry carries an F3 or FiA badge in that organization's color.
+  entry carries an F3 or FiA badge in that organization's color, or in violet when that color is
+  your accent, so it never looks like a highlight (it follows accent changes right away).
 - **Templates:** each text section (all but Notes and the Name-o-rama) can be saved as a template,
   and one per section can be starred as the default that fills new workouts or backblasts.
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. **Archive** lists
   what you've archived; **Search** finds workouts and backblasts by any word, with matches
   highlighted.
 - **Settings:** name, email, password, region, F3 or FiA wording, theme, accent color, the launch
-  animation, what Home shows, and swipe directions. **Your data** exports everything you have
+  animation, what Home shows, whose public workouts show, and swipe directions. **Your data** exports everything you have
   (settings, workouts with their notes, backblasts, saved templates, archive and likes) as a JSON
   file, and imports one back: it shows what's new and, for workouts, backblasts or templates you
   already have, lets you keep yours, replace them or keep both (settings are optional). **Reset

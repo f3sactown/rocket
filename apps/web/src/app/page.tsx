@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@rocket/core";
+import { formatDate, type Language } from "@rocket/core";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
@@ -37,6 +37,7 @@ function HomePage({ user }: { user: CurrentUser }) {
     stats: Map<string, WorkoutStats>;
   } | null>(null);
   const wantsTrending = show.has("trending");
+  const sources = user.publicSources.join();
 
   useEffect(() => {
     Promise.all([
@@ -55,12 +56,12 @@ function HomePage({ user }: { user: CurrentUser }) {
 
   useEffect(() => {
     if (!wantsTrending) return;
-    loadPublicWorkouts().then(
+    loadPublicWorkouts(sources.split(",") as Language[]).then(
       ({ workouts, stats }) =>
         setHot({ workouts: trending(workouts, stats).slice(0, RECENT), stats }),
       () => setHot({ workouts: [], stats: new Map() }),
     );
-  }, [wantsTrending, user.id]);
+  }, [wantsTrending, user.id, sources]);
 
   return (
     <section className="card">
