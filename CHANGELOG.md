@@ -4,6 +4,24 @@ All notable changes to Rocket are recorded here. This file is maintained automat
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commit](https://www.conventionalcommits.org) messages; see [RELEASING.md](RELEASING.md).
 
+## [0.1.0-alpha.3](https://github.com/f3sactown/rocket/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-11-05)
+
+### Features
+
+* **Privacy:** backblasts are private to their author; finished workouts are public by default
+  and can be made private. Archiving never changes visibility.
+* **Likes and reuses:** like other people's public workouts (once each), and see each workout's
+  like and reuse counts.
+* **Discover:** a page of public workouts grouped as Most liked, Most reused, At your region's AOs
+  and Newest.
+* **Library:** F3 and FiA Exicons, synced weekly, searchable by source, Exercises / Routines and
+  tag, from the Warm-o-rama and each thang.
+* **Regions:** FiA SacTown.
+* **Backblasts:** New backblast asks which workout it's for; a backblast's copy of its workout can
+  be edited; Reuse makes a copy and leaves where and when blank.
+* **Workouts:** timers beep through the last 10 seconds; music links on their own line.
+
+
 ## [0.1.0-alpha.2](https://github.com/f3sactown/rocket/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-11-04)
 
 ### Features
