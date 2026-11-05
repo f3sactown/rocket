@@ -56,7 +56,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   file, and imports one back: it shows what's new and, for workouts, backblasts or templates you
   already have, lets you keep yours, replace them or keep both (settings are optional). **Reset
   account** (type RESET to confirm) deletes all of that and restores default settings; your login
-  and name stay.
+  and name stay. Likes and reuses others gave a deleted workout (deleted on its own or by a reset)
+  are set aside in the database and come back when that workout is imported again by its author;
+  a "Keep both" copy starts fresh, since the original keeps them.
 
 ## Stack
 
@@ -93,6 +95,10 @@ The app runs entirely in the browser, so access rules live in the database as ro
 - Likes (`workout_likes`): you can like someone else's public workout once, and see only your own
   likes; counts of likes and reuses come from `workout_stats()`, which returns totals only.
 - Only the author can edit or delete a workout or backblast.
+- When a workout is deleted, a trigger copies its likes and reuse links to `retired_workout_likes`
+  and `retired_workout_reuses`, which no one can read. Only `restore_workout_links()`, called on
+  import, moves them back, and only for the deleted workout's own author, so an edited export file
+  can't add likes.
 - A workout's notes (`workout_notes`) can be read and written only by the workout's author.
 - Archiving is personal (`workout_archives`, `backblast_archives`): it hides an item from your own
   lists only, and never changes whether a workout is public.
