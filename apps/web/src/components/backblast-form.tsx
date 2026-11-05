@@ -3,7 +3,6 @@
 import {
   DEFAULT_INTRODUCTION,
   attendeeFromName,
-  attendeeLabel,
   joinQs,
   qNames,
   backblastParts,
@@ -21,7 +20,6 @@ import {
   type Backblast,
 } from "@rocket/core";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { parseAttendees } from "@/lib/backblast";
 import { loadRoster, loadSites, nextDateOn, sitesByDay } from "@/lib/regions";
 import { useLoad, useUserRegion } from "@/lib/use-region";
 import { AttendanceInput } from "./attendance-input";
@@ -234,14 +232,6 @@ function isFilled(step: Step, backblast: Backblast): boolean {
       return backblast.attendees.length > 0 || qNames(backblast).length > 0;
     case "review":
       return false;
-  }
-}
-
-function attendeesPreview(body: string): string {
-  try {
-    return parseAttendees(JSON.parse(body)).map(attendeeLabel).join(", ");
-  } catch {
-    return "";
   }
 }
 
@@ -597,20 +587,6 @@ export function BackblastForm({
               templates={templates}
               builtIns={step.builtIns}
               onLoad={(body) => loadTemplate(step.name, body)}
-              onTemplatesChange={setTemplates}
-            />
-          )}
-          {step.kind === "attendance" && (
-            <SectionTemplates
-              userId={userId}
-              section="attendees"
-              label="Name-o-rama"
-              body={JSON.stringify(backblast.attendees)}
-              preview={attendeesPreview}
-              templates={templates}
-              onLoad={(body) =>
-                set("attendees", parseAttendees(JSON.parse(body)))
-              }
               onTemplatesChange={setTemplates}
             />
           )}

@@ -30,8 +30,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   F3 and FiA Exicons together: search, choose the source (F3, FiA or both), Exercises / Routines and
   tags, read an entry, and add it by name or with its description (on The Thang, to the last
   thang). Each entry carries an F3 or FiA badge in that organization's color.
-- **Templates:** any section can be saved as a template, and one per section can be starred as the
-  default that fills new workouts or backblasts.
+- **Templates:** each text section (all but Notes and the Name-o-rama) can be saved as a template,
+  and one per section can be starred as the default that fills new workouts or backblasts.
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. **Archive** lists
   what you've archived; **Search** finds workouts and backblasts by any word, with matches
   highlighted.
