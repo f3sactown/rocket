@@ -8,6 +8,7 @@ import { useAuth } from "./auth-provider";
 import {
   ArchiveIcon,
   CloseIcon,
+  CompassIcon,
   DumbbellIcon,
   HomeIcon,
   GearIcon,
@@ -38,6 +39,11 @@ const LINKS = [
     match: (path: string) => path.startsWith("/workouts/new"),
   },
   {
+    href: "/discover",
+    label: "Discover",
+    match: (path: string) => path.startsWith("/discover"),
+  },
+  {
     href: "/backblasts",
     label: "Backblasts",
     match: (path: string) =>
@@ -64,6 +70,7 @@ const ICONS: Record<string, React.ReactNode> = {
   "/workouts": <DumbbellIcon />,
   "/workouts/new": <PlusIcon />,
   "/": <HomeIcon />,
+  "/discover": <CompassIcon />,
   "/backblasts": "☰",
   "/search": <SearchIcon />,
   "/archive": <ArchiveIcon />,

@@ -43,6 +43,10 @@ export interface Backblast {
   secondF?: string;
   /** The workout this backblast was made from, if any. */
   workoutId?: string;
+  /** A workout's visibility once finished: public (the default) or private to its Q. */
+  visibility?: "public" | "private";
+  /** For a workout made with Reuse, the workout it was copied from. */
+  reusedFrom?: string;
 }
 
 /**

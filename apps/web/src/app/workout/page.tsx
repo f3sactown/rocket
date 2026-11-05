@@ -15,6 +15,13 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { ShareButton } from "@/components/share-button";
+import { WorkoutStatsBar } from "@/components/workout-stats";
+import {
+  loadWorkoutStats,
+  NO_STATS,
+  setVisibility,
+  type WorkoutStats,
+} from "@/lib/workout-social";
 import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
 import { archive, deleteItem, unarchive } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
@@ -46,6 +53,10 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     { id: string; title: string; status: string; date: string | null }[]
   >([]);
   const [archived, setArchived] = useState<boolean | null>(null);
+  const [stats, setStats] = useState<WorkoutStats>(NO_STATS);
+  const [visibility, setVisibilityState] = useState<"public" | "private">(
+    "public",
+  );
 
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -60,6 +71,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       .then(({ data, error }) => {
         if (data?.author_id === user.id)
           loadWorkoutNotes(data.id).then(setNotes);
+        if (data) setVisibilityState(data.visibility ?? "public");
         setResult({
           workout: data && fromWorkoutRow(data),
           authorId: data?.author_id,
@@ -75,6 +87,10 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       .eq("workout_id", id)
       .eq("author_id", user.id)
       .then(({ data }) => setBackblasts(data ?? []));
+    loadWorkoutStats([id]).then(
+      (all) => setStats(all.get(id) ?? NO_STATS),
+      () => {},
+    );
     supabase
       .from("workout_archives")
       .select("workout_id")
@@ -120,6 +136,31 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-ink">{workout.ao}</span>
         <span className="text-ink-soft">{formatDate(workout.date)}</span>
+      </div>
+      <div className="-mt-2 flex flex-wrap items-center justify-between gap-3">
+        <WorkoutStatsBar
+          workoutId={id!}
+          stats={stats}
+          // You can like someone else's public workout, not your own.
+          canLike={!mine && result.status === "published"}
+          onChange={setStats}
+        />
+        {mine && result.status === "published" && (
+          <VisibilitySwitch
+            value={visibility}
+            onChange={async (next) => {
+              const before = visibility;
+              setVisibilityState(next);
+              setActionError(null);
+              try {
+                await setVisibility(id!, next);
+              } catch (error) {
+                setVisibilityState(before);
+                setActionError((error as Error).message);
+              }
+            }}
+          />
+        )}
       </div>
 
       <pre className="panel overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
@@ -207,5 +248,44 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         );
       })()}
     </article>
+  );
+}
+
+/** Public (anyone signed in can see, like and reuse it) or private (only you). */
+function VisibilitySwitch({
+  value,
+  onChange,
+}: {
+  value: "public" | "private";
+  onChange: (value: "public" | "private") => void;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Who can see this workout"
+      className="inline-flex gap-1 rounded-full border border-line bg-panel p-1 text-xs"
+    >
+      {(["public", "private"] as const).map((option) => (
+        <button
+          key={option}
+          type="button"
+          role="radio"
+          aria-checked={value === option}
+          title={
+            option === "public"
+              ? "Anyone signed in can see, like and reuse it"
+              : "Only you can see it"
+          }
+          onClick={() => value !== option && onChange(option)}
+          className={`rounded-full px-3 py-1 font-medium transition-colors ${
+            value === option
+              ? "bg-surface-raised text-ink shadow-sm"
+              : "text-muted hover:text-ink"
+          }`}
+        >
+          {option === "public" ? "Public" : "Private"}
+        </button>
+      ))}
+    </div>
   );
 }
