@@ -107,8 +107,8 @@ export async function deleteItem(id: string, kind: ItemKind = "backblast") {
 export const deleteBackblast = (id: string) => deleteItem(id, "backblast");
 
 /**
- * Your drafts of a kind, most recently edited first, and everyone's finished ones, newest first.
- * What you've archived is left out.
+ * Your drafts of a kind, most recently edited first, and your finished ones, newest first. Others'
+ * public workouts are on Discover, not here. What you've archived is left out.
  */
 export async function loadLists(
   kind: ItemKind,
@@ -129,6 +129,7 @@ export async function loadLists(
     .from(tableFor(kind))
     .select(listColumns(kind))
     .eq("status", "published")
+    .eq("author_id", userId)
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
