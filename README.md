@@ -19,7 +19,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     when scrolled away, and the screen stays awake.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
     choose again.
-- **Backblasts** are made from a finished workout with **Create backblast**. The backblast holds
+- **Backblasts** are made from a finished workout with **Create backblast**, or from **New
+  backblast**, which lists the finished, unarchived workouts that don't have a backblast yet to pick
+  from, or starts one without a workout. The backblast holds
   its own copy of the workout's sections, which can be edited without changing the workout
   (**Update from workout** copies it again). Its pages are Workout, Notes, Name-o-rama (Qs and
   PAX, with roster suggestions and the AO's regulars), Third F, Second F and Review.
