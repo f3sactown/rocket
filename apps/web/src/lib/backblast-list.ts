@@ -140,3 +140,32 @@ export async function loadLists(
   if (d.error || p.error) throw new Error((d.error ?? p.error)!.message);
   return { drafts: asItems(kind, d.data), published: asItems(kind, p.data) };
 }
+
+/**
+ * Finished workouts that don't have a backblast yet (one you can see: published, or your own
+ * draft), newest first, leaving out what you've archived.
+ */
+export async function loadWorkoutsNeedingBackblast(): Promise<ListItem[]> {
+  const supabase = createClient();
+  const [archived, written, workouts] = await Promise.all([
+    loadArchivedIds("workout"),
+    supabase
+      .from("backblasts")
+      .select("workout_id")
+      .not("workout_id", "is", null),
+    supabase
+      .from("workouts")
+      .select(listColumns("workout"))
+      .eq("status", "published")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(200),
+  ]);
+  if (written.error) throw new Error(written.error.message);
+  if (workouts.error) throw new Error(workouts.error.message);
+  const skip = new Set([
+    ...archived,
+    ...(written.data ?? []).map((row) => row.workout_id as string),
+  ]);
+  return asItems("workout", workouts.data).filter((w) => !skip.has(w.id));
+}
