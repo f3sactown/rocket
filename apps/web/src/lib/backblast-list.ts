@@ -108,6 +108,13 @@ export async function deleteItem(id: string, kind: ItemKind = "backblast") {
 /** Deletes a backblast. */
 export const deleteBackblast = (id: string) => deleteItem(id, "backblast");
 
+/** Today as YYYY-MM-DD in local time, to compare with workout and backblast dates. */
+export function localToday(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 /**
  * Your drafts of a kind, most recently edited first, and your finished ones, newest first. Others'
  * public workouts are on Discover, not here. What you've archived is left out.
@@ -116,6 +123,8 @@ export async function loadLists(
   kind: ItemKind,
   userId: string,
   limit = 50,
+  /** Leave out finished ones dated after today (Home lists those as Future workouts). */
+  pastOnly = false,
 ): Promise<{ drafts: ListItem[]; published: ListItem[] }> {
   const supabase = createClient();
   const archived = await loadArchivedIds(kind);
@@ -139,9 +148,32 @@ export async function loadLists(
     drafts = drafts.not("id", "in", notArchived);
     published = published.not("id", "in", notArchived);
   }
+  if (pastOnly)
+    published = published.or(`date.is.null,date.lte.${localToday()}`);
   const [d, p] = await Promise.all([drafts, published]);
   if (d.error || p.error) throw new Error((d.error ?? p.error)!.message);
   return { drafts: asItems(kind, d.data), published: asItems(kind, p.data) };
+}
+
+/** Your finished workouts dated after today, soonest first, leaving out what you've archived. */
+export async function loadFutureWorkouts(
+  userId: string,
+  limit = 50,
+): Promise<ListItem[]> {
+  const archived = await loadArchivedIds("workout");
+  let query = createClient()
+    .from("workouts")
+    .select(listColumns("workout"))
+    .eq("status", "published")
+    .eq("author_id", userId)
+    .gt("date", localToday())
+    .order("date", { ascending: true })
+    .order("created_at", { ascending: true })
+    .limit(limit);
+  if (archived.length) query = query.not("id", "in", `(${archived.join(",")})`);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return asItems("workout", data);
 }
 
 /**
