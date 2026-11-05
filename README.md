@@ -18,7 +18,12 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     each timer's countdown (beeping through the last 10 seconds). The timer in use pins to the top
     when scrolled away, and the screen stays awake.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
-    choose again.
+    choose again. Each workout shows how many times it's been reused (counting archived copies).
+  - A finished workout is **public** by default: anyone signed in can see, like and reuse it. Its Q
+    can make it **private** on its page. **Likes:** one per person, on other people's public
+    workouts.
+- **Discover** shows public workouts from every Q, grouped as Most liked, Most reused, At your
+  region's AOs and Newest, with like buttons.
 - **Backblasts** are made from a finished workout with **Create backblast**, or from **New
   backblast**, which lists the finished, unarchived workouts that don't have a backblast yet to pick
   from, or starts one without a workout. The backblast holds
@@ -70,12 +75,14 @@ The app runs entirely in the browser, so access rules live in the database as ro
 (`supabase/migrations`). They hold no matter which app or client talks to Supabase:
 
 - Signed-out visitors can't read anything.
-- Signed-in users can read every profile, and every finished workout and backblast. Drafts are
-  visible only to their author.
+- Signed-in users can read every profile and every finished **public** workout. Private workouts,
+  drafts and **all backblasts** are visible only to their author.
+- Likes (`workout_likes`): you can like someone else's public workout once, and see only your own
+  likes; counts of likes and reuses come from `workout_stats()`, which returns totals only.
 - Only the author can edit or delete a workout or backblast.
 - A workout's notes (`workout_notes`) can be read and written only by the workout's author.
 - Archiving is personal (`workout_archives`, `backblast_archives`): it hides an item from your own
-  lists only.
+  lists only, and never changes whether a workout is public.
 
 ## Getting started
 

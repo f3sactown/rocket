@@ -99,6 +99,8 @@ export function fromWorkoutRow(row: WorkoutRow, notes?: string): Workout {
       return thangs.length ? thangText(thangs) : (row.thang ?? undefined);
     })(),
     thangs: parseThangs(row.thangs, row.thang),
+    visibility: row.visibility ?? "public",
+    reusedFrom: row.reused_from ?? undefined,
     notes: notes || undefined,
     announcements: row.announcements ?? undefined,
     wordsOfWisdom: row.words_of_wisdom ?? undefined,
@@ -131,6 +133,7 @@ export function toWorkoutInsert(
       ) as unknown as Json,
     announcements: text(workout.announcements),
     words_of_wisdom: text(workout.wordsOfWisdom),
+    reused_from: workout.reusedFrom ?? null,
   };
 }
 

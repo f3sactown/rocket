@@ -137,6 +137,8 @@ export type Database = {
           warmup: string | null;
           thang: string | null;
           thangs: Json;
+          visibility: "public" | "private";
+          reused_from: string | null;
           announcements: string | null;
           words_of_wisdom: string | null;
           created_at: string;
@@ -155,6 +157,8 @@ export type Database = {
           warmup?: string | null;
           thang?: string | null;
           thangs?: Json;
+          visibility?: "public" | "private";
+          reused_from?: string | null;
           announcements?: string | null;
           words_of_wisdom?: string | null;
           created_at?: string;
@@ -187,6 +191,22 @@ export type Database = {
         Insert: Database["public"]["Tables"]["exicon_entries"]["Row"];
         Update: Partial<Database["public"]["Tables"]["exicon_entries"]["Row"]>;
         Relationships: [];
+      };
+      workout_likes: {
+        Row: { user_id: string; workout_id: string; created_at: string };
+        Insert: { user_id?: string; workout_id: string; created_at?: string };
+        Update: Partial<
+          Database["public"]["Tables"]["workout_likes"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "workout_likes_workout_id_fkey";
+            columns: ["workout_id"];
+            isOneToOne: false;
+            referencedRelation: "workouts";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       workout_notes: {
         Row: {
@@ -321,7 +341,17 @@ export type Database = {
       };
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      workout_stats: {
+        Args: { p_ids: string[] };
+        Returns: {
+          workout_id: string;
+          likes: number;
+          reuses: number;
+          liked: boolean;
+        }[];
+      };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };

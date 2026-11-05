@@ -48,6 +48,8 @@ function NewWorkout({ user }: { user: CurrentUser }) {
           address: undefined,
           date: "",
           time: undefined,
+          // Counted as a reuse of the original.
+          reusedFrom: data.id,
         });
       });
   }, [fromId, user.id]);
