@@ -171,6 +171,22 @@ export type Database = {
           },
         ];
       };
+      exicon_entries: {
+        Row: {
+          id: string;
+          name: string;
+          description: string;
+          aliases: string[];
+          tags: string[];
+          is_routine: boolean;
+          video_url: string | null;
+          url: string;
+          synced_at: string;
+        };
+        Insert: Database["public"]["Tables"]["exicon_entries"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["exicon_entries"]["Row"]>;
+        Relationships: [];
+      };
       workout_notes: {
         Row: {
           workout_id: string;
