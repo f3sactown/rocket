@@ -47,6 +47,11 @@ export interface Backblast {
   visibility?: "public" | "private";
   /** For a workout made with Reuse, the workout it was copied from. */
   reusedFrom?: string;
+  /**
+   * For a reused workout, the Q who wrote the first one in the chain: a reuse of a reuse still
+   * credits the original author.
+   */
+  originalAuthorId?: string;
 }
 
 /**

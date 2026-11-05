@@ -139,6 +139,7 @@ export type Database = {
           thangs: Json;
           visibility: "public" | "private";
           reused_from: string | null;
+          original_author_id: string | null;
           announcements: string | null;
           words_of_wisdom: string | null;
           created_at: string;
@@ -159,6 +160,7 @@ export type Database = {
           thangs?: Json;
           visibility?: "public" | "private";
           reused_from?: string | null;
+          original_author_id?: string | null;
           announcements?: string | null;
           words_of_wisdom?: string | null;
           created_at?: string;
@@ -169,6 +171,13 @@ export type Database = {
           {
             foreignKeyName: "workouts_author_id_fkey";
             columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "workouts_original_author_id_fkey";
+            columns: ["original_author_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];

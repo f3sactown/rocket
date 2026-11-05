@@ -20,6 +20,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     when scrolled away, and the screen stays awake.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
     choose again. Each workout shows how many times it's been reused (counting archived copies).
+    A reused workout credits the Q who wrote the first one (`workouts.original_author_id`), even
+    when it's a reuse of a reuse: its page shows "Originally by" them.
   - A finished workout is **public** by default: anyone signed in can see, like and reuse it. Its Q
     can make it **private** on its page: it disappears for everyone else (Discover, Trending, lists
     and search) but keeps its likes and reuse count, which only its Q sees until it's public again. **Likes:** one per person, on other people's public
@@ -46,7 +48,12 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   what you've archived; **Search** finds workouts and backblasts by any word, with matches
   highlighted.
 - **Settings:** name, email, password, region, F3 or FiA wording, theme, accent color, the launch
-  animation, what Home shows, and swipe directions.
+  animation, what Home shows, and swipe directions. **Your data** exports everything you have
+  (settings, workouts with their notes, backblasts, saved templates, archive and likes) as a JSON
+  file, and imports one back: it shows what's new and, for workouts, backblasts or templates you
+  already have, lets you keep yours, replace them or keep both (settings are optional). **Reset
+  account** (type RESET to confirm) deletes all of that and restores default settings; your login
+  and name stay.
 
 ## Stack
 
