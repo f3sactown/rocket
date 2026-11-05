@@ -11,7 +11,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Workouts** are written first: Basics (title, AO, date, time), Introduction, Warm-o-rama,
   The Thang, Notes, Announcements and Words of Wisdom. The Workouts page lists only your own;
   others' public workouts are on Discover. Your finished workouts dated today or earlier show a
-  **Needs backblast** badge (in lists, on Home and on Discover) until a backblast from them is
+  **Needs backblast** badge (in lists and on Home, but never on Discover) until a backblast from them is
   finished; others' workouts never do.
   - The Thang can hold several thangs. Each can have a **timer** (Countdown, Stopwatch, AMRAP,
     Intervals or EMOM) and **music** (a link to a song or playlist, shown in the output as 🎵 Title 🎵
