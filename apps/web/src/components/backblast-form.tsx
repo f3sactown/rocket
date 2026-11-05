@@ -559,23 +559,13 @@ export function BackblastForm({
           </h2>
           {step.kind === "text" &&
             mode === "workout" &&
-            (step.name === "warmup" || step.name === "thang") && (
-              // The exercise and routine library, top right beside the templates. On The Thang it
-              // adds to the last thang.
+            step.name === "warmup" && (
+              // The exercise and routine library, top right beside the templates. (Each thang
+              // has its own, on The Thang.)
               <LibraryButton
-                onAdd={(text) => {
-                  if (step.name === "warmup")
-                    return set("warmup", appendText(backblast.warmup, text));
-                  const thangs = backblast.thangs?.length
-                    ? backblast.thangs
-                    : [{ text: backblast.thang ?? "" }];
-                  const last = thangs.length - 1;
-                  setThangs(
-                    thangs.map((t, i) =>
-                      i === last ? { ...t, text: appendText(t.text, text) } : t,
-                    ),
-                  );
-                }}
+                onAdd={(text) =>
+                  set("warmup", appendText(backblast.warmup, text))
+                }
               />
             )}
           {step.kind === "text" && !step.noTemplates && (
