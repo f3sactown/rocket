@@ -27,7 +27,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     can make it **private** on its page: it disappears for everyone else (Discover, Trending, lists
     and search) but keeps its likes and reuse count, which only its Q sees until it's public again. **Likes:** one per person, on other people's public
     workouts.
-- **Discover** shows public workouts from every Q, grouped as Trending (likes and reuses on the
+- **Discover** shows public workouts from every other Q (check **Include my workouts** to add yours), grouped as Trending (likes and reuses on the
   last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
   Newest, with like buttons. Settings → Public workouts chooses F3's, FiA's or both (the default),
   going by each author's region; authors with no region always show. Trending on Home follows it.
