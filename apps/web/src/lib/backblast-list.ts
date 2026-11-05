@@ -13,6 +13,8 @@ export interface ListItem {
   status: "draft" | "published";
   author_id: string;
   author: { name: string } | null;
+  /** The author's region, where it's been loaded (Discover). */
+  authorRegion?: string | null;
 }
 
 const TABLES = {
