@@ -6,10 +6,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 ## What it does
 
 - **Home:** your total posts and Qs from your region's sheet (with the date the sheet was last
-  updated), your drafts, trending workouts, and the most recent workouts and backblasts. Which of
+  updated), your drafts, trending workouts, and your most recent workouts and backblasts. Which of
   these show is chosen in Settings → Home screen (all but trending, to start).
 - **Workouts** are written first: Basics (title, AO, date, time), Introduction, Warm-o-rama,
-  The Thang, Notes, Announcements and Words of Wisdom.
+  The Thang, Notes, Announcements and Words of Wisdom. The Workouts page lists only your own;
+  others' public workouts are on Discover.
   - The Thang can hold several thangs. Each can have a **timer** (Countdown, Stopwatch, AMRAP,
     Intervals or EMOM) and **music** (a link to a song or playlist, shown in the output as 🎵 Title 🎵
     with the link on the next line).
