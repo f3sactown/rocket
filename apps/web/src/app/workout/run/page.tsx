@@ -2,6 +2,7 @@
 
 import { backblastParts, termsFor, type Workout } from "@rocket/core";
 import Link from "next/link";
+import { Linkify } from "@/components/linkify";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
@@ -150,7 +151,9 @@ function RunWorkout({ user }: { user: CurrentUser }) {
         <h2 className="text-[0.7em] font-semibold tracking-wider text-accent uppercase">
           {title}
         </h2>
-        <p className="leading-relaxed whitespace-pre-wrap">{text.trim()}</p>
+        <p className="leading-relaxed whitespace-pre-wrap">
+          <Linkify text={text.trim()} />
+        </p>
       </section>
     );
 
@@ -193,7 +196,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
         <h1 className="card-title">{workout.title}</h1>
         <div className={`flex flex-col gap-6 text-ink ${sizeClass}`}>
           <p className="leading-relaxed whitespace-pre-wrap text-ink-soft">
-            {where}
+            <Linkify text={where} />
           </p>
           {section("Introduction", workout.introduction)}
           {section(terms.warmup, workout.warmup)}
@@ -206,7 +209,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
                 <div key={index} className="flex flex-col gap-2">
                   {thang.text.trim() && (
                     <p className="leading-relaxed whitespace-pre-wrap">
-                      {thang.text.trim()}
+                      <Linkify text={thang.text.trim()} />
                     </p>
                   )}
                   {thang.music && (

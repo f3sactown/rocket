@@ -20,7 +20,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     with the link on the next line).
   - A workout's **Notes** are private to its Q: stored in their own table only the author can read,
     and left out of anything copied or shared.
-  - **Run workout** shows the whole workout to lead from, in Normal, Large or Extra large text, with
+  - **Run workout** shows the whole workout to lead from (web addresses are clickable links), in Normal, Large or Extra large text, with
     each timer's countdown (beeping through the last 10 seconds). The timer in use pins to the top
     when scrolled away, and the screen stays awake.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
