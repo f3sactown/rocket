@@ -7,11 +7,11 @@ import type { WorkoutStats } from "@/lib/workout-social";
 import { NeedsBackblastBadge } from "./backblast-list";
 import { WorkoutStatsBar } from "./workout-stats";
 
-/** "Tinman • F3 SacTown", or just the name when the author has no region (or it isn't loaded). */
+/** "Tinman · F3 SacTown", or just the name when the author has no region (or it isn't loaded). */
 function byline(workout: ListItem): string {
   return [workout.author?.name, workout.authorRegion]
     .filter(Boolean)
-    .join(" • ");
+    .join(" · ");
 }
 
 /**
