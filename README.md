@@ -206,7 +206,9 @@ PAX who post across several regions can choose **All F3 regions** or **All FiA r
 (stored as `all:f3` / `all:fia` in the account, with no single region on the profile). Then every
 region of that organization counts: AOs and PAX names come from all of them, regulars and total
 posts and Qs are added up, Discover shows an "At … AOs" group for each region with matching
-workouts, and the organization is locked to F3 or FiA.
+workouts, and the organization is locked to F3 or FiA. Their profile records the organization
+(`profiles.region_scope`), so on everyone's workout cards their workouts show the region the
+workout's AO belongs to.
 
 - The sheet must be shared so **anyone with the link can view** it.
 - Each region records which tabs and column headers hold its AOs, roster and attendance, and its

@@ -640,12 +640,6 @@ function OrganizationPicker({ user }: { user: CurrentUser }) {
           </button>
         ))}
       </div>
-      <p className="text-xs text-muted">
-        {(() => {
-          const t = termsFor(selected);
-          return `${t.warmup} · ${t.thang} · ${t.secondF}`;
-        })()}
-      </p>
       {lockedBy && (
         <p className="text-sm text-ink-soft">
           Set by your region choice ({lockedBy.name}). To change it, choose a

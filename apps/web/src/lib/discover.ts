@@ -1,5 +1,6 @@
 import type { Language } from "@rocket/core";
 import { asItems, listColumns, type ListItem } from "./backblast-list";
+import { loadRegions, loadSites } from "./regions";
 import { createClient } from "./supabase/client";
 import {
   loadWorkoutStats,
@@ -8,9 +9,24 @@ import {
 } from "./workout-social";
 
 /**
+ * Which region each AO belongs to, by AO name (lower case), for an organization's regions.
+ */
+async function aoRegions(language: Language): Promise<Map<string, string>> {
+  const regions = (await loadRegions()).filter((r) => r.language === language);
+  const byAo = new Map<string, string>();
+  for (const region of regions)
+    for (const site of await loadSites(region).catch(() => []))
+      if (!byAo.has(site.name.toLowerCase()))
+        byAo.set(site.name.toLowerCase(), region.name);
+  return byAo;
+}
+
+/**
  * Public workouts from everyone, newest first, with their like and reuse counts. A workout counts
- * as F3 or FiA by its author's region; only those from `sources` are kept, plus any whose author
- * has no region (so they can't be told apart).
+ * as F3 or FiA by its author's region (or, for an author who chose all of an organization's
+ * regions, that organization); only those from `sources` are kept, plus any whose author has no
+ * region (so they can't be told apart). For an author with all regions, the region shown is the one
+ * the workout's AO belongs to.
  */
 export async function loadPublicWorkouts(
   sources: Language[] = ["f3", "fia"],
@@ -21,7 +37,7 @@ export async function loadPublicWorkouts(
   const { data, error } = await createClient()
     .from("workouts")
     .select(
-      `${listColumns("workout")}, author_region:profiles!workouts_author_id_fkey(region:regions!profiles_region_id_fkey(language, name))`,
+      `${listColumns("workout")}, author_region:profiles!workouts_author_id_fkey(region_scope, region:regions!profiles_region_id_fkey(language, name))`,
     )
     .eq("status", "published")
     .eq("visibility", "public")
@@ -30,21 +46,39 @@ export async function loadPublicWorkouts(
     .limit(300);
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as unknown as {
+    ao: string;
     author_region: {
+      region_scope?: Language | null;
       region: { language: Language; name: string } | null;
     } | null;
   }[];
+  // Each AO's region, for authors who post across all of an organization's regions.
+  const scopes = [
+    ...new Set(rows.flatMap((r) => r.author_region?.region_scope ?? [])),
+  ];
+  const aoMaps = new Map(
+    await Promise.all(
+      scopes.map(async (l) => [l, await aoRegions(l)] as const),
+    ),
+  );
   const workouts = asItems(
     "workout",
     rows
       .filter((row) => {
-        const language = row.author_region?.region?.language;
+        const language =
+          row.author_region?.region?.language ??
+          row.author_region?.region_scope;
         return !language || sources.includes(language);
       })
-      .map(({ author_region, ...row }) => ({
-        ...row,
-        authorRegion: author_region?.region?.name ?? null,
-      })),
+      .map(({ author_region, ...row }) => {
+        const scope = author_region?.region_scope;
+        return {
+          ...row,
+          authorRegion: scope
+            ? (aoMaps.get(scope)?.get(row.ao.trim().toLowerCase()) ?? null)
+            : (author_region?.region?.name ?? null),
+        };
+      }),
   );
   return { workouts, stats: await loadWorkoutStats(workouts.map((w) => w.id)) };
 }

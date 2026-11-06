@@ -31,7 +31,9 @@ async function chooseRegion(
   const all = region && "all" in region ? region.all : null;
   const { error } = await supabase
     .from("profiles")
-    .update({ region_id: single?.id ?? null })
+    // Others' screens read the profile: one region, or which organization's regions (for showing
+    // each workout's region by its AO).
+    .update({ region_id: single?.id ?? null, region_scope: all })
     .eq("id", userId);
   if (error) return error.message;
   const language = single?.language ?? all;
