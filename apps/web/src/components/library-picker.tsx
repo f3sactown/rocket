@@ -235,14 +235,15 @@ export function LibraryBrowser({
       })),
     ];
   }, [regions.value]);
-  // Every tag but "Routine" (that's the Exercises / Routines switch), most used first.
+  // Every tag but "Routine" (that's the Exercises / Routines switch), in alphabetical order.
   const allTags = useMemo(() => {
-    const counts = new Map<string, number>();
+    const tags = new Set<string>();
     for (const entry of entries)
       for (const tag of entry.tags)
-        if (tag.toLowerCase() !== "routine")
-          counts.set(tag, (counts.get(tag) ?? 0) + 1);
-    return [...counts].sort((a, b) => b[1] - a[1]).map(([tag]) => tag);
+        if (tag.toLowerCase() !== "routine") tags.add(tag);
+    return [...tags].sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base", numeric: true }),
+    );
   }, [entries]);
 
   const results = useMemo(() => {
