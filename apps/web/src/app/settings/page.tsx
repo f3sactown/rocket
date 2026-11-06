@@ -277,6 +277,7 @@ function Settings({ user }: { user: CurrentUser }) {
         description="Whose public workouts Discover and Trending show, by the author's region. Saved to your account."
       >
         <PublicSourcesPicker sources={user.publicSources} />
+        <IncludeOwnSwitch on={user.discoverIncludeOwn} />
       </Section>
 
       <Section
@@ -312,6 +313,56 @@ function Settings({ user }: { user: CurrentUser }) {
         </button>
       </Section>
     </section>
+  );
+}
+
+/** Whether Discover includes your own workouts, with a My workouts section to compare them. */
+function IncludeOwnSwitch({ on: saved }: { on: boolean }) {
+  const [on, setOn] = useState(saved);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggle() {
+    const next = !on;
+    setOn(next);
+    setError(null);
+    const { error } = await createClient().auth.updateUser({
+      data: { discover_include_own: next, discover_own_asked: true },
+    });
+    if (error) {
+      setOn(!next);
+      setError(error.message);
+    }
+  }
+
+  const label = "Include my workouts on Discover";
+  return (
+    <div className="flex flex-col gap-1 border-t border-line pt-3">
+      <div className="flex items-center justify-between gap-3 py-1.5">
+        <span className="flex flex-col">
+          <span className="text-sm text-ink">{label}</span>
+          <span className="text-xs text-muted">
+            Adds a My workouts section to see how yours compare.
+          </span>
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          aria-label={label}
+          onClick={toggle}
+          className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors ${
+            on ? "border-accent/60 bg-accent" : "border-line-strong bg-panel"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 size-5.5 rounded-full bg-white shadow transition-[left] ${
+              on ? "left-[calc(100%-1.5rem)]" : "left-0.5"
+            }`}
+          />
+        </button>
+      </div>
+      {error && <p className="text-sm text-accent">{error}</p>}
+    </div>
   );
 }
 

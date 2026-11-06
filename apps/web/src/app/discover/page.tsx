@@ -7,6 +7,7 @@ import { WorkoutCards } from "@/components/workout-card";
 import type { ListItem } from "@/lib/backblast-list";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
 import { loadSites } from "@/lib/regions";
+import { createClient } from "@/lib/supabase/client";
 import { useLoad, useUserRegion } from "@/lib/use-region";
 import { NO_STATS, type WorkoutStats } from "@/lib/workout-social";
 
@@ -26,8 +27,8 @@ function Discover({ user }: { user: CurrentUser }) {
   const [workouts, setWorkouts] = useState<ListItem[] | null>(null);
   const [stats, setStats] = useState<Map<string, WorkoutStats>>(new Map());
   const [error, setError] = useState<string | null>(null);
-  // Your own workouts are left out unless you ask for them.
-  const [includeOwn, setIncludeOwn] = useState(false);
+  // Your own workouts are left out unless you include them (asked once here, or in Settings).
+  const includeOwn = user.discoverIncludeOwn;
   const region = useUserRegion();
   // Compared as text, since each sign-in refresh brings a new array.
   const sources = user.publicSources.join();
@@ -52,7 +53,18 @@ function Discover({ user }: { user: CurrentUser }) {
     const aos = new Set(
       (sites.value ?? []).map((site) => site.name.toLowerCase()),
     );
+    // Your own, best first, to compare how they're doing.
+    const mine = includeOwn
+      ? workouts
+          .filter((w) => w.author_id === user.id)
+          .sort(
+            (a, b) =>
+              statsOf(b).likes - statsOf(a).likes ||
+              statsOf(b).reuses - statsOf(a).reuses,
+          )
+      : [];
     return [
+      { title: "My workouts", items: mine, all: true },
       { title: "Trending", items: trending(shown, stats) },
       {
         title: "Most liked",
@@ -75,7 +87,10 @@ function Discover({ user }: { user: CurrentUser }) {
       { title: "Newest", items: shown },
     ]
       .filter((group) => group.title && group.items.length > 0)
-      .map((group) => ({ ...group, items: group.items.slice(0, PER_GROUP) }));
+      .map((group) => ({
+        ...group,
+        items: "all" in group ? group.items : group.items.slice(0, PER_GROUP),
+      }));
     // Sorting reads `stats`, which changes as people like things; keep the order stable by only
     // regrouping when the list itself loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -89,16 +104,8 @@ function Discover({ user }: { user: CurrentUser }) {
           Public workouts from other Qs. Like the ones you enjoy, and Reuse one
           to run it yourself.
         </p>
-        <label className="mt-2 flex items-center gap-2 self-start text-sm text-ink-soft">
-          <input
-            type="checkbox"
-            checked={includeOwn}
-            onChange={(e) => setIncludeOwn(e.target.checked)}
-            className="h-4 w-4 accent-[var(--color-accent)]"
-          />
-          Include my workouts
-        </label>
       </header>
+      {!user.discoverOwnAsked && <IncludeOwnPrompt />}
       {error ? (
         <p className="panel px-3 py-8 text-center text-accent">{error}</p>
       ) : !workouts ? (
@@ -126,5 +133,58 @@ function Discover({ user }: { user: CurrentUser }) {
         ))
       )}
     </section>
+  );
+}
+
+/**
+ * Asks once, without getting in the way, whether Discover should include your own workouts.
+ * Either answer is saved to your account (and can be changed in Settings → Public workouts).
+ */
+function IncludeOwnPrompt() {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function answer(include: boolean) {
+    setSaving(true);
+    setError(null);
+    const { error } = await createClient().auth.updateUser({
+      data: { discover_include_own: include, discover_own_asked: true },
+    });
+    if (error) {
+      setError(error.message);
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      role="status"
+      className="flex flex-col gap-3 rounded-2xl border border-accent/40 bg-accent-soft px-4 py-3"
+    >
+      <p className="text-sm text-ink">
+        Want your own public workouts on Discover too? You&apos;d get a{" "}
+        <span className="font-medium">My workouts</span> section to see how they
+        compare. You can change this later in Settings.
+      </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => answer(true)}
+          className="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+        >
+          Include mine
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => answer(false)}
+          className="link text-sm"
+        >
+          No thanks
+        </button>
+        {error && <span className="text-sm text-accent">{error}</span>}
+      </div>
+    </div>
   );
 }
