@@ -69,7 +69,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   mailer and standard template, no custom SMTP needed). The link opens `/reset-password` on any
   device, signed in for the reset, where you choose a new password. Supabase → Authentication →
   URL Configuration must have the site as the Site URL and under Redirect URLs.
-- **Settings:** name, email, password, region, F3 or FiA wording, theme, accent color (F3 red, FiA teal, blue, green, orange or violet), the launch
+- **Settings:** name, email, password, region, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
+  locked while you have one, and free to choose with no region or one you added), theme, accent color (F3 red, FiA teal, blue, green, orange or violet), the launch
   animation, what Home shows, whose public workouts show (and whether Discover includes yours),
   swipe directions, and **Sharing**: a copied or shared backblast from a public workout ends with
   a link to that workout asking PAX to like and reuse it (right above the hidden PAX list; on by

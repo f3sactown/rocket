@@ -20,6 +20,7 @@ import {
   ThemeSwitcher,
 } from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/client";
+import { useUserRegion } from "@/lib/use-region";
 
 export default function SettingsPage() {
   return (
@@ -247,10 +248,10 @@ function Settings({ user }: { user: CurrentUser }) {
       </Section>
 
       <Section
-        title="Language"
-        description="Which words the app uses, e.g. Warm-o-rama or Warm-up. Saved to your account."
+        title="Organization"
+        description="Whether you post with F3 or FiA. It also sets the words the app uses: F3 says Warm-o-rama, The Thang and Coffeeteria; FiA says Warm-up, The Workout and CoFiA. Saved to your account."
       >
-        <LanguagePicker language={user.language} />
+        <OrganizationPicker user={user} />
       </Section>
 
       <Section title="Appearance" description="Saved on this device.">
@@ -583,13 +584,20 @@ function SwipePicker({ swipeLeft }: { swipeLeft: SwipeAction }) {
 }
 
 /** F3 / FiA choice, saved to the account so it follows the user to every device. */
-function LanguagePicker({ language }: { language: Language }) {
+/**
+ * F3 or FiA. A shared region sets it (choosing the region chose the organization), so it's locked
+ * while you have one; with no region, or one you added yourself, you choose.
+ */
+function OrganizationPicker({ user }: { user: CurrentUser }) {
+  const region = useUserRegion();
   const [pending, setPending] = useState<Language | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const lockedBy = region && region.created_by !== user.id ? region : null;
+  const language = lockedBy ? lockedBy.language : user.language;
   const selected = pending ?? language;
 
   async function choose(value: Language) {
-    if (value === language) return;
+    if (lockedBy || value === language) return;
     setPending(value);
     setError(null);
     // The auth provider picks up the change and every screen switches words.
@@ -604,8 +612,11 @@ function LanguagePicker({ language }: { language: Language }) {
     <div className="flex flex-col gap-2">
       <div
         role="radiogroup"
-        aria-label="Language"
-        className="inline-flex gap-1 self-start rounded-full border border-line bg-panel p-1"
+        aria-label="Organization"
+        aria-disabled={lockedBy ? true : undefined}
+        className={`inline-flex gap-1 self-start rounded-full border border-line bg-panel p-1 ${
+          lockedBy ? "opacity-60" : ""
+        }`}
       >
         {LANGUAGES.map((option) => (
           <button
@@ -613,7 +624,7 @@ function LanguagePicker({ language }: { language: Language }) {
             type="button"
             role="radio"
             aria-checked={selected === option.value}
-            disabled={pending !== null}
+            disabled={pending !== null || region === undefined || !!lockedBy}
             onClick={() => choose(option.value)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               selected === option.value
@@ -631,6 +642,12 @@ function LanguagePicker({ language }: { language: Language }) {
           return `${t.warmup} · ${t.thang} · ${t.secondF}`;
         })()}
       </p>
+      {lockedBy && (
+        <p className="text-sm text-ink-soft">
+          Set by your region, {lockedBy.name}. To change it, choose a different
+          region (or no region) above.
+        </p>
+      )}
       {error && <p className="text-sm text-accent">{error}</p>}
     </div>
   );
