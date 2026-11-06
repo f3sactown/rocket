@@ -12,12 +12,13 @@ type Stage =
   | { kind: "done" };
 
 const EXPIRED =
-  "This reset link has expired or was already used. Ask for a new one from Sign in → Forgot password?, and open it on the same device.";
+  "This reset link has expired or was already used. Ask for a new one from Sign in → Forgot password?";
 
 /**
- * Where a password reset email lands. The link signs you in for the reset (Supabase's default
- * link carries a one-time code; a custom email template can send a token instead), then you
- * choose a new password.
+ * Where a password reset email lands. The link signs you in for the reset, then you choose a new
+ * password. Supabase's standard link returns with the session in the address (#access_token…),
+ * which works on any device; a one-time code (same browser) or a custom template's token_hash are
+ * handled too.
  */
 export default function ResetPasswordPage() {
   const [stage, setStage] = useState<Stage>({ kind: "checking" });
@@ -33,6 +34,17 @@ export default function ResetPasswordPage() {
 
     (async () => {
       if (failed) return setStage({ kind: "invalid", reason: EXPIRED });
+      // Supabase's standard link: the session itself, after the #.
+      const accessToken = hash.get("access_token");
+      const refreshToken = hash.get("refresh_token");
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error) return setStage({ kind: "invalid", reason: EXPIRED });
+        return setStage({ kind: "ready" });
+      }
       const tokenHash = params.get("token_hash");
       if (tokenHash) {
         // From an email template that sends the token itself (works on any device).
