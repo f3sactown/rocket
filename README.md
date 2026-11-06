@@ -61,6 +61,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. **Archive** lists
   what you've archived; **Search** finds workouts and backblasts by any word, with matches
   highlighted.
+- **Forgot password:** Sign in → **Forgot password?** emails a reset link (Supabase's built-in
+  mailer). It opens `/reset-password`, where you choose a new password and are signed in. The
+  default link must be opened on the device that asked for it; a "Reset Password" email template
+  that links to `/reset-password/?token_hash={{ .TokenHash }}&type=recovery` works on any device.
+  Supabase → Authentication → URL Configuration must list the site under Redirect URLs.
 - **Settings:** name, email, password, region, F3 or FiA wording, theme, accent color (F3 red, FiA teal, blue, green, orange or violet), the launch
   animation, what Home shows, whose public workouts show (and whether Discover includes yours),
   swipe directions, and **Sharing**: a copied or shared backblast from a public workout ends with
