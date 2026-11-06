@@ -32,18 +32,18 @@
 }
 
 /*
- * Library F3 and FiA badges in each organization's color, except when that color is the accent:
- * then the badge turns violet so it doesn't read as an accent highlight.
+ * Library F3 and FiA badges in each organization's color, except when that color is the accent,
+ * so the badge doesn't read as an accent highlight: then F3 turns orange and FiA blue.
  */
 :root {
-  --badge-f3: #a78bfa;
+  --badge-f3: #fb923c;
   --badge-fia: #2dd4bf;
 }
 :root[data-accent] {
   --badge-f3: #e0544a;
 }
 :root[data-accent="fia"] {
-  --badge-fia: #a78bfa;
+  --badge-fia: #60a5fa;
 }
 
 /* Rocket trim per accent (see ACCENTS in lib/theme.ts). F3 red is the default. */
