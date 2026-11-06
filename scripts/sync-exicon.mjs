@@ -1,6 +1,7 @@
 // Copies the exercise and routine Library into Supabase, once a week, from two sources:
 //   - F3: F3 Nation's Exicon on the F3 Codex (the list its Exicon page loads).
-//   - FiA: FiA's Exicon, a Google Sheet shared so anyone with the link can view it.
+//   - FiA: FiA's Exicon ("Updated FiA Exicon"), a Google Sheet shared so anyone with the link
+//     can view it.
 // Runs in GitHub Actions (.github/workflows/sync-exicon.yml) with the service-role key, which can
 // replace the read-only `exicon_entries` table. Each source is replaced on its own, so one failing
 // leaves the other (and its own previous copy) in place.
@@ -17,8 +18,12 @@ const EXICON_URL =
   process.env.EXICON_URL ?? "https://codex.f3nation.com/api/exicon";
 const CODEX = "https://codex.f3nation.com";
 const SHEETS_BASE = process.env.SHEETS_BASE || "https://docs.google.com";
-/** FiA's Exicon. Its Lexicon tab has Name, Category and Description; Lexirades 21 adds more. */
-const FIA_SHEET = "1-aBi3UGOwhGChtKEFdVjikbqfcCWP35mcoKqqxqKssI";
+/**
+ * FiA's Exicon ("Updated FiA Exicon"). Its "FiA Nation Alphabetical" tab has no header row: each
+ * row is a name, a category or focus (e.g. "Arms/Shoulders", "Routine", "Term") and a description.
+ */
+const FIA_SHEET = "1twkcFAxUQHbKCQBnQSFxqMOKJ7kOXsDoQcJQsW37Efg";
+const FIA_TAB = "FiA Nation Alphabetical";
 const FIA_URL = `https://docs.google.com/spreadsheets/d/${FIA_SHEET}/edit`;
 
 const ENTITIES = {
@@ -166,11 +171,14 @@ export async function readF3() {
   return enough(entries, 50, "F3");
 }
 
-/** Reads every row of a sheet tab with Google's Visualization API, keyed by column header. */
-async function readTab(sheetId, tab) {
+/**
+ * Reads every row of a sheet tab with Google's Visualization API: keyed by column header, or (for
+ * a tab with no header row, `headers` 0) as plain arrays of cell values.
+ */
+async function readTab(sheetId, tab, headers = 1) {
   const params = new URLSearchParams({
     tqx: "out:json",
-    headers: "1",
+    headers: String(headers),
     sheet: tab,
     tq: "select *",
   });
@@ -188,6 +196,10 @@ async function readTab(sheetId, tab) {
   if (result.status === "error")
     throw new Error(
       result.errors?.[0]?.detailed_message ?? "FiA Exicon query failed",
+    );
+  if (!headers)
+    return result.table.rows.map((row) =>
+      result.table.cols.map((_, i) => String(row.c?.[i]?.v ?? "").trim()),
     );
   const labels = result.table.cols.map((col) =>
     String(col.label ?? "")
@@ -210,26 +222,42 @@ const slug = (text) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
+/** FiA focus words, as F3's tag names where they mean the same thing. */
+const FIA_TAG_NAMES = [
+  [/^abs?$/, "Core"],
+  [/^warm|^wamup/, "Warm-Up"],
+  [/^full[- ]?body$/, "Full Body"],
+  [/^cool/, "Cooldown"],
+];
+
 /**
- * Tags for a FiA category, matching F3's tag names where they mean the same thing. Returns null
- * for a TERM (vocabulary, not an exercise), which is left out.
+ * Tags for a FiA category such as "Arms/Shoulders", "Routine/Full-body" or "Partner Routine":
+ * each part becomes a tag, using F3's tag names where they mean the same thing ("Abs" is Core).
+ * "Exercise" adds none. Returns null for a Term (vocabulary, not an exercise), which is left out.
  */
 export function fiaTags(category) {
   const c = category.toLowerCase().trim();
   if (!c || c === "term") return null;
   const tags = [];
-  if (c.includes("ab")) tags.push("Core");
-  if (c.includes("warm")) tags.push("Warm-Up");
-  if (c.includes("partner")) tags.push("Partner");
-  if (c.includes("routine")) tags.push("Routine");
-  return tags;
+  for (const part of c.split(/[/,&]|\s+(?=routine)/)) {
+    const word = part.trim();
+    if (!word || word === "exercise") continue;
+    const known = FIA_TAG_NAMES.find(([pattern]) => pattern.test(word));
+    tags.push(
+      known
+        ? known[1]
+        : word.replace(/(^|[\s-])([a-z])/g, (m) => m.toUpperCase()),
+    );
+  }
+  return [...new Set(tags)];
 }
 
 /** FiA's Exicon, from its Google Sheet. */
 export async function readFia() {
   const entries = new Map();
   const add = (name, description, tags) => {
-    const clean = oneLine(name);
+    // Some names end in "*" in the sheet; it isn't part of the name.
+    const clean = oneLine(name).replace(/\s*\*+$/, "");
     const id = `fia-${slug(clean)}`;
     if (!clean || !slug(clean) || entries.has(id)) return;
     entries.set(id, {
@@ -243,16 +271,15 @@ export async function readFia() {
       url: FIA_URL,
     });
   };
-  for (const row of await readTab(FIA_SHEET, "Lexicon")) {
-    const tags = fiaTags(row.category ?? "");
-    if (tags) add(row.name ?? "", row.description ?? "", tags);
+  for (const [name = "", category = "", description = ""] of await readTab(
+    FIA_SHEET,
+    FIA_TAB,
+    0,
+  )) {
+    const tags = fiaTags(category);
+    if (tags) add(name, description, tags);
   }
-  // Exercises collected for the 2021 Lexirades.
-  for (const row of await readTab(FIA_SHEET, "lexirades 21"))
-    add(row["lexirade exercise"] ?? "", row.description ?? "", [
-      "Lexirades 21",
-    ]);
-  return enough([...entries.values()], 20, "FiA");
+  return enough([...entries.values()], 100, "FiA");
 }
 
 async function main() {
