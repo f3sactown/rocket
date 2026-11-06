@@ -47,7 +47,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   its own copy of the workout's sections, which can be edited without changing the workout
   (**Update from workout** copies it again). Its pages are Workout, Notes, Name-o-rama (Qs and
   PAX, with roster suggestions and the AO's regulars), Announcements (the backblast's own, not
-  copied from the workout), Coffeeteria (CofFiA in FiA wording) and Review.
+  copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review.
   - A backblast can't be finished before its workout's date.
   - **Copy** and **Share** produce Slack-ready text (Event Data, Workout Details, COT), ending with a
     plain comma-separated list of everyone who posted.

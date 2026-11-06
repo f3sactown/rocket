@@ -13,7 +13,7 @@ export interface Terms {
   beatdown: string;
   warmup: string;
   thang: string;
-  /** The backblast's coffee section: F3's Coffeeteria, FiA's CofFiA. */
+  /** The backblast's coffee section: F3's Coffeeteria, FiA's CoFiA. */
   secondF: string;
 }
 
@@ -30,7 +30,7 @@ const TERMS: Record<Language, Terms> = {
     beatdown: "workout",
     warmup: "Warm-up",
     thang: "The Workout",
-    secondF: "CofFiA",
+    secondF: "CoFiA",
   },
 };
 

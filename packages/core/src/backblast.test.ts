@@ -194,7 +194,7 @@ describe("formatBackblast", () => {
 });
 
 describe("FiA vocabulary", () => {
-  it("uses Warm-up, The Workout and CofFiA", () => {
+  it("uses Warm-up, The Workout and CoFiA", () => {
     const fia = formatBackblast(
       {
         ...base,
@@ -206,7 +206,7 @@ describe("FiA vocabulary", () => {
     );
     expect(fia).toContain("Warm-up:\nSSH x20");
     expect(fia).toContain("The Workout:\n11s on the hill");
-    expect(fia).toContain("CofFiA:\nCoffee");
+    expect(fia).toContain("CoFiA:\nCoffee");
     expect(fia).not.toMatch(/Warm-o-rama|Thang|Coffeeteria/);
   });
 
