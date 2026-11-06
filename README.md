@@ -42,7 +42,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   like buttons. Trending on Home follows the From choice, and
   scrolls sideways the same way. The rows' scrollbars are thin and faint, with no arrows.
 - **PAX** (in the menu, under Search) lists everyone on your region's roster (or every region's,
-  when you've chosen all regions) as tiles in alphabetical order, with a search box that matches
+  when you've chosen all regions) as tiles in alphabetical order (three across on a phone, four on larger screens), with a search box that matches
   names. Each tile shows the PAX's regions, posts and Qs (from the synced region stats) and the
   total likes and reuses on their public Rocket workouts, with the same heart and reuse icons as
   workout tiles. A **From** picker of regions, in each
