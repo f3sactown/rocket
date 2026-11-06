@@ -44,9 +44,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **PAX** (in the menu, under Search) lists everyone on your region's roster (or every region's,
   when you've chosen all regions) as tiles in alphabetical order, with a search box that matches
   names. Each tile shows the PAX's regions, posts and Qs (from the synced region stats) and the
-  total likes and reuses on their public Rocket workouts. A **From** picker of regions, in each
+  total likes and reuses on their public Rocket workouts, with the same heart and reuse icons as
+  workout tiles. A **From** picker of regions, in each
   region's color, narrows the list and the totals; the choice is saved to your account. A tile
-  opens the PAX's profile: their stats per region and their Trending and Recent public workouts.
+  opens the PAX's profile: posts, Qs, likes and reuses in one row on top, their stats per region and their Trending and Recent public workouts.
 - **Backblasts** are made from a finished workout with **Create backblast**, or from **New
   backblast**, which lists your finished, unarchived workouts that don't have a backblast yet to
   pick from, or starts one without a workout. Only a workout's Q writes its backblast, so other

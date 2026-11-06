@@ -63,7 +63,7 @@ function PaxProfile({ user }: { user: CurrentUser }) {
       )}
       {entry && (
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-4 gap-2">
             {[
               ["Posts", entry.posts],
               ["Qs", entry.qs],
@@ -72,13 +72,13 @@ function PaxProfile({ user }: { user: CurrentUser }) {
             ].map(([label, value]) => (
               <div
                 key={label}
-                className="flex flex-col items-center gap-1 rounded-2xl border py-4"
+                className="flex min-w-0 flex-col items-center gap-0.5 rounded-2xl border py-3"
                 style={{ borderColor: "var(--accent)" }}
               >
-                <span className="font-mono text-3xl text-ink tabular-nums">
+                <span className="font-mono text-2xl text-ink tabular-nums">
                   {value}
                 </span>
-                <span className="text-sm text-ink-soft">{label}</span>
+                <span className="text-xs text-ink-soft">{label}</span>
               </div>
             ))}
           </div>

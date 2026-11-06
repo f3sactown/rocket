@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { Highlight } from "@/components/highlight";
+import { HeartIcon, ReuseIcon } from "@/components/icons";
 import { SourceChips } from "@/components/source-chips";
 import { loadAllPax } from "@/lib/pax";
 import { regionColors } from "@/lib/regions";
@@ -135,22 +136,43 @@ function Pax({ user }: { user: CurrentUser }) {
                       </span>
                     ))}
                   </span>
-                  <span className="mt-auto grid grid-cols-2 gap-x-3 gap-y-0.5 pt-1 text-xs text-ink-soft">
-                    {(
-                      [
-                        [p.posts, "posts"],
-                        [p.qs, "Qs"],
-                        [p.likes, "likes"],
-                        [p.reuses, "reuses"],
-                      ] as const
-                    ).map(([value, label]) => (
-                      <span key={label}>
-                        <span className="mr-1 font-mono text-sm text-ink tabular-nums">
-                          {value}
+                  <span className="mt-auto flex flex-col gap-1 pt-1 text-xs text-ink-soft">
+                    <span className="flex gap-3">
+                      {(
+                        [
+                          [p.posts, "posts"],
+                          [p.qs, "Qs"],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <span key={label}>
+                          <span className="mr-1 font-mono text-sm text-ink tabular-nums">
+                            {value}
+                          </span>
+                          {label}
                         </span>
-                        {label}
+                      ))}
+                    </span>
+                    {/* Likes and reuses as on workout tiles: heart and reuse icons with the counts. */}
+                    <span className="flex items-center gap-4">
+                      <span
+                        className="inline-flex items-center gap-1.5"
+                        title={`${p.likes} ${p.likes === 1 ? "like" : "likes"}`}
+                      >
+                        <span className="text-accent">
+                          <HeartIcon filled={p.likes > 0} />
+                        </span>
+                        {p.likes}
                       </span>
-                    ))}
+                      <span
+                        className="inline-flex items-center gap-1.5"
+                        title={`${p.reuses} ${p.reuses === 1 ? "reuse" : "reuses"}`}
+                      >
+                        <span className="text-accent">
+                          <ReuseIcon />
+                        </span>
+                        {p.reuses}
+                      </span>
+                    </span>
                   </span>
                 </Link>
               </li>
