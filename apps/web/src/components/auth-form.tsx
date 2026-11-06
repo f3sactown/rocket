@@ -8,7 +8,7 @@ import { ArrowIcon } from "./icons";
 import { setAccent } from "./theme-switcher";
 
 export function AuthForm() {
-  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
+  const [mode, setMode] = useState<"sign-in" | "sign-up" | "forgot">("sign-in");
   const [message, setMessage] = useState<{
     text: string;
     error: boolean;
@@ -26,6 +26,19 @@ export function AuthForm() {
     const supabase = createClient();
     setPending(true);
     setMessage(null);
+
+    if (mode === "forgot") {
+      // The emailed link opens the reset page, which asks for a new password.
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH}/reset-password/`,
+      });
+      setPending(false);
+      if (error) return setMessage({ text: error.message, error: true });
+      return setMessage({
+        text: "If there's an account for that email, a link to reset its password is on its way. Open it on this device.",
+        error: false,
+      });
+    }
 
     if (mode === "sign-up") {
       const region = regions.value?.find((r) => r.id === form.get("region"));
@@ -65,7 +78,11 @@ export function AuthForm() {
       <header className="flex items-start justify-between gap-4">
         <h1 className="card-title">Rocket</h1>
         <span className="status mt-2">
-          {mode === "sign-in" ? "Sign in" : "Sign up"}
+          {mode === "sign-in"
+            ? "Sign in"
+            : mode === "sign-up"
+              ? "Sign up"
+              : "Reset password"}
         </span>
       </header>
 
@@ -89,19 +106,38 @@ export function AuthForm() {
             className="input"
           />
         </label>
-        <label className="label flex flex-col gap-1.5">
-          Password
-          <input
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            autoComplete={
-              mode === "sign-in" ? "current-password" : "new-password"
-            }
-            className="input"
-          />
-        </label>
+        {mode === "forgot" ? (
+          <p className="text-sm text-ink-soft">
+            Enter your account&apos;s email and we&apos;ll send a link to set a
+            new password.
+          </p>
+        ) : (
+          <label className="label flex flex-col gap-1.5">
+            Password
+            <input
+              name="password"
+              type="password"
+              required
+              minLength={8}
+              autoComplete={
+                mode === "sign-in" ? "current-password" : "new-password"
+              }
+              className="input"
+            />
+          </label>
+        )}
+        {mode === "sign-in" && (
+          <button
+            type="button"
+            onClick={() => {
+              setMessage(null);
+              setMode("forgot");
+            }}
+            className="link -mt-2 self-end text-sm"
+          >
+            Forgot password?
+          </button>
+        )}
         {message && (
           <p
             className={`text-sm ${message.error ? "text-accent" : "text-ink-soft"}`}
@@ -113,16 +149,27 @@ export function AuthForm() {
 
       <button type="submit" disabled={pending} className="btn w-full">
         <ArrowIcon />
-        {pending ? "…" : mode === "sign-in" ? "Sign in" : "Create account"}
+        {pending
+          ? "…"
+          : mode === "sign-in"
+            ? "Sign in"
+            : mode === "sign-up"
+              ? "Create account"
+              : "Send reset link"}
       </button>
       <button
         type="button"
         className="link -mt-2 self-center"
-        onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
+        onClick={() => {
+          setMessage(null);
+          setMode(mode === "sign-in" ? "sign-up" : "sign-in");
+        }}
       >
         {mode === "sign-in"
           ? "Need an account? Sign up"
-          : "Have an account? Sign in"}
+          : mode === "sign-up"
+            ? "Have an account? Sign in"
+            : "Back to sign in"}
       </button>
     </form>
   );
