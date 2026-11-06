@@ -20,8 +20,13 @@ import {
   type Backblast,
 } from "@rocket/core";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { loadRoster, loadSites, nextDateOn, sitesByDay } from "@/lib/regions";
-import { useLoad, useUserRegion } from "@/lib/use-region";
+import {
+  loadRosterIn,
+  loadSitesIn,
+  nextDateOn,
+  sitesByDay,
+} from "@/lib/regions";
+import { useLoad, useRegionScope } from "@/lib/use-region";
 import { useWorkoutLink } from "@/lib/workout-link";
 import { AttendanceInput } from "./attendance-input";
 import { LibraryButton } from "./library-picker";
@@ -277,11 +282,15 @@ export function BackblastForm({
   const workoutLink = useWorkoutLink(
     mode === "backblast" ? backblast.workoutId : undefined,
   );
-  // The user's region's sheet supplies AO suggestions (with locations) and PAX names.
-  const region = useUserRegion();
-  const sites = useLoad(region ? () => loadSites(region) : null, [region?.id]);
-  const roster = useLoad(region ? () => loadRoster(region) : null, [
-    region?.id,
+  // The user's region's sheet supplies AO suggestions (with locations) and PAX names; with "all F3
+  // (or FiA) regions", every such region's do.
+  const scope = useRegionScope();
+  const scopeKey = scope?.regions.map((r) => r.id).join() ?? "";
+  const sites = useLoad(scope ? () => loadSitesIn(scope.regions) : null, [
+    scopeKey,
+  ]);
+  const roster = useLoad(scope ? () => loadRosterIn(scope.regions) : null, [
+    scopeKey,
   ]);
   // An AO typed by hand, for one that isn't on the region's list.
   const [typingAo, setTypingAo] = useState(false);
@@ -695,9 +704,9 @@ export function BackblastForm({
               onChange={(qs) => set("q", joinQs(qs))}
               roster={roster.value}
             />
-            {region && (
+            {scope && (
               <Regulars
-                region={region}
+                regions={scope.regions}
                 ao={backblast.ao}
                 qs={qNames(backblast)}
                 attendees={backblast.attendees}

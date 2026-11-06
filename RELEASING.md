@@ -7,7 +7,7 @@ the root `package.json` (and mirrored into each workspace package).
 
 | Phase   | Version looks like | Meaning                                          |
 | ------- | ------------------ | ------------------------------------------------ |
-| alpha   | `0.1.0-alpha.3`    | Still being built; not ready for outside testers |
+| alpha   | `0.1.0-alpha.4`    | Still being built; not ready for outside testers |
 | beta    | `0.1.0-beta.1`     | Feature-complete enough for others to test       |
 | rc      | `0.1.0-rc.1`       | Release candidate                                |
 | release | `0.1.0`, `1.0.0`   | Stable                                           |

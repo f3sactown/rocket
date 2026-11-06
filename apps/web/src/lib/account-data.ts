@@ -562,11 +562,12 @@ async function importSettings(
       (ACCOUNT_KEYS as readonly string[]).includes(k),
     ),
   );
-  // The region may not exist here; then the profile keeps none.
+  // The region may not exist here; then the profile keeps none. "All F3 (or FiA) regions" has no
+  // single region on the profile.
   let regionId =
     typeof account.region_id === "string" ? account.region_id : null;
   const profile: { name?: string; region_id: string | null } = {
-    region_id: regionId,
+    region_id: regionId?.startsWith("all:") ? null : regionId,
   };
   if (typeof account.name === "string" && account.name.trim())
     profile.name = account.name.trim();

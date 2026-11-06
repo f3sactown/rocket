@@ -1,7 +1,7 @@
 "use client";
 
 import { attendeeFromName, type Attendee } from "@rocket/core";
-import { loadRegulars, REGULARS_MONTHS, type Region } from "@/lib/regions";
+import { loadRegularsIn, REGULARS_MONTHS, type Region } from "@/lib/regions";
 import { useLoad } from "@/lib/use-region";
 
 /**
@@ -9,13 +9,14 @@ import { useLoad } from "@/lib/use-region";
  * Anyone already listed (or the Q) is left out.
  */
 export function Regulars({
-  region,
+  regions,
   ao,
   qs,
   attendees,
   onAdd,
 }: {
-  region: Region;
+  /** The user's region, or every region of their organization. */
+  regions: Region[];
   ao: string;
   /** The Qs, left out like anyone already listed. */
   qs: string[];
@@ -23,10 +24,10 @@ export function Regulars({
   onAdd: (names: string[]) => void;
 }) {
   const aoName = ao.trim();
-  const regulars = useLoad(aoName ? () => loadRegulars(region, aoName) : null, [
-    region.id,
-    aoName.toLowerCase(),
-  ]);
+  const regulars = useLoad(
+    aoName ? () => loadRegularsIn(regions, aoName) : null,
+    [regions.map((r) => r.id).join(), aoName.toLowerCase()],
+  );
   if (!aoName) return null;
 
   const listed = new Set(

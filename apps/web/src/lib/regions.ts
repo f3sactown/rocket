@@ -453,3 +453,83 @@ export function regionColors(regions: Region[]): Map<string, string> {
     ]),
   );
 }
+
+/**
+ * Runs a load for each region and combines what comes back. A region that fails is skipped; the
+ * load fails only if every region does.
+ */
+async function acrossRegions<T, R>(
+  regions: Region[],
+  load: (region: Region) => Promise<T>,
+  combine: (results: T[]) => R,
+): Promise<R> {
+  const settled = await Promise.allSettled(regions.map(load));
+  const ok = settled.flatMap((s) =>
+    s.status === "fulfilled" ? [s.value] : [],
+  );
+  if (regions.length && !ok.length)
+    throw (settled[0] as PromiseRejectedResult).reason;
+  return combine(ok);
+}
+
+/** Every AO in these regions, by name (the first region's wins if two share a name). */
+export function loadSitesIn(regions: Region[]): Promise<Site[]> {
+  return acrossRegions(regions, loadSites, (lists) => {
+    const byName = new Map<string, Site>();
+    for (const site of lists.flat())
+      if (!byName.has(site.name.toLowerCase()))
+        byName.set(site.name.toLowerCase(), site);
+    return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
+  });
+}
+
+/** Every PAX name on these regions' rosters, once each, sorted. */
+export function loadRosterIn(regions: Region[]): Promise<string[]> {
+  return acrossRegions(regions, loadRoster, (lists) =>
+    [...new Set(lists.flat())].sort((a, b) => a.localeCompare(b)),
+  );
+}
+
+/** Who has posted at an AO lately across these regions, most posts first. */
+export function loadRegularsIn(
+  regions: Region[],
+  ao: string,
+): Promise<Regular[]> {
+  return acrossRegions(
+    regions,
+    (region) => loadRegulars(region, ao),
+    (lists) => {
+      const posts = new Map<string, number>();
+      for (const r of lists.flat())
+        posts.set(r.name, (posts.get(r.name) ?? 0) + r.posts);
+      return [...posts]
+        .map(([name, count]) => ({ name, posts: count }))
+        .sort((a, b) => b.posts - a.posts || a.name.localeCompare(b.name));
+    },
+  );
+}
+
+/** A PAX's posts and Qs added up across these regions. */
+export function loadPaxStatsIn(
+  regions: Region[],
+  name: string,
+): Promise<PaxStats> {
+  return acrossRegions(
+    regions,
+    (region) => loadPaxStats(region, name),
+    (all) => ({
+      posts: all.reduce((sum, s) => sum + s.posts, 0),
+      qs: all.reduce((sum, s) => sum + s.qs, 0),
+    }),
+  );
+}
+
+/** The newest post date across these regions. */
+export function loadLatestPostIn(regions: Region[]): Promise<string | null> {
+  return acrossRegions(regions, loadLatestPost, (dates) =>
+    dates.reduce<string | null>(
+      (latest, d) => (d && (!latest || d > latest) ? d : latest),
+      null,
+    ),
+  );
+}

@@ -17,11 +17,11 @@ import { loadPublicWorkouts, trending } from "@/lib/discover";
 import type { WorkoutStats } from "@/lib/workout-social";
 import {
   endMinutes,
-  loadLatestPost,
-  loadPaxStats,
+  loadLatestPostIn,
+  loadPaxStatsIn,
   startMinutes,
 } from "@/lib/regions";
-import { useLoad, useUserRegion } from "@/lib/use-region";
+import { useLoad, useRegionScope } from "@/lib/use-region";
 
 export default function Home() {
   return <SignedIn>{(user) => <HomePage user={user} />}</SignedIn>;
@@ -252,15 +252,17 @@ function Recent({
 
 /** Your total posts and Qs from your region's sheet, big and outlined in the accent color. */
 function Totals({ user }: { user: CurrentUser }) {
-  const region = useUserRegion();
-  const stats = useLoad(region ? () => loadPaxStats(region, user.name) : null, [
-    region?.id,
-    user.name,
+  // Your region, or (with "all F3 or FiA regions") every one of them added up.
+  const scope = useRegionScope();
+  const key = scope?.regions.map((r) => r.id).join() ?? "";
+  const stats = useLoad(
+    scope ? () => loadPaxStatsIn(scope.regions, user.name) : null,
+    [key, user.name],
+  );
+  const latest = useLoad(scope ? () => loadLatestPostIn(scope.regions) : null, [
+    key,
   ]);
-  const latest = useLoad(region ? () => loadLatestPost(region) : null, [
-    region?.id,
-  ]);
-  if (region === null)
+  if (scope === null)
     return (
       <Link href="/settings" className="link">
         Choose your region in Settings to see your posts and Qs →
@@ -291,7 +293,7 @@ function Totals({ user }: { user: CurrentUser }) {
       <p className="text-center text-xs text-muted">
         {stats.error
           ? `Totals unavailable: ${stats.error}`
-          : (region?.name ?? "")}
+          : (scope?.label ?? "")}
         {latest.value && (
           <span className="block">Updated {formatDate(latest.value)}</span>
         )}
