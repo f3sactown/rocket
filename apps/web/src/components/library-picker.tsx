@@ -336,15 +336,9 @@ export function LibraryBrowser({
         ))}
       </div>
       {allTags.length > 0 && (
-        <div
-          aria-label="Tags"
-          className="-mx-4 flex shrink-0 gap-1.5 overflow-x-auto px-4 pb-1"
-        >
-          {/* Chosen tags first, so they're always in view. */}
-          {[
-            ...allTags.filter((t) => tags.includes(t)),
-            ...allTags.filter((t) => !tags.includes(t)),
-          ].map((tag) => {
+        <div aria-label="Tags" className="flex shrink-0 flex-wrap gap-1.5">
+          {/* Every tag in view, wrapping onto more rows; each keeps its place when chosen. */}
+          {allTags.map((tag) => {
             const on = tags.includes(tag);
             return (
               <button
