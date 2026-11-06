@@ -36,7 +36,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   workouts. With yours included, a **My workouts** section ranks them by likes, then reuses. The
   groups are Trending (likes and reuses on the
   last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
-  Newest, as tiles naming each author and their region, with like buttons. Settings → Public workouts chooses F3's, FiA's or both (the default),
+  Newest, each a row of tiles that scrolls sideways, naming each author and their region, with
+  like buttons. Settings → Public workouts chooses F3's, FiA's or both (the default),
   going by each author's region; authors with no region always show. Trending on Home follows it.
 - **Backblasts** are made from a finished workout with **Create backblast**, or from **New
   backblast**, which lists the finished, unarchived workouts that don't have a backblast yet to pick
