@@ -35,13 +35,13 @@ export default function WorkoutPage() {
   );
 }
 
-/** The original author's name and, when they have one, their region: "Tinman • F3 SacTown". */
+/** The original author's name and, when they have one, their region: "Tinman · F3 SacTown". */
 function originalAuthor(
   author: { name: string; region?: { name: string } | null } | null | undefined,
 ): string {
   if (!author) return "a former member";
   return author.region?.name
-    ? `${author.name} • ${author.region.name}`
+    ? `${author.name} · ${author.region.name}`
     : author.name;
 }
 
