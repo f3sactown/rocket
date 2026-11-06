@@ -2,7 +2,7 @@ export type ThemePreference = "light" | "dark" | "system";
 
 export const THEME_STORAGE_KEY = "rocket-theme";
 
-export type Accent = "f3" | "fia" | "blue" | "green" | "orange";
+export type Accent = "f3" | "fia" | "blue" | "green" | "orange" | "violet";
 
 export const ACCENT_STORAGE_KEY = "rocket-accent";
 
@@ -56,6 +56,12 @@ export const ACCENTS: {
     swatch: "#fb923c",
     rocket: { light: "#fcc08a", mid: "#b4642a", dark: "#7a421b" },
   },
+  {
+    value: "violet",
+    label: "Violet",
+    swatch: "#a78bfa",
+    rocket: { light: "#c4b5fd", mid: "#6d4bb8", dark: "#4a3380" },
+  },
 ];
 
 /**
@@ -71,7 +77,7 @@ export const themeScript = `(() => {
     var light = p === "light" || (p !== "dark" && matchMedia("(prefers-color-scheme: light)").matches);
     root.dataset.theme = light ? "light" : "dark";
     var a = localStorage.getItem("${ACCENT_STORAGE_KEY}");
-    if (${JSON.stringify(["fia", "blue", "green", "orange"])}.indexOf(a) >= 0) root.dataset.accent = a;
+    if (${JSON.stringify(["fia", "blue", "green", "orange", "violet"])}.indexOf(a) >= 0) root.dataset.accent = a;
     if (localStorage.getItem("${SPLASH_STORAGE_KEY}") === "off") root.dataset.splash = "off";
   } catch (e) {}
 })();`;
