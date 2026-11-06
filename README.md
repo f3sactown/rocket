@@ -202,6 +202,12 @@ Rocket uses it to list AOs by weekday (filling in their location, time and next 
 names, show the regulars at an AO over the last 3 months, show a user's total posts and Qs, and
 show the newest post date in the attendance records.
 
+PAX who post across several regions can choose **All F3 regions** or **All FiA regions** instead
+(stored as `all:f3` / `all:fia` in the account, with no single region on the profile). Then every
+region of that organization counts: AOs and PAX names come from all of them, regulars and total
+posts and Qs are added up, Discover shows an "At … AOs" group for each region with matching
+workouts, and the organization is locked to F3 or FiA.
+
 - The sheet must be shared so **anyone with the link can view** it.
 - Each region records which tabs and column headers hold its AOs, roster and attendance, and its
   organization: choosing a region switches the user to its wording and colors. **F3 SacTown** (F3)

@@ -6,9 +6,9 @@ import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { WorkoutCards } from "@/components/workout-card";
 import type { ListItem } from "@/lib/backblast-list";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
-import { loadSites } from "@/lib/regions";
+import { loadSites, type Region } from "@/lib/regions";
 import { createClient } from "@/lib/supabase/client";
-import { useLoad, useUserRegion } from "@/lib/use-region";
+import { useLoad, useRegionScope } from "@/lib/use-region";
 import { NO_STATS, type WorkoutStats } from "@/lib/workout-social";
 
 export default function DiscoverPage() {
@@ -29,10 +29,26 @@ function Discover({ user }: { user: CurrentUser }) {
   const [error, setError] = useState<string | null>(null);
   // Your own workouts are left out unless you include them (asked once here, or in Settings).
   const includeOwn = user.discoverIncludeOwn;
-  const region = useUserRegion();
+  // Your region, or every region of your organization: each gets its own "At … AOs" group.
+  const scope = useRegionScope();
   // Compared as text, since each sign-in refresh brings a new array.
   const sources = user.publicSources.join();
-  const sites = useLoad(region ? () => loadSites(region) : null, [region?.id]);
+  const regionAos = useLoad(
+    scope
+      ? () =>
+          Promise.all(
+            scope.regions.map(async (region) => ({
+              region,
+              aos: new Set(
+                (await loadSites(region).catch(() => [])).map((s) =>
+                  s.name.toLowerCase(),
+                ),
+              ),
+            })),
+          )
+      : null,
+    [scope?.regions.map((r) => r.id).join() ?? ""],
+  );
 
   useEffect(() => {
     loadPublicWorkouts(sources.split(",") as Language[]).then(
@@ -50,8 +66,12 @@ function Discover({ user }: { user: CurrentUser }) {
       ? workouts
       : workouts.filter((w) => w.author_id !== user.id);
     const statsOf = (w: ListItem) => stats.get(w.id) ?? NO_STATS;
-    const aos = new Set(
-      (sites.value ?? []).map((site) => site.name.toLowerCase()),
+    // One group per region, for the workouts at its AOs.
+    const atRegions = (regionAos.value ?? []).map(
+      ({ region, aos }: { region: Region; aos: Set<string> }) => ({
+        title: `At ${region.name} AOs`,
+        items: shown.filter((w) => aos.has(w.ao.trim().toLowerCase())),
+      }),
     );
     // Your own, best first, to compare how they're doing.
     const mine = includeOwn
@@ -78,12 +98,7 @@ function Discover({ user }: { user: CurrentUser }) {
           .filter((w) => statsOf(w).reuses > 0)
           .sort((a, b) => statsOf(b).reuses - statsOf(a).reuses),
       },
-      {
-        title: region ? `At ${region.name} AOs` : "",
-        items: aos.size
-          ? shown.filter((w) => aos.has(w.ao.trim().toLowerCase()))
-          : [],
-      },
+      ...atRegions,
       { title: "Newest", items: shown },
     ]
       .filter((group) => group.title && group.items.length > 0)
@@ -94,7 +109,7 @@ function Discover({ user }: { user: CurrentUser }) {
     // Sorting reads `stats`, which changes as people like things; keep the order stable by only
     // regrouping when the list itself loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workouts, sites.value, region?.name, includeOwn, user.id]);
+  }, [workouts, regionAos.value, includeOwn, user.id]);
 
   return (
     <section className="card">

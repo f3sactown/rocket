@@ -20,7 +20,7 @@ import {
   ThemeSwitcher,
 } from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/client";
-import { useUserRegion } from "@/lib/use-region";
+import { useRegionScope } from "@/lib/use-region";
 
 export default function SettingsPage() {
   return (
@@ -583,16 +583,20 @@ function SwipePicker({ swipeLeft }: { swipeLeft: SwipeAction }) {
   );
 }
 
-/** F3 / FiA choice, saved to the account so it follows the user to every device. */
 /**
- * F3 or FiA. A shared region sets it (choosing the region chose the organization), so it's locked
- * while you have one; with no region, or one you added yourself, you choose.
+ * F3 or FiA, saved to the account. A shared region, or "all F3 (or FiA) regions", sets it, so it's
+ * locked while you have one; with no region, or one you added yourself, you choose.
  */
 function OrganizationPicker({ user }: { user: CurrentUser }) {
-  const region = useUserRegion();
+  const scope = useRegionScope();
   const [pending, setPending] = useState<Language | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const lockedBy = region && region.created_by !== user.id ? region : null;
+  const single = scope && !scope.all ? scope.regions[0] : undefined;
+  const lockedBy: { name: string; language: Language } | null = scope?.all
+    ? { name: scope.label, language: scope.all }
+    : single && single.created_by !== user.id
+      ? single
+      : null;
   const language = lockedBy ? lockedBy.language : user.language;
   const selected = pending ?? language;
 
@@ -624,7 +628,7 @@ function OrganizationPicker({ user }: { user: CurrentUser }) {
             type="button"
             role="radio"
             aria-checked={selected === option.value}
-            disabled={pending !== null || region === undefined || !!lockedBy}
+            disabled={pending !== null || scope === undefined || !!lockedBy}
             onClick={() => choose(option.value)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               selected === option.value
@@ -644,8 +648,8 @@ function OrganizationPicker({ user }: { user: CurrentUser }) {
       </p>
       {lockedBy && (
         <p className="text-sm text-ink-soft">
-          Set by your region, {lockedBy.name}. To change it, choose a different
-          region (or no region) above.
+          Set by your region choice ({lockedBy.name}). To change it, choose a
+          different region (or no region) above.
         </p>
       )}
       {error && <p className="text-sm text-accent">{error}</p>}

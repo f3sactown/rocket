@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   checkRegion,
   DEFAULT_CONFIG,
-  loadPaxStats,
+  loadPaxStatsIn,
   loadRegions,
   type Region,
   type RegionConfig,
@@ -12,29 +12,39 @@ import {
 import { sheetIdFromUrl } from "@/lib/sheets";
 import type { Json } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/client";
-import { useLoad } from "@/lib/use-region";
-import { LANGUAGES, type Language } from "@rocket/core";
+import { allRegionsLanguage, ALL_REGIONS, useLoad } from "@/lib/use-region";
+import { LANGUAGES, termsFor, type Language } from "@rocket/core";
 import { setAccent } from "./theme-switcher";
 import type { CurrentUser } from "./auth-provider";
 
 /**
- * Saves the user's home region to their profile and account, and switches their wording (F3 or
- * FiA) and accent color to the region's. They can change those again afterwards.
+ * Saves the user's home region to their profile and account, and switches their organization (F3
+ * or FiA) and accent color to the region's. `region` can also be every region of one organization
+ * (for PAX who post across several), which has no single home region on the profile.
  */
-async function chooseRegion(userId: string, region: Region | null) {
+async function chooseRegion(
+  userId: string,
+  region: Region | { all: Language } | null,
+) {
   const supabase = createClient();
+  const single = region && "id" in region ? region : null;
+  const all = region && "all" in region ? region.all : null;
   const { error } = await supabase
     .from("profiles")
-    .update({ region_id: region?.id ?? null })
+    .update({ region_id: single?.id ?? null })
     .eq("id", userId);
   if (error) return error.message;
+  const language = single?.language ?? all;
   // The account copy is what the app reads; updating it refreshes every screen.
   const { error: authError } = await supabase.auth.updateUser({
-    data: region
-      ? { region_id: region.id, language: region.language }
+    data: language
+      ? {
+          region_id: single?.id ?? ALL_REGIONS[all!],
+          language,
+        }
       : { region_id: null },
   });
-  if (!authError && region) setAccent(region.language);
+  if (!authError && language) setAccent(language);
   return authError?.message;
 }
 
@@ -46,8 +56,15 @@ export function RegionSettings({ user }: { user: CurrentUser }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const region = regions.value?.find((r) => r.id === user.regionId) ?? null;
+  // "All F3 regions" or "All FiA regions", for PAX who post across several.
+  const all = allRegionsLanguage(user.regionId);
+  const covered = all
+    ? (regions.value ?? []).filter((r) => r.language === all)
+    : region
+      ? [region]
+      : [];
 
-  async function choose(region: Region | null) {
+  async function choose(region: Region | { all: Language } | null) {
     setSaving(true);
     setError(null);
     const message = await chooseRegion(user.id, region);
@@ -64,7 +81,12 @@ export function RegionSettings({ user }: { user: CurrentUser }) {
           disabled={saving || !regions.value}
           onChange={(e) => {
             if (e.target.value === "__add") return setAdding(true);
-            choose(regions.value?.find((r) => r.id === e.target.value) ?? null);
+            const allOf = allRegionsLanguage(e.target.value);
+            choose(
+              allOf
+                ? { all: allOf }
+                : (regions.value?.find((r) => r.id === e.target.value) ?? null),
+            );
           }}
           className="input"
         >
@@ -74,6 +96,14 @@ export function RegionSettings({ user }: { user: CurrentUser }) {
           {regions.value?.map((r) => (
             <option key={r.id} value={r.id}>
               {r.name}
+            </option>
+          ))}
+          {/* For PAX who post across several regions of one organization. */}
+          {LANGUAGES.filter((l) =>
+            regions.value?.some((r) => r.language === l.value),
+          ).map((l) => (
+            <option key={l.value} value={ALL_REGIONS[l.value]}>
+              All {termsFor(l.value).org} regions
             </option>
           ))}
           <option value="__add">My region isn&apos;t listed…</option>
@@ -95,7 +125,14 @@ export function RegionSettings({ user }: { user: CurrentUser }) {
           )}
         </p>
       )}
-      {region && <RegionStats region={region} name={user.name} />}
+      {all && (
+        <p className="-mt-2 text-xs text-muted">
+          Uses every {termsFor(all).org} region&apos;s AOs and PAX:{" "}
+          {covered.map((r) => r.name).join(", ") || "none yet"}. Your totals
+          below add them all up.
+        </p>
+      )}
+      {covered.length > 0 && <RegionStats regions={covered} name={user.name} />}
 
       {adding ? (
         <RegionForm
@@ -119,9 +156,12 @@ export function RegionSettings({ user }: { user: CurrentUser }) {
   );
 }
 
-/** The user's total posts and Qs, matched by their name in the region's attendance records. */
-function RegionStats({ region, name }: { region: Region; name: string }) {
-  const stats = useLoad(() => loadPaxStats(region, name), [region.id, name]);
+/** The user's total posts and Qs, matched by their name in the regions' attendance records. */
+function RegionStats({ regions, name }: { regions: Region[]; name: string }) {
+  const stats = useLoad(
+    () => loadPaxStatsIn(regions, name),
+    [regions.map((r) => r.id).join(), name],
+  );
   return (
     <div className="rounded-xl border border-line px-4 py-3">
       {stats.loading && (
