@@ -7,6 +7,7 @@ import {
   type LibraryEntry,
   type LibrarySource,
 } from "@/lib/library";
+import { loadRegions } from "@/lib/regions";
 import { useLoad } from "@/lib/use-region";
 import { BookIcon, CloseIcon } from "./icons";
 
@@ -21,6 +22,7 @@ const KINDS: { value: Kind; label: string }[] = [
 /**
  * The sources, each badged in its organization's color, or (when that color is the accent) F3
  * orange and FiA blue (see --badge-* in globals.css, which follow the accent as it changes).
+ * Each configured region is a source of its own too, in a neutral color.
  */
 const SOURCES: { value: LibrarySource; label: string; color: string }[] = [
   {
@@ -53,6 +55,13 @@ function SourceBadge({ entry }: { entry: LibraryEntry }) {
       {label}
     </span>
   );
+}
+
+/** Which chip an entry belongs to: F3, FiA, or its region's ID. */
+function sourceKey(entry: LibraryEntry): string {
+  return entry.source === "region"
+    ? (entry.regionId ?? "region")
+    : entry.source;
 }
 
 /** How many results show before "Show more". */
@@ -202,21 +211,30 @@ export function LibraryBrowser({
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<Kind>("all");
   const [tags, setTags] = useState<string[]>(initialTags);
-  // Both sources to start; at least one stays on.
-  const [sources, setSources] = useState<LibrarySource[]>([
-    "f3",
-    "fia",
-    "region",
-  ]);
+  // Every source is on to start (F3, FiA and each configured region), so this tracks the ones
+  // turned off; at least one stays on.
+  const [off, setOff] = useState<string[]>([]);
+  const regions = useLoad(() => loadRegions(), []);
   const [shown, setShown] = useState(PAGE);
   const [open, setOpen] = useState<string | null>(null);
 
   const entries = useMemo(() => library.value ?? [], [library.value]);
-  // The Region chip only shows once some region has entries of its own.
-  const hasRegion = useMemo(
-    () => entries.some((entry) => entry.source === "region"),
-    [entries],
-  );
+  // The chips: F3, FiA, then every configured region (whether or not it has entries yet).
+  const chips = useMemo(() => {
+    const region = SOURCES.find((s) => s.value === "region")!;
+    return [
+      ...SOURCES.filter((s) => s.value !== "region").map((s) => ({
+        key: s.value as string,
+        label: s.label,
+        color: s.color,
+      })),
+      ...(regions.value ?? []).map((r) => ({
+        key: r.id,
+        label: r.name,
+        color: region.color,
+      })),
+    ];
+  }, [regions.value]);
   // Every tag but "Routine" (that's the Exercises / Routines switch), most used first.
   const allTags = useMemo(() => {
     const counts = new Map<string, number>();
@@ -230,7 +248,7 @@ export function LibraryBrowser({
   const results = useMemo(() => {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
     return entries.filter((entry) => {
-      if (!sources.includes(entry.source)) return false;
+      if (off.includes(sourceKey(entry))) return false;
       if (kind === "routine" && !entry.isRoutine) return false;
       if (kind === "exercise" && entry.isRoutine) return false;
       if (!tags.every((tag) => entry.tags.includes(tag))) return false;
@@ -240,17 +258,17 @@ export function LibraryBrowser({
         .toLowerCase();
       return words.every((word) => text.includes(word));
     });
-  }, [entries, kind, tags, query, sources]);
+  }, [entries, kind, tags, query, off]);
 
-  function toggleSource(source: LibrarySource) {
+  function toggleSource(key: string) {
     setShown(PAGE);
-    setSources((current) =>
-      current.includes(source)
-        ? // At least one chip that's on screen stays on.
-          current.filter((s) => s !== "region" || hasRegion).length > 1
-          ? current.filter((s) => s !== source)
-          : current
-        : [...current, source],
+    setOff((current) =>
+      current.includes(key)
+        ? current.filter((k) => k !== key)
+        : // At least one chip stays on.
+          chips.filter((c) => !current.includes(c.key)).length > 1
+          ? [...current, key]
+          : current,
     );
   }
 
@@ -283,32 +301,30 @@ export function LibraryBrowser({
       />
       <div
         aria-label="Sources"
-        className="flex items-center gap-2 text-xs text-ink-soft"
+        className="flex flex-wrap items-center gap-2 text-xs text-ink-soft"
       >
         <span>From</span>
-        {SOURCES.filter((option) => option.value !== "region" || hasRegion).map(
-          (option) => {
-            const on = sources.includes(option.value);
-            return (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={on}
-                onClick={() => toggleSource(option.value)}
-                className={`rounded-full border px-3 py-1 font-bold transition-colors ${
-                  on ? "text-black" : "border-line text-muted"
-                }`}
-                style={
-                  on
-                    ? { background: option.color, borderColor: option.color }
-                    : undefined
-                }
-              >
-                {option.label}
-              </button>
-            );
-          },
-        )}
+        {chips.map((option) => {
+          const on = !off.includes(option.key);
+          return (
+            <button
+              key={option.key}
+              type="button"
+              aria-pressed={on}
+              onClick={() => toggleSource(option.key)}
+              className={`rounded-full border px-3 py-1 font-bold transition-colors ${
+                on ? "text-black" : "border-line text-muted"
+              }`}
+              style={
+                on
+                  ? { background: option.color, borderColor: option.color }
+                  : undefined
+              }
+            >
+              {option.label}
+            </button>
+          );
+        })}
       </div>
       <div
         role="radiogroup"
