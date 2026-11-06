@@ -16,7 +16,8 @@ function byline(workout: ListItem): string {
 
 /**
  * Public workouts with their likes and reuses (like button on others'), as a list or, with
- * `tiles`, a grid of tiles (for Discover, without the "Needs backblast" badge).
+ * `tiles`, a row of tiles that scrolls sideways (for Discover, without the "Needs backblast"
+ * badge).
  */
 export function WorkoutCards({
   workouts,
@@ -45,9 +46,11 @@ export function WorkoutCards({
 
   if (tiles)
     return (
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      // One row per section that scrolls sideways, reaching the card's edges so tiles slide under
+      // them; each stops with a tile lined up at the start.
+      <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:-mx-8 sm:scroll-px-8 sm:px-8">
         {workouts.map((workout) => (
-          <li key={workout.id} className="min-w-0">
+          <li key={workout.id} className="w-40 shrink-0 snap-start sm:w-48">
             <Link
               href={`/workout?id=${workout.id}`}
               className="panel flex h-full flex-col gap-2 p-3 transition-colors hover:border-accent/40"
