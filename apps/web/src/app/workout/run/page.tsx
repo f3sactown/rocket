@@ -53,6 +53,8 @@ function RunWorkout({ user }: { user: CurrentUser }) {
   >([]);
   const [result, setResult] = useState<{
     workout: Workout | null;
+    /** Whether it's your workout; only its Q writes the backblast. */
+    mine?: boolean;
     error?: string;
   } | null>(null);
 
@@ -71,6 +73,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
               data,
               data.author_id === user.id ? await loadWorkoutNotes(data.id) : "",
             ),
+          mine: data?.author_id === user.id,
           error: error?.message,
         }),
       );
@@ -236,24 +239,25 @@ function RunWorkout({ user }: { user: CurrentUser }) {
           {section("Notes", workout.notes)}
           {section("Words of Wisdom", workout.wordsOfWisdom)}
         </div>
-        {(() => {
-          const existing = backblasts[0];
-          const href = existing
-            ? existing.status === "draft"
-              ? `/backblasts/edit?id=${existing.id}`
-              : `/backblast?id=${existing.id}`
-            : `/backblasts/new?workout=${id}`;
-          return (
-            <Link href={href} className="btn w-full">
-              <ArrowIcon />
-              {existing
-                ? existing.status === "draft"
-                  ? "Continue backblast"
-                  : "Open backblast"
-                : "Create backblast"}
-            </Link>
-          );
-        })()}
+        {result.mine &&
+          (() => {
+            const existing = backblasts[0];
+            const href = existing
+              ? existing.status === "draft"
+                ? `/backblasts/edit?id=${existing.id}`
+                : `/backblast?id=${existing.id}`
+              : `/backblasts/new?workout=${id}`;
+            return (
+              <Link href={href} className="btn w-full">
+                <ArrowIcon />
+                {existing
+                  ? existing.status === "draft"
+                    ? "Continue backblast"
+                    : "Open backblast"
+                  : "Create backblast"}
+              </Link>
+            );
+          })()}
       </article>
     </ActiveTimer.Provider>
   );

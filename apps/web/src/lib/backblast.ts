@@ -139,8 +139,14 @@ export function toWorkoutInsert(
   };
 }
 
-/** A workout's sections, for copying into a backblast; an error message if it can't be read. */
-export async function loadWorkout(id: string): Promise<Workout | string> {
+/**
+ * A workout's sections, for copying into a backblast; an error message if it can't be read, or
+ * (with `authorId`) if it isn't that person's workout.
+ */
+export async function loadWorkout(
+  id: string,
+  authorId?: string,
+): Promise<Workout | string> {
   const { data, error } = await createClient()
     .from("workouts")
     .select("*")
@@ -148,6 +154,8 @@ export async function loadWorkout(id: string): Promise<Workout | string> {
     .maybeSingle();
   if (error) return error.message;
   if (!data) return "That workout is gone or isn't shared.";
+  if (authorId && data.author_id !== authorId)
+    return "You can only write a backblast for your own workout.";
   return fromWorkoutRow(data);
 }
 
