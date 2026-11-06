@@ -27,6 +27,8 @@ export interface CurrentUser {
   discoverOwnAsked: boolean;
   /** Whether a copied or shared backblast ends with a link to its workout (on by default). */
   shareWorkoutLink: boolean;
+  /** Regions (by ID) turned off in the PAX page's From picker; all are on by default. */
+  paxSourcesOff: string[];
 }
 
 /** Both F3 and FiA, which public workouts show until the user narrows it in Settings. */
@@ -121,6 +123,11 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
     discoverIncludeOwn: user.user_metadata?.discover_include_own === true,
     discoverOwnAsked: user.user_metadata?.discover_own_asked === true,
     shareWorkoutLink: user.user_metadata?.share_workout_link !== false,
+    paxSourcesOff: Array.isArray(user.user_metadata?.pax_sources_off)
+      ? (user.user_metadata.pax_sources_off as unknown[]).filter(
+          (v): v is string => typeof v === "string",
+        )
+      : [],
     regionId:
       typeof user.user_metadata?.region_id === "string"
         ? user.user_metadata.region_id

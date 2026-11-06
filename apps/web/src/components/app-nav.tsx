@@ -15,6 +15,7 @@ import {
   HomeIcon,
   GearIcon,
   MenuIcon,
+  PeopleIcon,
   PlusIcon,
   SearchIcon,
 } from "./icons";
@@ -90,6 +91,12 @@ const LINKS: {
     label: "Search",
     icon: <SearchIcon />,
     match: (path) => path.startsWith("/search"),
+  },
+  {
+    href: "/pax",
+    label: "PAX",
+    icon: <PeopleIcon />,
+    match: (path) => path.startsWith("/pax"),
   },
   {
     href: "/settings",

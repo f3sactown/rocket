@@ -32,15 +32,21 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     can make it **private** on its page: it disappears for everyone else (Discover, Trending, lists
     and search) but keeps its likes and reuse count, which only its Q sees until it's public again. **Likes:** one per person, on other people's public
     workouts.
-- **Discover** shows public workouts from every other Q. It asks once (a note at the top, not a
-  pop-up) whether to include yours; the choice is saved and can be changed in Settings → Public
-  workouts. With yours included, a **My workouts** section ranks them by likes, then reuses. The
+- **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
+  F3's, FiA's or both (the default), going by each author's region (authors with no region always
+  show), and **Include my workouts** (off by default) adds yours; both are saved to your account.
+  With yours included, a **My workouts** section ranks them by likes, then reuses. The
   groups are Trending (likes and reuses on the
   last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
   Newest, each a row of tiles that scrolls sideways, naming each author and their region, with
-  like buttons. Settings → Public workouts chooses F3's, FiA's or both (the default),
-  going by each author's region; authors with no region always show. Trending on Home follows it, and
+  like buttons. Trending on Home follows the From choice, and
   scrolls sideways the same way. The rows' scrollbars are thin and faint, with no arrows.
+- **PAX** (in the menu, under Search) lists everyone on your region's roster (or every region's,
+  when you've chosen all regions) as tiles in alphabetical order, with a search box that matches
+  names. Each tile shows the PAX's regions, posts and Qs (from the synced region stats) and the
+  total likes and reuses on their public Rocket workouts. A **From** picker of regions, in each
+  region's color, narrows the list and the totals; the choice is saved to your account. A tile
+  opens the PAX's profile: their stats per region and their Trending and Recent public workouts.
 - **Backblasts** are made from a finished workout with **Create backblast**, or from **New
   backblast**, which lists your finished, unarchived workouts that don't have a backblast yet to
   pick from, or starts one without a workout. Only a workout's Q writes its backblast, so other
@@ -71,14 +77,14 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   URL Configuration must have the site as the Site URL and under Redirect URLs.
 - **Settings:** name, email, password, region, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
   locked while you have one, and free to choose with no region or one you added), theme, accent color (F3 red, FiA teal, blue, green, orange or violet), the launch
-  animation, what Home shows, whose public workouts show (and whether Discover includes yours),
+  animation, what Home shows,
   swipe directions, and **Sharing**: a copied or shared backblast from a public workout ends with
   a link to that workout asking PAX to like and reuse it (right above the hidden PAX list; on by
   default, never shown on screen).
 - **Copying:** the backblast and workout text on their pages and on the review step can't be
   selected, so it's copied with Copy or Share. If a copy takes it in anyway (Select All), it gets
   exactly what Copy gives, link and PAX list included. **Your data** exports everything you have
-  (settings, workouts with their notes, backblasts, saved templates, archive and likes) as a JSON
+  (settings, including the Discover and PAX pickers, workouts with their notes, backblasts, saved templates, archive and likes) as a JSON
   file, and imports one back: it shows what's new and, for workouts, backblasts or templates you
   already have, lets you keep yours, replace them or keep both (settings are optional). **Reset
   account** (type RESET to confirm) deletes all of that and restores default settings; your login

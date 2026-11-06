@@ -1,9 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { LANGUAGES, termsFor, type Language } from "@rocket/core";
+import { LANGUAGES, type Language } from "@rocket/core";
 import {
-  ALL_PUBLIC_SOURCES,
   SignedIn,
   useTerms,
   HOME_SECTIONS,
@@ -273,23 +272,6 @@ function Settings({ user }: { user: CurrentUser }) {
         <HomeSectionsPicker sections={user.homeSections} />
       </Section>
 
-      <Section
-        title="Public workouts"
-        description="Whose public workouts Discover and Trending show, by the author's region. Saved to your account."
-      >
-        <PublicSourcesPicker sources={user.publicSources} />
-        <AccountSwitch
-          divided
-          on={user.discoverIncludeOwn}
-          label="Include my workouts on Discover"
-          hint="Adds a My workouts section to see how yours compare."
-          save={(on) => ({
-            discover_include_own: on,
-            discover_own_asked: true,
-          })}
-        />
-      </Section>
-
       <Section title="Sharing" description="Saved to your account.">
         <AccountSwitch
           on={user.shareWorkoutLink}
@@ -394,65 +376,6 @@ function AccountSwitch({
           />
         </button>
       </div>
-      {error && <p className="text-sm text-accent">{error}</p>}
-    </div>
-  );
-}
-
-/** F3 and FiA switches for public workouts; at least one stays on. */
-function PublicSourcesPicker({ sources }: { sources: Language[] }) {
-  const [chosen, setChosen] = useState(sources);
-  const [error, setError] = useState<string | null>(null);
-
-  async function toggle(source: Language) {
-    const next = chosen.includes(source)
-      ? chosen.filter((s) => s !== source)
-      : ALL_PUBLIC_SOURCES.filter((s) => s === source || chosen.includes(s));
-    if (!next.length) return setError("Keep at least one on.");
-    const before = chosen;
-    setChosen(next);
-    setError(null);
-    const { error } = await createClient().auth.updateUser({
-      data: { public_sources: next },
-    });
-    if (error) {
-      setChosen(before);
-      setError(error.message);
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-1">
-      {ALL_PUBLIC_SOURCES.map((source) => {
-        const on = chosen.includes(source);
-        const label = `${termsFor(source).org} workouts`;
-        return (
-          <div
-            key={source}
-            className="flex items-center justify-between gap-3 py-1.5"
-          >
-            <span className="text-sm text-ink">{label}</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={on}
-              aria-label={label}
-              onClick={() => toggle(source)}
-              className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors ${
-                on
-                  ? "border-accent/60 bg-accent"
-                  : "border-line-strong bg-panel"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 size-5.5 rounded-full bg-white shadow transition-[left] ${
-                  on ? "left-[calc(100%-1.5rem)]" : "left-0.5"
-                }`}
-              />
-            </button>
-          </div>
-        );
-      })}
       {error && <p className="text-sm text-accent">{error}</p>}
     </div>
   );
