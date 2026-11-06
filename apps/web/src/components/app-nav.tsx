@@ -19,6 +19,7 @@ import {
   SearchIcon,
 } from "./icons";
 import { RocketArt } from "./rocket-art";
+import { Wordmark } from "./wordmark";
 
 /** Menu entries, in order. `sub` ones are indented under the entry above them. */
 const LINKS: {
@@ -131,13 +132,14 @@ export function AppNav() {
     >
       <Link
         href="/"
-        className="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink"
+        aria-label="Rocket Q Planner, home"
+        className="flex items-center gap-2 text-ink"
       >
         {/* Tilted like the app icon, heading up and to the right. */}
         <span className="flex size-9 items-center justify-center">
           <RocketArt className="h-9 w-[19px] rotate-45" />
         </span>
-        Rocket
+        <Wordmark subtitle={false} className="h-[18px]" />
       </Link>
       <button
         type="button"
