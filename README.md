@@ -52,6 +52,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   Exercises / Routines and tags, read an entry, and add it by name or with its description. Each
   entry carries an F3 or FiA badge in that organization's color, or in violet when that color is
   your accent, so it never looks like a highlight (it follows accent changes right away).
+  The **Library** page (in the menu, under Discover) browses the same entries on their own, with
+  Copy and Copy with description in place of Add.
 - **Templates:** each text section (all but Notes and the Name-o-rama) can be saved as a template,
   and one per section can be starred as the default that fills new workouts or backblasts.
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. **Archive** lists

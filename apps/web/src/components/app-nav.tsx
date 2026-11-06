@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "./auth-provider";
 import {
   ArchiveIcon,
+  BookIcon,
   CloseIcon,
   CompassIcon,
   DocumentIcon,
@@ -70,6 +71,12 @@ const LINKS: {
     label: "Discover",
     icon: <CompassIcon />,
     match: (path) => path.startsWith("/discover"),
+  },
+  {
+    href: "/library",
+    label: "Library",
+    icon: <BookIcon />,
+    match: (path) => path.startsWith("/library"),
   },
   {
     href: "/archive",
