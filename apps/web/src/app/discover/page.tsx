@@ -2,7 +2,12 @@
 
 import type { Language } from "@rocket/core";
 import { useEffect, useMemo, useState } from "react";
-import { SignedIn, type CurrentUser } from "@/components/auth-provider";
+import {
+  ALL_PUBLIC_SOURCES,
+  SignedIn,
+  type CurrentUser,
+} from "@/components/auth-provider";
+import { SourceChips } from "@/components/source-chips";
 import { WorkoutCards } from "@/components/workout-card";
 import type { ListItem } from "@/lib/backblast-list";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
@@ -27,12 +32,29 @@ function Discover({ user }: { user: CurrentUser }) {
   const [workouts, setWorkouts] = useState<ListItem[] | null>(null);
   const [stats, setStats] = useState<Map<string, WorkoutStats>>(new Map());
   const [error, setError] = useState<string | null>(null);
-  // Your own workouts are left out unless you include them (asked once here, or in Settings).
-  const includeOwn = user.discoverIncludeOwn;
+  // Your own workouts are left out unless you include them; the choice is saved to your account.
+  const [includeOwn, setIncludeOwn] = useState(user.discoverIncludeOwn);
+  // Which organizations' workouts show (F3, FiA or both), saved to your account.
+  const [chosen, setChosen] = useState<Language[]>(user.publicSources);
   // Your region, or every region of your organization: each gets its own "At … AOs" group.
   const scope = useRegionScope();
-  // Compared as text, since each sign-in refresh brings a new array.
-  const sources = user.publicSources.join();
+  // Compared as text, so a new array with the same choices doesn't reload.
+  const sources = chosen.join();
+
+  function chooseSources(off: string[]) {
+    const next = ALL_PUBLIC_SOURCES.filter((s) => !off.includes(s));
+    setChosen(next);
+    createClient()
+      .auth.updateUser({ data: { public_sources: next } })
+      .then(() => {});
+  }
+
+  function chooseIncludeOwn(on: boolean) {
+    setIncludeOwn(on);
+    createClient()
+      .auth.updateUser({ data: { discover_include_own: on } })
+      .then(() => {});
+  }
   const regionAos = useLoad(
     scope
       ? () =>
@@ -120,7 +142,25 @@ function Discover({ user }: { user: CurrentUser }) {
           to run it yourself.
         </p>
       </header>
-      {!user.discoverOwnAsked && <IncludeOwnPrompt />}
+      <div className="flex flex-col gap-3">
+        <SourceChips
+          chips={[
+            { key: "f3", label: "F3", color: "var(--badge-f3)" },
+            { key: "fia", label: "FiA", color: "var(--badge-fia)" },
+          ]}
+          off={ALL_PUBLIC_SOURCES.filter((s) => !chosen.includes(s))}
+          onChange={chooseSources}
+        />
+        <label className="flex items-center gap-2 self-start text-sm text-ink-soft">
+          <input
+            type="checkbox"
+            checked={includeOwn}
+            onChange={(e) => chooseIncludeOwn(e.target.checked)}
+            className="h-4 w-4 accent-[var(--color-accent)]"
+          />
+          Include my workouts
+        </label>
+      </div>
       {error ? (
         <p className="panel px-3 py-8 text-center text-accent">{error}</p>
       ) : !workouts ? (
@@ -148,58 +188,5 @@ function Discover({ user }: { user: CurrentUser }) {
         ))
       )}
     </section>
-  );
-}
-
-/**
- * Asks once, without getting in the way, whether Discover should include your own workouts.
- * Either answer is saved to your account (and can be changed in Settings → Public workouts).
- */
-function IncludeOwnPrompt() {
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function answer(include: boolean) {
-    setSaving(true);
-    setError(null);
-    const { error } = await createClient().auth.updateUser({
-      data: { discover_include_own: include, discover_own_asked: true },
-    });
-    if (error) {
-      setError(error.message);
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div
-      role="status"
-      className="flex flex-col gap-3 rounded-2xl border border-accent/40 bg-accent-soft px-4 py-3"
-    >
-      <p className="text-sm text-ink">
-        Want your own public workouts on Discover too? You&apos;d get a{" "}
-        <span className="font-medium">My workouts</span> section to see how they
-        compare. You can change this later in Settings.
-      </p>
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => answer(true)}
-          className="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-        >
-          Include mine
-        </button>
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => answer(false)}
-          className="link text-sm"
-        >
-          No thanks
-        </button>
-        {error && <span className="text-sm text-accent">{error}</span>}
-      </div>
-    </div>
   );
 }
