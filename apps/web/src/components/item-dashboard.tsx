@@ -6,7 +6,6 @@ import { loadLists, type ItemKind, type ListItem } from "@/lib/backblast-list";
 import type { CurrentUser } from "./auth-provider";
 import { BackblastList } from "./backblast-list";
 import { PlusIcon } from "./icons";
-import { SignOutButton } from "./sign-out-button";
 
 const WORDS = {
   workout: {
@@ -69,9 +68,6 @@ export function ItemDashboard({
         <PlusIcon />
         {words.newLabel}
       </Link>
-      <div className="-mt-2 flex justify-center">
-        <SignOutButton />
-      </div>
     </section>
   );
 }

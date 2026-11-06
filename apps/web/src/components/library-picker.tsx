@@ -217,6 +217,8 @@ export function LibraryBrowser({
   const [off, setOff] = useState<string[]>([]);
   const regions = useLoad(() => loadRegions(), []);
   const [shown, setShown] = useState(PAGE);
+  // On a phone the tags start as one row, so the list keeps the room; "More tags" shows them all.
+  const [allTagsShown, setAllTagsShown] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
 
   const entries = useMemo(() => library.value ?? [], [library.value]);
@@ -354,26 +356,43 @@ export function LibraryBrowser({
         ))}
       </div>
       {allTags.length > 0 && (
-        <div aria-label="Tags" className="flex shrink-0 flex-wrap gap-1.5">
-          {/* Every tag in view, wrapping onto more rows; each keeps its place when chosen. */}
-          {allTags.map((tag) => {
-            const on = tags.includes(tag);
-            return (
-              <button
-                key={tag}
-                type="button"
-                aria-pressed={on}
-                onClick={() => toggleTag(tag)}
-                className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
-                  on
-                    ? "border-accent/60 bg-accent-soft text-ink"
-                    : "border-line text-ink-soft hover:border-line-strong"
-                }`}
-              >
-                {tag}
-              </button>
-            );
-          })}
+        <div className="flex shrink-0 flex-col gap-1">
+          <div
+            aria-label="Tags"
+            className={`flex flex-wrap gap-1.5 sm:max-h-none sm:overflow-visible ${
+              allTagsShown ? "" : "max-h-[1.625rem] overflow-hidden"
+            }`}
+          >
+            {/* Every tag, wrapping onto more rows; each keeps its place when chosen. */}
+            {allTags.map((tag) => {
+              const on = tags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => toggleTag(tag)}
+                  className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap transition-colors sm:px-3 sm:py-1 ${
+                    on
+                      ? "border-accent/60 bg-accent-soft text-ink"
+                      : "border-line text-ink-soft hover:border-line-strong"
+                  }`}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            aria-expanded={allTagsShown}
+            onClick={() => setAllTagsShown((open) => !open)}
+            className="link self-start text-xs sm:hidden"
+          >
+            {allTagsShown
+              ? "Fewer tags"
+              : `More tags${tags.length ? ` (${tags.length} chosen)` : ""}`}
+          </button>
         </div>
       )}
 
