@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTerms } from "./auth-provider";
 import { RocketArt } from "./rocket-art";
+import { Wordmark } from "./wordmark";
 
 /**
  * Launch animation shown over the app while it loads: ignition, smoke, liftoff and a fade into the
@@ -57,12 +58,10 @@ export function LaunchSplash() {
         </div>
       </div>
       <div className="splash-title">
-        <span className="text-2xl font-extrabold tracking-[0.12em] text-white">
-          ROCKET
-        </span>
-        <span className="text-[11px] font-semibold tracking-[0.45em] text-[var(--rocket-light)]">
-          Q PLANNER
-        </span>
+        <Wordmark
+          subtitleColor="var(--rocket-light)"
+          className="h-12 text-white"
+        />
       </div>
     </div>
   );

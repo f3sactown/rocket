@@ -106,6 +106,10 @@ supabase/
 
 New tools go in `apps/` (or as routes inside `apps/web`); code shared between them goes in `packages/`.
 
+The **Rocket Q Planner** wordmark (`apps/web/src/components/wordmark.tsx`) is the logo traced into
+vector paths: "ROCKET" takes the current text color and "Q PLANNER" the accent. It's in the top bar
+("ROCKET" only), on the launch screen and on the sign-in card.
+
 ## Who can see what
 
 The app runs entirely in the browser, so access rules live in the database as row-level security

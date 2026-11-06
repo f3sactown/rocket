@@ -6,6 +6,7 @@ import { createClient, createRecoveryClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/use-region";
 import { ArrowIcon } from "./icons";
 import { setAccent } from "./theme-switcher";
+import { Wordmark } from "./wordmark";
 
 export function AuthForm() {
   const [mode, setMode] = useState<"sign-in" | "sign-up" | "forgot">("sign-in");
@@ -79,7 +80,9 @@ export function AuthForm() {
   return (
     <form onSubmit={onSubmit} className="card">
       <header className="flex items-start justify-between gap-4">
-        <h1 className="card-title">Rocket</h1>
+        <h1 className="pt-1 text-ink">
+          <Wordmark className="h-10" />
+        </h1>
         <span className="status mt-2">
           {mode === "sign-in"
             ? "Sign in"
