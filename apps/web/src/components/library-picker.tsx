@@ -64,6 +64,32 @@ function sourceKey(entry: LibraryEntry): string {
     : entry.source;
 }
 
+/** A tag filter chip; each keeps its place when chosen. */
+function TagChip({
+  tag,
+  on,
+  onToggle,
+}: {
+  tag: string;
+  on: boolean;
+  onToggle: (tag: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={() => onToggle(tag)}
+      className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap transition-colors sm:px-3 sm:py-1 ${
+        on
+          ? "border-accent/60 bg-accent-soft text-ink"
+          : "border-line text-ink-soft hover:border-line-strong"
+      }`}
+    >
+      {tag}
+    </button>
+  );
+}
+
 /** How many results show before "Show more". */
 const PAGE = 40;
 
@@ -217,8 +243,6 @@ export function LibraryBrowser({
   const [off, setOff] = useState<string[]>([]);
   const regions = useLoad(() => loadRegions(), []);
   const [shown, setShown] = useState(PAGE);
-  // On a phone the tags start as one row, so the list keeps the room; "More tags" shows them all.
-  const [allTagsShown, setAllTagsShown] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
 
   const entries = useMemo(() => library.value ?? [], [library.value]);
@@ -356,44 +380,46 @@ export function LibraryBrowser({
         ))}
       </div>
       {allTags.length > 0 && (
-        <div className="flex shrink-0 flex-col gap-1">
+        <>
+          {/* On a phone: two rows that scroll sideways together, the first half of the tags in
+              the top row, so the list keeps the room. */}
           <div
             aria-label="Tags"
-            className={`flex flex-wrap gap-1.5 sm:max-h-none sm:overflow-visible ${
-              allTagsShown ? "" : "max-h-[1.625rem] overflow-hidden"
-            }`}
+            className="scroll-row -mx-4 shrink-0 overflow-x-auto px-4 pb-1 sm:hidden"
           >
-            {/* Every tag, wrapping onto more rows; each keeps its place when chosen. */}
-            {allTags.map((tag) => {
-              const on = tags.includes(tag);
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => toggleTag(tag)}
-                  className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap transition-colors sm:px-3 sm:py-1 ${
-                    on
-                      ? "border-accent/60 bg-accent-soft text-ink"
-                      : "border-line text-ink-soft hover:border-line-strong"
-                  }`}
-                >
-                  {tag}
-                </button>
-              );
-            })}
+            <div className="flex w-max flex-col gap-1.5">
+              {[
+                allTags.slice(0, Math.ceil(allTags.length / 2)),
+                allTags.slice(Math.ceil(allTags.length / 2)),
+              ].map((row, index) => (
+                <div key={index} className="flex gap-1.5">
+                  {row.map((tag) => (
+                    <TagChip
+                      key={tag}
+                      tag={tag}
+                      on={tags.includes(tag)}
+                      onToggle={toggleTag}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
-          <button
-            type="button"
-            aria-expanded={allTagsShown}
-            onClick={() => setAllTagsShown((open) => !open)}
-            className="link self-start text-xs sm:hidden"
+          {/* On a wider screen: every tag, wrapping onto as many rows as it takes. */}
+          <div
+            aria-label="Tags"
+            className="hidden shrink-0 flex-wrap gap-1.5 sm:flex"
           >
-            {allTagsShown
-              ? "Fewer tags"
-              : `More tags${tags.length ? ` (${tags.length} chosen)` : ""}`}
-          </button>
-        </div>
+            {allTags.map((tag) => (
+              <TagChip
+                key={tag}
+                tag={tag}
+                on={tags.includes(tag)}
+                onToggle={toggleTag}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       <div
