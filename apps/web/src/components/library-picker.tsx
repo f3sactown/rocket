@@ -176,7 +176,7 @@ function LibraryPicker({
               </a>{" "}
               and{" "}
               <a
-                href="https://docs.google.com/spreadsheets/d/1-aBi3UGOwhGChtKEFdVjikbqfcCWP35mcoKqqxqKssI/edit"
+                href="https://docs.google.com/spreadsheets/d/1twkcFAxUQHbKCQBnQSFxqMOKJ7kOXsDoQcJQsW37Efg/edit"
                 target="_blank"
                 rel="noreferrer"
                 className="underline"

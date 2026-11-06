@@ -217,12 +217,13 @@ The Library is a weekly copy of two Exicons:
 - **F3:** F3 Nation's Exicon from the [F3 Codex](https://codex.f3nation.com/exicon), read from the
   list its Exicon page loads (`https://codex.f3nation.com/api/exicon`). An entry tagged "Routine" is
   a routine; the rest are exercises. Descriptions are turned into plain text.
-- **FiA:** FiA's Exicon, a
-  [Google Sheet](https://docs.google.com/spreadsheets/d/1-aBi3UGOwhGChtKEFdVjikbqfcCWP35mcoKqqxqKssI/edit)
-  that must stay shared so anyone with the link can view it. Its **Lexicon** tab (Name, Category,
-  Description) gives exercises and routines; **TERM** rows (vocabulary) are left out, and the "Ab",
-  "Warm up" and "Partner" categories become the Core, Warm-Up and Partner tags. Its **Lexirades 21**
-  tab adds exercises tagged "Lexirades 21".
+- **FiA:** FiA's Exicon, the "Updated FiA Exicon"
+  [Google Sheet](https://docs.google.com/spreadsheets/d/1twkcFAxUQHbKCQBnQSFxqMOKJ7kOXsDoQcJQsW37Efg/edit),
+  which must stay shared so anyone with the link can view it. Its **FiA Nation Alphabetical** tab
+  has no header row: each row is a name, a category and a description. **Term** rows (vocabulary)
+  are left out; a "Routine" category makes a routine; each part of a category like
+  "Arms/Shoulders" becomes a tag, using F3's names where they match (Abs is Core, Warm-up is
+  Warm-Up, Full-body is Full Body). A trailing "*" on a name is dropped.
 - **Region:** a region's own exercises and routines, from an optional **Exicon** tab in its Google
   Sheet (Name, Category, Tags, Description, Author), copied in by the nightly region sync
   (`replace_region_exicon()`). A Category of "Routine" makes a routine, any other category (but
