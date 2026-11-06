@@ -218,6 +218,40 @@ export type Database = {
           },
         ];
       };
+      user_exercises: {
+        Row: {
+          id: string;
+          owner_id: string;
+          name: string;
+          description: string;
+          tags: string[];
+          is_routine: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          owner_id?: string;
+          name: string;
+          description?: string;
+          tags?: string[];
+          is_routine?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["user_exercises"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "user_exercises_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       workout_likes: {
         Row: { user_id: string; workout_id: string; created_at: string };
         Insert: { user_id?: string; workout_id: string; created_at?: string };

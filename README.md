@@ -55,7 +55,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   entry carries an F3 or FiA badge in that organization's color, or (when that color is your accent) F3 in orange and FiA in blue,
   so it never looks like a highlight; it follows accent changes right away.
   The **Library** page (in the menu, under Discover) browses the same entries on their own, with
-  Copy and Copy with description in place of Add.
+  Copy and Copy with description in place of Add. **+ Add your own exercise** (on the page and in
+  the pop-up) saves your own exercises and routines (name, description, tags, routine or not). They
+  carry an outlined **Mine** badge and a Mine chip, can be edited or deleted from the entry, are
+  private to you (`user_exercises`), and are part of your exported data.
 - **Templates:** each text section (all but Notes and the Name-o-rama) can be saved as a template,
   and one per section can be starred as the default that fills new workouts or backblasts.
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. **Archive** lists
@@ -69,9 +72,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Copying:** the backblast and workout text on their pages and on the review step can't be
   selected, so it's copied with Copy or Share. If a copy takes it in anyway (Select All), it gets
   exactly what Copy gives, link and PAX list included. **Your data** exports everything you have
-  (settings, workouts with their notes, backblasts, saved templates, archive and likes) as a JSON
-  file, and imports one back: it shows what's new and, for workouts, backblasts or templates you
-  already have, lets you keep yours, replace them or keep both (settings are optional). **Reset
+  (settings, workouts with their notes, backblasts, saved templates, your own Library exercises,
+  archive and likes) as a JSON
+  file, and imports one back: it shows what's new and, for workouts, backblasts, templates or Library exercises you
+  already have (exercises match by name), lets you keep yours, replace them or keep both (settings are optional). **Reset
   account** (type RESET to confirm) deletes all of that and restores default settings; your login
   and name stay. Likes and reuses others gave a deleted workout (deleted on its own or by a reset)
   are set aside in the database and come back when that workout is imported again by its author;
@@ -116,6 +120,7 @@ The app runs entirely in the browser, so access rules live in the database as ro
   and `retired_workout_reuses`, which no one can read. Only `restore_workout_links()`, called on
   import, moves them back, and only for the deleted workout's own author, so an edited export file
   can't add likes.
+- Your own Library exercises (`user_exercises`) can be read and changed only by you.
 - A workout's notes (`workout_notes`) can be read and written only by the workout's author.
 - Archiving is personal (`workout_archives`, `backblast_archives`): it hides an item from your own
   lists only, and never changes whether a workout is public.

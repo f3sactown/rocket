@@ -22,6 +22,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
   { value: "workouts", label: "Workouts" },
   { value: "backblasts", label: "Backblasts" },
   { value: "templates", label: "Saved templates" },
+  { value: "exercises", label: "Library exercises" },
 ];
 
 /** Export, import and reset of everything the user has. */
@@ -46,7 +47,7 @@ function ExportData() {
       const data = await exportAccount();
       downloadExport(data);
       setMessage({
-        text: `Exported ${data.workouts.length} workouts, ${data.backblasts.length} backblasts and ${data.templates.length} templates.`,
+        text: `Exported ${data.workouts.length} workouts, ${data.backblasts.length} backblasts, ${data.templates.length} templates and ${data.exercises.length} library exercises.`,
         error: false,
       });
     } catch (error) {
@@ -60,7 +61,8 @@ function ExportData() {
       <span className="label">Export</span>
       <p className="text-sm text-muted">
         Download a file with your settings, workouts (with their private notes),
-        backblasts, saved templates, archive and likes.
+        backblasts, saved templates, your own library exercises, archive and
+        likes.
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <button
@@ -91,6 +93,7 @@ function ImportData() {
     workouts: "keep",
     backblasts: "keep",
     templates: "keep",
+    exercises: "keep",
   });
   const [settings, setSettings] = useState(false);
   const [progress, setProgress] = useState<[number, number] | null>(null);
@@ -274,11 +277,11 @@ function ResetAccount() {
     <div className="flex flex-col gap-2">
       <span className="label">Reset account</span>
       <p className="text-sm text-muted">
-        Start over: deletes all your workouts, backblasts, saved templates,
-        archive and likes, and puts your settings back to the defaults. You stay
-        signed in with the same login and name. Export first if you might want
-        any of it back: importing that export restores it, including the likes
-        and reuses others gave your workouts.
+        Start over: deletes all your workouts, backblasts, saved templates, your
+        own library exercises, archive and likes, and puts your settings back to
+        the defaults. You stay signed in with the same login and name. Export
+        first if you might want any of it back: importing that export restores
+        it, including the likes and reuses others gave your workouts.
       </p>
       {!open ? (
         <button
