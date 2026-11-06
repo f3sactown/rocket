@@ -2,10 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  deleteMyExercise,
   entryText,
   loadLibrary,
+  loadMyExercises,
+  saveMyExercise,
   type LibraryEntry,
   type LibrarySource,
+  type MyExercise,
 } from "@/lib/library";
 import { loadRegions } from "@/lib/regions";
 import { useLoad } from "@/lib/use-region";
@@ -40,13 +44,27 @@ const SOURCES: { value: LibrarySource; label: string; color: string }[] = [
     label: "Region",
     color: "var(--badge-region)",
   },
+  {
+    value: "mine",
+    label: "Mine",
+    color: "var(--color-accent)",
+  },
 ];
 
-/** A small F3 or FiA badge in that organization's color, or the region's name for its own. */
+/**
+ * A small F3 or FiA badge in that organization's color, the region's name for its own, or an
+ * outlined "Mine" in the accent color for the user's own.
+ */
 function SourceBadge({ entry }: { entry: LibraryEntry }) {
   const source = SOURCES.find((s) => s.value === entry.source)!;
   const label = (entry.source === "region" && entry.regionName) || source.label;
   const color = source.color;
+  if (entry.source === "mine")
+    return (
+      <span className="shrink-0 rounded-full border border-accent px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-accent">
+        {label}
+      </span>
+    );
   return (
     <span
       className="shrink-0 rounded-full px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-black"
@@ -209,6 +227,11 @@ export function LibraryBrowser({
   autoFocus?: boolean;
 }) {
   const library = useLoad(loadLibrary, []);
+  // Your own exercises, reloaded after you add, change or delete one.
+  const [mineVersion, setMineVersion] = useState(0);
+  const mine = useLoad(() => loadMyExercises(), [mineVersion]);
+  const [adding, setAdding] = useState(false);
+  const reloadMine = () => setMineVersion((v) => v + 1);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<Kind>("all");
   const [tags, setTags] = useState<string[]>(initialTags);
@@ -219,16 +242,25 @@ export function LibraryBrowser({
   const [shown, setShown] = useState(PAGE);
   const [open, setOpen] = useState<string | null>(null);
 
-  const entries = useMemo(() => library.value ?? [], [library.value]);
-  // The chips: F3, FiA, then every configured region (whether or not it has entries yet).
+  // Everything, with your own mixed in by name.
+  const entries = useMemo(
+    () =>
+      [...(library.value ?? []), ...(mine.value ?? [])].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      ),
+    [library.value, mine.value],
+  );
+  // The chips: Mine, F3, FiA, then every configured region (whether or not it has entries yet).
   const chips = useMemo(() => {
     const region = SOURCES.find((s) => s.value === "region")!;
     return [
-      ...SOURCES.filter((s) => s.value !== "region").map((s) => ({
-        key: s.value as string,
-        label: s.label,
-        color: s.color,
-      })),
+      ...["mine", "f3", "fia"]
+        .map((key) => SOURCES.find((s) => s.value === key)!)
+        .map((s) => ({
+          key: s.value as string,
+          label: s.label,
+          color: s.color,
+        })),
       ...(regions.value ?? []).map((r) => ({
         key: r.id,
         label: r.name,
@@ -384,6 +416,22 @@ export function LibraryBrowser({
             : "flex flex-col"
         }
       >
+        {adding ? (
+          <MyExerciseForm
+            onDone={(saved) => {
+              setAdding(false);
+              if (saved) reloadMine();
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="link mb-2 self-start text-sm"
+          >
+            + Add your own exercise
+          </button>
+        )}
         {library.error ? (
           <p className="py-8 text-center text-sm text-accent">
             {library.error}
@@ -421,6 +469,7 @@ export function LibraryBrowser({
                     )
                   }
                   onAdd={onAdd}
+                  onChanged={reloadMine}
                 />
               ))}
             </ul>
@@ -445,13 +494,36 @@ function Entry({
   open,
   onToggle,
   onAdd,
+  onChanged,
 }: {
   entry: LibraryEntry;
   open: boolean;
   onToggle: () => void;
   onAdd?: (text: string) => void;
+  /** After one of your own is changed or deleted. */
+  onChanged: () => void;
 }) {
   const [copied, setCopied] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (editing)
+    return (
+      <li className="py-2">
+        <MyExerciseForm
+          id={entry.id}
+          initial={{
+            name: entry.name,
+            description: entry.description,
+            tags: entry.tags,
+            isRoutine: entry.isRoutine,
+          }}
+          onDone={(saved) => {
+            setEditing(false);
+            if (saved) onChanged();
+          }}
+        />
+      </li>
+    );
   async function copy(label: string, text: string) {
     try {
       await navigator.clipboard.writeText(text);
@@ -514,18 +586,48 @@ function Entry({
             {copied === "Couldn't copy" && (
               <span className="text-xs text-accent">Couldn&apos;t copy</span>
             )}
-            <a
-              href={entry.url}
-              target="_blank"
-              rel="noreferrer"
-              className="link ml-auto text-xs"
-            >
-              {entry.source === "region"
-                ? `${entry.regionName ?? "Region"} sheet ↗`
-                : entry.source === "fia"
-                  ? "FiA Exicon ↗"
-                  : "F3 Codex ↗"}
-            </a>
+            {entry.source === "mine" && (
+              <span className="ml-auto flex items-center gap-4 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="link"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!confirm(`Delete "${entry.name}" from your library?`))
+                      return;
+                    try {
+                      await deleteMyExercise(entry.id);
+                      onChanged();
+                    } catch (e) {
+                      setError((e as Error).message);
+                    }
+                  }}
+                  className="link"
+                >
+                  Delete
+                </button>
+              </span>
+            )}
+            {error && <span className="text-xs text-accent">{error}</span>}
+            {entry.url && (
+              <a
+                href={entry.url}
+                target="_blank"
+                rel="noreferrer"
+                className="link ml-auto text-xs"
+              >
+                {entry.source === "region"
+                  ? `${entry.regionName ?? "Region"} sheet ↗`
+                  : entry.source === "fia"
+                    ? "FiA Exicon ↗"
+                    : "F3 Codex ↗"}
+              </a>
+            )}
             {entry.videoUrl && (
               <a
                 href={entry.videoUrl}
@@ -540,5 +642,108 @@ function Entry({
         </div>
       )}
     </li>
+  );
+}
+
+/** Adds one of your own exercises, or changes one (with `id`). Only you can see them. */
+function MyExerciseForm({
+  id,
+  initial,
+  onDone,
+}: {
+  id?: string;
+  initial?: MyExercise;
+  /** Called after saving (true) or cancelling (false). */
+  onDone: (saved: boolean) => void;
+}) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [tags, setTags] = useState((initial?.tags ?? []).join(", "));
+  const [isRoutine, setIsRoutine] = useState(initial?.isRoutine ?? false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    if (!name.trim()) return setError("Give it a name.");
+    setSaving(true);
+    setError(null);
+    try {
+      await saveMyExercise(
+        { name, description, tags: tags.split(","), isRoutine },
+        id,
+      );
+      onDone(true);
+    } catch (e) {
+      setError((e as Error).message);
+      setSaving(false);
+    }
+  }
+
+  return (
+    // The pop-up sits inside the workout form, so Enter saves this instead of submitting that.
+    <div
+      className="mb-3 flex flex-col gap-3 rounded-xl border border-accent/40 p-3"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && !(e.target instanceof HTMLTextAreaElement)) {
+          e.preventDefault();
+          save();
+        }
+      }}
+    >
+      <p className="text-xs text-muted">
+        {id ? "Edit your exercise." : "Add your own exercise or routine."} Only
+        you can see it; it&apos;s part of your exported data.
+      </p>
+      <input
+        aria-label="Name"
+        placeholder="Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="input"
+      />
+      <textarea
+        aria-label="Description"
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        rows={3}
+        className="input"
+      />
+      <input
+        aria-label="Tags"
+        placeholder="Tags, separated by commas (optional)"
+        value={tags}
+        onChange={(e) => setTags(e.target.value)}
+        className="input"
+      />
+      <label className="flex items-center gap-2 text-sm text-ink">
+        <input
+          type="checkbox"
+          checked={isRoutine}
+          onChange={(e) => setIsRoutine(e.target.checked)}
+          className="size-4 accent-[var(--color-accent)]"
+        />
+        It&apos;s a routine
+      </label>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          className="btn px-4 py-1.5 text-sm"
+        >
+          {saving ? "Saving…" : id ? "Save" : "Add to my library"}
+        </button>
+        <button
+          type="button"
+          onClick={() => onDone(false)}
+          disabled={saving}
+          className="link text-sm"
+        >
+          Cancel
+        </button>
+        {error && <span className="text-sm text-accent">{error}</span>}
+      </div>
+    </div>
   );
 }
