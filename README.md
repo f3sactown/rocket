@@ -63,7 +63,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   animation, what Home shows, whose public workouts show (and whether Discover includes yours),
   swipe directions, and **Sharing**: a copied or shared backblast from a public workout ends with
   a link to that workout asking PAX to like and reuse it (right above the hidden PAX list; on by
-  default, never shown on screen). **Your data** exports everything you have
+  default, never shown on screen).
+- **Copying:** the backblast and workout text on their pages and on the review step can't be
+  selected, so it's copied with Copy or Share. If a copy takes it in anyway (Select All), it gets
+  exactly what Copy gives, link and PAX list included. **Your data** exports everything you have
   (settings, workouts with their notes, backblasts, saved templates, archive and likes) as a JSON
   file, and imports one back: it shows what's new and, for workouts, backblasts or templates you
   already have, lets you keep yours, replace them or keep both (settings are optional). **Reset

@@ -30,6 +30,7 @@ import { ThangsInput } from "./thangs-input";
 import { Regulars } from "./regulars";
 import { useAuth } from "./auth-provider";
 import { ArrowIcon, PencilIcon, SkipIcon, TrashIcon } from "./icons";
+import { ProtectedText } from "./protected-text";
 import { ShareButton } from "./share-button";
 import {
   SectionTemplates,
@@ -302,6 +303,12 @@ export function BackblastForm({
       !sites.value.some((s) => s.name === backblast.ao));
   const steps = useMemo(() => stepsFor(language, mode), [language, mode]);
   const lastStep = steps.length - 1;
+  // What the review's Share button gives, and what copying its text gives too. A workout's notes
+  // are the Q's own, so they aren't shared.
+  const reviewCopyText =
+    mode === "workout"
+      ? formatBackblast({ ...backblast, notes: "" }, language)
+      : copyText(backblast, language, workoutLink);
   const step = steps[stepIndex]!;
   const allText = useMemo(() => stepsFor(language, "workout"), [language]);
   // A backblast is written after its workout, so it can't be finished before the workout's date.
@@ -758,19 +765,17 @@ export function BackblastForm({
                 <h3 className="border-b border-line bg-hover px-4 py-2 text-xs font-semibold tracking-wider text-accent uppercase">
                   {part.title}
                 </h3>
-                <pre className="overflow-x-auto p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
+                <ProtectedText
+                  copyText={reviewCopyText}
+                  className="overflow-x-auto p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft"
+                >
                   {part.text}
-                </pre>
+                </ProtectedText>
               </section>
             ))}
             <ShareButton
               title={backblast.title}
-              text={
-                mode === "workout"
-                  ? // The workout's notes are the Q's own, so they aren't shared.
-                    formatBackblast({ ...backblast, notes: "" }, language)
-                  : copyText(backblast, language, workoutLink)
-              }
+              text={reviewCopyText}
               className="btn w-full px-4 text-base"
             />
           </>

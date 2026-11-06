@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { CopyButton } from "@/components/copy-button";
+import { ProtectedText } from "@/components/protected-text";
 import {
   ArchiveIcon,
   ArrowIcon,
@@ -199,9 +200,12 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         )}
       </div>
 
-      <pre className="panel overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
+      <ProtectedText
+        copyText={text}
+        className="panel overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft"
+      >
         {shown}
-      </pre>
+      </ProtectedText>
 
       <Link href={`/workout/run?id=${id}`} className="btn w-full">
         <PlayIcon />
