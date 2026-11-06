@@ -21,6 +21,10 @@ export interface CurrentUser {
   homeSections: HomeSection[];
   /** Whose public workouts Discover and Trending show: F3's, FiA's or both (the default). */
   publicSources: Language[];
+  /** Whether Discover includes the user's own public workouts (off by default). */
+  discoverIncludeOwn: boolean;
+  /** Whether Discover has already asked about including them, so it asks only once. */
+  discoverOwnAsked: boolean;
 }
 
 /** Both F3 and FiA, which public workouts show until the user narrows it in Settings. */
@@ -85,6 +89,8 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
       user.user_metadata?.swipe_left === "archive" ? "archive" : "delete",
     homeSections: homeSectionsFrom(user.user_metadata?.home_sections),
     publicSources: publicSourcesFrom(user.user_metadata?.public_sources),
+    discoverIncludeOwn: user.user_metadata?.discover_include_own === true,
+    discoverOwnAsked: user.user_metadata?.discover_own_asked === true,
     regionId:
       typeof user.user_metadata?.region_id === "string"
         ? user.user_metadata.region_id

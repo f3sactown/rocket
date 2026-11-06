@@ -31,7 +31,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     can make it **private** on its page: it disappears for everyone else (Discover, Trending, lists
     and search) but keeps its likes and reuse count, which only its Q sees until it's public again. **Likes:** one per person, on other people's public
     workouts.
-- **Discover** shows public workouts from every other Q (check **Include my workouts** to add yours), grouped as Trending (likes and reuses on the
+- **Discover** shows public workouts from every other Q. It asks once (a note at the top, not a
+  pop-up) whether to include yours; the choice is saved and can be changed in Settings → Public
+  workouts. With yours included, a **My workouts** section ranks them by likes, then reuses. The
+  groups are Trending (likes and reuses on the
   last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
   Newest, as tiles naming each author and their region, with like buttons. Settings → Public workouts chooses F3's, FiA's or both (the default),
   going by each author's region; authors with no region always show. Trending on Home follows it.
@@ -55,7 +58,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   what you've archived; **Search** finds workouts and backblasts by any word, with matches
   highlighted.
 - **Settings:** name, email, password, region, F3 or FiA wording, theme, accent color, the launch
-  animation, what Home shows, whose public workouts show, and swipe directions. **Your data** exports everything you have
+  animation, what Home shows, whose public workouts show (and whether Discover includes yours),
+  and swipe directions. **Your data** exports everything you have
   (settings, workouts with their notes, backblasts, saved templates, archive and likes) as a JSON
   file, and imports one back: it shows what's new and, for workouts, backblasts or templates you
   already have, lets you keep yours, replace them or keep both (settings are optional). **Reset

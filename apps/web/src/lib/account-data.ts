@@ -27,6 +27,8 @@ const ACCOUNT_KEYS = [
   "home_sections",
   "region_id",
   "public_sources",
+  "discover_include_own",
+  "discover_own_asked",
 ] as const;
 
 /** Everything a user owns, as written to an export file. */
@@ -625,6 +627,8 @@ export async function resetAccount(): Promise<void> {
       home_sections: null,
       region_id: null,
       public_sources: null,
+      discover_include_own: null,
+      discover_own_asked: null,
     },
   });
   if (error) throw new Error(error.message);
