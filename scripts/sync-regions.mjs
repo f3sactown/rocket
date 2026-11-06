@@ -203,6 +203,66 @@ async function readRegion({ sheet_id: id, config }) {
   return { sites, roster, regulars, stats, latestPostOn };
 }
 
+/**
+ * The region's own exercises and routines, from an optional "Exicon" tab with Name, Category,
+ * Tags, Description and Author columns. The author goes at the end of the description in
+ * parentheses. Returns null when the region has no such tab (or it lacks Name and Description).
+ */
+export async function readRegionExicon({ id: regionId, sheet_id: id, config }) {
+  const tab = config.exicon?.sheet || "Exicon";
+  let cols;
+  try {
+    cols = await columns(id, tab, { name: "Name", description: "Description" });
+  } catch {
+    return null;
+  }
+  const optional = {};
+  for (const [key, name] of Object.entries({
+    category: "Category",
+    tags: "Tags",
+    author: "Author",
+  })) {
+    try {
+      Object.assign(optional, await columns(id, tab, { [key]: name }));
+    } catch {
+      // That column is optional.
+    }
+  }
+  const all = { ...cols, ...optional };
+  const keys = Object.keys(all);
+  const rows = (
+    await query(id, tab, `select ${keys.map((k) => all[k]).join(", ")}`)
+  ).rows.map((row) =>
+    Object.fromEntries(keys.map((k, i) => [k, text(row[i])])),
+  );
+  const url = `https://docs.google.com/spreadsheets/d/${id}/edit`;
+  const entries = [];
+  for (const row of rows) {
+    if (!row.name) continue;
+    const category = row.category ?? "";
+    const isRoutine = /routine/i.test(category);
+    const tags = [
+      ...(row.tags ?? "").split(/[,;]/),
+      // The category is a tag too, unless it only says exercise or routine.
+      /^(exercises?|routines?)$/i.test(category) ? "" : category,
+    ]
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const description = [row.description, row.author && `(${row.author})`]
+      .filter(Boolean)
+      .join(" ");
+    entries.push({
+      id: `region-${regionId}-${entries.length}`,
+      name: row.name,
+      description,
+      tags: [...new Set(tags)],
+      is_routine: isRoutine,
+      url,
+    });
+  }
+  return entries;
+}
+
 const regions = await supabase(
   "regions?select=id,name,sheet_id,config&order=name",
 );
@@ -222,8 +282,23 @@ for (const region of regions) {
       { latest_post_on: data.latestPostOn },
       "PATCH",
     );
+    // The region's own Exicon is optional; a problem with it doesn't fail the region's sync.
+    let exicon = "no Exicon tab";
+    try {
+      const entries = await readRegionExicon(region);
+      if (entries) {
+        await supabase("rpc/replace_region_exicon", {
+          p_region: region.id,
+          p_entries: entries,
+        });
+        exicon = `${entries.length} Exicon entries`;
+      }
+    } catch (error) {
+      exicon = `Exicon not read (${error.message})`;
+      console.log(`::warning::${region.name}: ${exicon}`);
+    }
     console.log(
-      `${region.name}: ${data.sites.length} AOs, ${data.roster.length} PAX, ${data.regulars.length} regulars, ${data.stats.length} totals, latest post ${data.latestPostOn ?? "none"}`,
+      `${region.name}: ${exicon}, ${data.sites.length} AOs, ${data.roster.length} PAX, ${data.regulars.length} regulars, ${data.stats.length} totals, latest post ${data.latestPostOn ?? "none"}`,
     );
   } catch (error) {
     failures++;
