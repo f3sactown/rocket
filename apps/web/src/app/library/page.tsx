@@ -29,8 +29,8 @@ export default function LibraryPage() {
               >
                 FiA
               </a>{" "}
-              Exicons (updated weekly), and from regions’ own sheets. Tap one to
-              read it or copy it.
+              Exicons (updated weekly), plus each region&apos;s own Exicon from
+              its sheet (updated daily). Tap one to read it or copy it.
             </p>
           </header>
           <LibraryBrowser />

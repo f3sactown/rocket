@@ -222,8 +222,9 @@ The Library is a weekly copy of two Exicons:
   Sheet (Name, Category, Tags, Description, Author), copied in by the nightly region sync
   (`replace_region_exicon()`). A Category of "Routine" makes a routine, any other category (but
   "Exercise") becomes a tag, Tags are split on commas, and the Author goes at the end of the
-  description in parentheses. These entries carry a badge with the region's name, and a **Region**
-  chip filters them once any region has some.
+  description in parentheses. These entries carry a badge with the region's name. Every configured
+  region gets a source chip of its own beside F3 and FiA (even before it has entries), and all
+  sources start selected.
 
 `.github/workflows/sync-exicon.yml` runs `scripts/sync-exicon.mjs` every Monday (about 2am Pacific,
 or on demand from the Actions tab). Each source replaces its own rows in `exicon_entries`, so if one

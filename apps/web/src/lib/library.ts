@@ -7,7 +7,8 @@ export type LibrarySource = "f3" | "fia" | "region";
 export interface LibraryEntry {
   id: string;
   source: LibrarySource;
-  /** For a region's own entry, the region's name (its badge). */
+  /** For a region's own entry, the region and its name (its badge). */
+  regionId: string | null;
   regionName: string | null;
   name: string;
   description: string;
@@ -33,7 +34,7 @@ export function loadLibrary(): Promise<LibraryEntry[]> {
       const { data, error } = await supabase
         .from("exicon_entries")
         .select(
-          "id, source, name, description, aliases, tags, is_routine, video_url, url, region:regions(name)",
+          "id, source, region_id, name, description, aliases, tags, is_routine, video_url, url, region:regions(name)",
         )
         .order("name")
         .range(from, from + PAGE - 1);
@@ -42,6 +43,7 @@ export function loadLibrary(): Promise<LibraryEntry[]> {
         ...(data ?? []).map((row) => ({
           id: row.id,
           source: row.source,
+          regionId: row.region_id,
           regionName:
             (row as { region?: { name: string } | null }).region?.name ?? null,
           name: row.name,
