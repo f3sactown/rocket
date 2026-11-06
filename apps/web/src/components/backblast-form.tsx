@@ -22,6 +22,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { loadRoster, loadSites, nextDateOn, sitesByDay } from "@/lib/regions";
 import { useLoad, useUserRegion } from "@/lib/use-region";
+import { useWorkoutLink } from "@/lib/workout-link";
 import { AttendanceInput } from "./attendance-input";
 import { LibraryButton } from "./library-picker";
 import { QPicker } from "./q-picker";
@@ -280,6 +281,10 @@ export function BackblastForm({
   const page = useRef<HTMLDivElement>(null);
   const navigated = useRef(false);
   const language = useAuth().user?.language ?? "f3";
+  // A shared backblast ends with a link to its workout, when it has a public one.
+  const workoutLink = useWorkoutLink(
+    mode === "backblast" ? backblast.workoutId : undefined,
+  );
   // The user's region's sheet supplies AO suggestions (with locations) and PAX names.
   const region = useUserRegion();
   const sites = useLoad(region ? () => loadSites(region) : null, [region?.id]);
@@ -764,7 +769,7 @@ export function BackblastForm({
                 mode === "workout"
                   ? // The workout's notes are the Q's own, so they aren't shared.
                     formatBackblast({ ...backblast, notes: "" }, language)
-                  : copyText(backblast, language)
+                  : copyText(backblast, language, workoutLink)
               }
               className="btn w-full px-4 text-base"
             />

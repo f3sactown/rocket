@@ -61,7 +61,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   highlighted.
 - **Settings:** name, email, password, region, F3 or FiA wording, theme, accent color (F3 red, FiA teal, blue, green, orange or violet), the launch
   animation, what Home shows, whose public workouts show (and whether Discover includes yours),
-  and swipe directions. **Your data** exports everything you have
+  swipe directions, and **Sharing**: a copied or shared backblast from a public workout ends with
+  a link to that workout asking PAX to like and reuse it (right above the hidden PAX list; on by
+  default, never shown on screen). **Your data** exports everything you have
   (settings, workouts with their notes, backblasts, saved templates, archive and likes) as a JSON
   file, and imports one back: it shows what's new and, for workouts, backblasts or templates you
   already have, lets you keep yours, replace them or keep both (settings are optional). **Reset

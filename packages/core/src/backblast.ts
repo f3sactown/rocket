@@ -428,14 +428,27 @@ export function paxList(backblast: Backblast): string {
 }
 
 /**
- * The text that's copied or shared: the backblast, then a few blank lines and the PAX list. The
- * list isn't shown on screen.
+ * The line that invites PAX to like and reuse the workout a backblast was made from, with a link
+ * to it.
+ */
+export function workoutLinkText(url: string): string {
+  return `Enjoyed this workout? Give it a like, and Reuse it to run it yourself: ${url}`;
+}
+
+/**
+ * The text that's copied or shared: the backblast, then a few blank lines and the hidden part,
+ * which isn't shown on screen: a closing line such as the link to its workout (when given), then
+ * one blank line and the PAX list.
  */
 export function copyText(
   backblast: Backblast,
   language: Language = "f3",
+  closing?: string,
 ): string {
-  return [formatBackblast(backblast, language), paxList(backblast)]
+  const hidden = [closing?.trim(), paxList(backblast)]
+    .filter(Boolean)
+    .join("\n\n");
+  return [formatBackblast(backblast, language), hidden]
     .filter(Boolean)
     .join("\n\n\n\n");
 }

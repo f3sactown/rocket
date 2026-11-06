@@ -29,6 +29,7 @@ const ACCOUNT_KEYS = [
   "public_sources",
   "discover_include_own",
   "discover_own_asked",
+  "share_workout_link",
 ] as const;
 
 /** Everything a user owns, as written to an export file. */
@@ -629,6 +630,7 @@ export async function resetAccount(): Promise<void> {
       public_sources: null,
       discover_include_own: null,
       discover_own_asked: null,
+      share_workout_link: null,
     },
   });
   if (error) throw new Error(error.message);

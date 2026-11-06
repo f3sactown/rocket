@@ -15,6 +15,7 @@ import { CountPanel } from "@/components/count-panel";
 import { ShareButton } from "@/components/share-button";
 import { ArchiveIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { fromRow } from "@/lib/backblast";
+import { useWorkoutLink } from "@/lib/workout-link";
 import { archive, unarchive } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 
@@ -66,6 +67,9 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
       .eq("backblast_id", id)
       .then(({ data }) => setArchived((data ?? []).length > 0));
   }, [id]);
+
+  // The copied and shared text ends with a link to its workout, when it has a public one.
+  const workoutLink = useWorkoutLink(result?.backblast?.workoutId);
 
   async function toggleArchive() {
     setDeleteError(null);
@@ -119,10 +123,10 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
       </pre>
 
       <div className="grid grid-cols-2 gap-3">
-        <CopyButton text={copyText(backblast, user.language)} />
+        <CopyButton text={copyText(backblast, user.language, workoutLink)} />
         <ShareButton
           title={backblast.title}
-          text={copyText(backblast, user.language)}
+          text={copyText(backblast, user.language, workoutLink)}
         />
       </div>
       {result.authorId === user.id && (
