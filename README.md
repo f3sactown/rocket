@@ -24,7 +24,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     each timer's countdown (beeping through the last 10 seconds). The timer in use pins to the top
     when scrolled away, and the screen stays awake.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
-    choose again. Each workout shows how many times it's been reused (counting archived copies).
+    choose again. Each workout shows how many times it's been reused by other Qs (counting archived copies; reusing your own doesn't count, just as you can't like your own).
     A reused workout credits the Q who wrote the first one (`workouts.original_author_id`), even
     when it's a reuse of a reuse: its page shows "Originally by" them and their region.
   - A finished workout is **public** by default: anyone signed in can see, like and reuse it. Its Q
