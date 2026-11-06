@@ -33,11 +33,18 @@ const SOURCES: { value: LibrarySource; label: string; color: string }[] = [
     label: "FiA",
     color: "var(--badge-fia)",
   },
+  {
+    value: "region",
+    label: "Region",
+    color: "var(--badge-region)",
+  },
 ];
 
-/** A small F3 or FiA badge in that organization's color. */
-function SourceBadge({ source }: { source: LibrarySource }) {
-  const { label, color } = SOURCES.find((s) => s.value === source)!;
+/** A small F3 or FiA badge in that organization's color, or the region's name for its own. */
+function SourceBadge({ entry }: { entry: LibraryEntry }) {
+  const source = SOURCES.find((s) => s.value === entry.source)!;
+  const label = (entry.source === "region" && entry.regionName) || source.label;
+  const color = source.color;
   return (
     <span
       className="shrink-0 rounded-full px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-black"
@@ -149,7 +156,7 @@ function LibraryPicker({
               >
                 FiA
               </a>{" "}
-              Exicons, updated weekly.
+              Exicons (updated weekly), and from regions’ own sheets.
             </p>
           </div>
           <button
@@ -196,11 +203,20 @@ export function LibraryBrowser({
   const [kind, setKind] = useState<Kind>("all");
   const [tags, setTags] = useState<string[]>(initialTags);
   // Both sources to start; at least one stays on.
-  const [sources, setSources] = useState<LibrarySource[]>(["f3", "fia"]);
+  const [sources, setSources] = useState<LibrarySource[]>([
+    "f3",
+    "fia",
+    "region",
+  ]);
   const [shown, setShown] = useState(PAGE);
   const [open, setOpen] = useState<string | null>(null);
 
   const entries = useMemo(() => library.value ?? [], [library.value]);
+  // The Region chip only shows once some region has entries of its own.
+  const hasRegion = useMemo(
+    () => entries.some((entry) => entry.source === "region"),
+    [entries],
+  );
   // Every tag but "Routine" (that's the Exercises / Routines switch), most used first.
   const allTags = useMemo(() => {
     const counts = new Map<string, number>();
@@ -230,7 +246,8 @@ export function LibraryBrowser({
     setShown(PAGE);
     setSources((current) =>
       current.includes(source)
-        ? current.length > 1
+        ? // At least one chip that's on screen stays on.
+          current.filter((s) => s !== "region" || hasRegion).length > 1
           ? current.filter((s) => s !== source)
           : current
         : [...current, source],
@@ -269,27 +286,29 @@ export function LibraryBrowser({
         className="flex items-center gap-2 text-xs text-ink-soft"
       >
         <span>From</span>
-        {SOURCES.map((option) => {
-          const on = sources.includes(option.value);
-          return (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={on}
-              onClick={() => toggleSource(option.value)}
-              className={`rounded-full border px-3 py-1 font-bold transition-colors ${
-                on ? "text-black" : "border-line text-muted"
-              }`}
-              style={
-                on
-                  ? { background: option.color, borderColor: option.color }
-                  : undefined
-              }
-            >
-              {option.label}
-            </button>
-          );
-        })}
+        {SOURCES.filter((option) => option.value !== "region" || hasRegion).map(
+          (option) => {
+            const on = sources.includes(option.value);
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggleSource(option.value)}
+                className={`rounded-full border px-3 py-1 font-bold transition-colors ${
+                  on ? "text-black" : "border-line text-muted"
+                }`}
+                style={
+                  on
+                    ? { background: option.color, borderColor: option.color }
+                    : undefined
+                }
+              >
+                {option.label}
+              </button>
+            );
+          },
+        )}
       </div>
       <div
         role="radiogroup"
@@ -445,7 +464,7 @@ function Entry({
       >
         <span className="flex w-full items-center justify-between gap-2">
           <span className="font-medium text-ink">{entry.name}</span>
-          <SourceBadge source={entry.source} />
+          <SourceBadge entry={entry} />
         </span>
         {entry.aliases.length > 0 && (
           <span className="text-xs text-muted">
@@ -489,7 +508,11 @@ function Entry({
               rel="noreferrer"
               className="link ml-auto text-xs"
             >
-              {entry.source === "fia" ? "FiA Exicon ↗" : "F3 Codex ↗"}
+              {entry.source === "region"
+                ? `${entry.regionName ?? "Region"} sheet ↗`
+                : entry.source === "fia"
+                  ? "FiA Exicon ↗"
+                  : "F3 Codex ↗"}
             </a>
             {entry.videoUrl && (
               <a

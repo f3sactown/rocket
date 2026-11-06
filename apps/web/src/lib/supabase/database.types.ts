@@ -202,12 +202,21 @@ export type Database = {
           is_routine: boolean;
           video_url: string | null;
           url: string;
-          source: "f3" | "fia";
+          source: "f3" | "fia" | "region";
+          region_id: string | null;
           synced_at: string;
         };
         Insert: Database["public"]["Tables"]["exicon_entries"]["Row"];
         Update: Partial<Database["public"]["Tables"]["exicon_entries"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "exicon_entries_region_id_fkey";
+            columns: ["region_id"];
+            isOneToOne: false;
+            referencedRelation: "regions";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       workout_likes: {
         Row: { user_id: string; workout_id: string; created_at: string };

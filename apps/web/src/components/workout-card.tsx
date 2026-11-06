@@ -16,8 +16,8 @@ function byline(workout: ListItem): string {
 
 /**
  * Public workouts with their likes and reuses (like button on others'), as a list or, with
- * `tiles`, a row of tiles that scrolls sideways (for Discover, without the "Needs backblast"
- * badge).
+ * `tiles`, a row of tiles that scrolls sideways (Discover and Home's Trending, without the
+ * "Needs backblast" badge).
  */
 export function WorkoutCards({
   workouts,
@@ -32,7 +32,7 @@ export function WorkoutCards({
   onStatsChange: (id: string, stats: WorkoutStats) => void;
   tiles?: boolean;
 }) {
-  // Discover's tiles never flag a workout as needing a backblast, even your own.
+  // Tiles never flag a workout as needing a backblast, even your own.
   const needsBackblast = useNeedsBackblast(tiles ? [] : workouts, userId);
   const statsBar = (workout: ListItem) => (
     <WorkoutStatsBar
@@ -48,7 +48,7 @@ export function WorkoutCards({
     return (
       // One row per section that scrolls sideways, reaching the card's edges so tiles slide under
       // them; each stops with a tile lined up at the start.
-      <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:-mx-8 sm:scroll-px-8 sm:px-8">
+      <ul className="scroll-row -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:-mx-8 sm:scroll-px-8 sm:px-8">
         {workouts.map((workout) => (
           <li key={workout.id} className="w-40 shrink-0 snap-start sm:w-48">
             <Link

@@ -117,6 +117,7 @@ function HomePage({ user }: { user: CurrentUser }) {
                 </p>
               ) : (
                 <WorkoutCards
+                  tiles
                   workouts={hot.workouts}
                   stats={hot.stats}
                   userId={user.id}

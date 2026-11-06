@@ -38,7 +38,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
   Newest, each a row of tiles that scrolls sideways, naming each author and their region, with
   like buttons. Settings → Public workouts chooses F3's, FiA's or both (the default),
-  going by each author's region; authors with no region always show. Trending on Home follows it.
+  going by each author's region; authors with no region always show. Trending on Home follows it, and
+  scrolls sideways the same way. The rows' scrollbars are thin and faint, with no arrows.
 - **Backblasts** are made from a finished workout with **Create backblast**, or from **New
   backblast**, which lists the finished, unarchived workouts that don't have a backblast yet to pick
   from, or starts one without a workout. The backblast holds
@@ -217,6 +218,12 @@ The Library is a weekly copy of two Exicons:
   Description) gives exercises and routines; **TERM** rows (vocabulary) are left out, and the "Ab",
   "Warm up" and "Partner" categories become the Core, Warm-Up and Partner tags. Its **Lexirades 21**
   tab adds exercises tagged "Lexirades 21".
+- **Region:** a region's own exercises and routines, from an optional **Exicon** tab in its Google
+  Sheet (Name, Category, Tags, Description, Author), copied in by the nightly region sync
+  (`replace_region_exicon()`). A Category of "Routine" makes a routine, any other category (but
+  "Exercise") becomes a tag, Tags are split on commas, and the Author goes at the end of the
+  description in parentheses. These entries carry a badge with the region's name, and a **Region**
+  chip filters them once any region has some.
 
 `.github/workflows/sync-exicon.yml` runs `scripts/sync-exicon.mjs` every Monday (about 2am Pacific,
 or on demand from the Actions tab). Each source replaces its own rows in `exicon_entries`, so if one

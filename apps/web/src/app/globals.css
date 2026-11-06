@@ -38,6 +38,8 @@
 :root {
   --badge-f3: #fb923c;
   --badge-fia: #2dd4bf;
+  /* A region's own entries: a neutral badge with the region's name. */
+  --badge-region: #d4d4d8;
 }
 :root[data-accent] {
   --badge-f3: #e0544a;
@@ -187,6 +189,29 @@ body::before {
 
 @layer components {
   /* Raised card, like the outer "Tonight" panel. */
+  /* A sideways-scrolling row with a thin, quiet scrollbar: no arrows, a faint thumb on a clear
+     track that brightens on hover. */
+  .scroll-row {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+  .scroll-row::-webkit-scrollbar {
+    height: 6px;
+  }
+  .scroll-row::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scroll-row::-webkit-scrollbar-thumb {
+    background: var(--line-strong);
+    border-radius: 9999px;
+  }
+  .scroll-row:hover::-webkit-scrollbar-thumb {
+    background: var(--muted);
+  }
+  .scroll-row::-webkit-scrollbar-button {
+    display: none;
+  }
+
   .card {
     @apply flex flex-col gap-5 rounded-[22px] border border-line px-4 py-5 sm:gap-6 sm:rounded-[28px] sm:p-8;
     background: linear-gradient(180deg, var(--surface-raised), var(--surface));
