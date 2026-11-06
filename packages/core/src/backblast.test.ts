@@ -182,7 +182,7 @@ describe("formatBackblast", () => {
     expect(parts[1].trim()).toBe(
       "Title: Hills for Days\n\nThe Thang:\n11s on the hill",
     );
-    expect(parts[2].trim()).toBe("Second F:\nCoffee");
+    expect(parts[2].trim()).toBe("Coffeeteria:\nCoffee");
   });
 
   it("leaves out a part with nothing in it", () => {
@@ -194,22 +194,20 @@ describe("formatBackblast", () => {
 });
 
 describe("FiA vocabulary", () => {
-  it("uses Warm-up, The Workout, Community and Fellowship", () => {
+  it("uses Warm-up, The Workout and CoFiA", () => {
     const fia = formatBackblast(
       {
         ...base,
         warmup: "SSH x20",
         thang: "11s on the hill",
-        thirdF: "Praises",
         secondF: "Coffee",
       },
       "fia",
     );
     expect(fia).toContain("Warm-up:\nSSH x20");
     expect(fia).toContain("The Workout:\n11s on the hill");
-    expect(fia).toContain("Community:\nPraises");
-    expect(fia).toContain("Fellowship:\nCoffee");
-    expect(fia).not.toMatch(/Warm-o-rama|Thang|Third F|Second F/);
+    expect(fia).toContain("CoFiA:\nCoffee");
+    expect(fia).not.toMatch(/Warm-o-rama|Thang|Coffeeteria/);
   });
 
   it("keeps F3 words by default", () => {
@@ -357,6 +355,7 @@ describe("copyWorkout", () => {
         q: "Casper",
         attendees: [],
         notes: "Mine",
+        announcements: "Coffee after",
       },
       workout,
     );
@@ -367,6 +366,8 @@ describe("copyWorkout", () => {
       wordsOfWisdom: "Keep going",
       notes: "Mine",
       q: "Casper",
+      // Announcements are the backblast's own, not the workout's.
+      announcements: "Coffee after",
     });
   });
 });

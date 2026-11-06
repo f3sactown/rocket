@@ -50,7 +50,6 @@ export function fromRow(row: BackblastRow): Backblast {
     attendees: parseAttendees(row.attendees),
     announcements: row.announcements ?? undefined,
     wordsOfWisdom: row.words_of_wisdom ?? undefined,
-    thirdF: row.third_f ?? undefined,
     secondF: row.second_f ?? undefined,
     workoutId: row.workout_id ?? undefined,
   };
@@ -74,7 +73,8 @@ export function toInsert(
     attendees: parseAttendees(backblast.attendees) as unknown as Json,
     announcements: text(backblast.announcements),
     words_of_wisdom: text(backblast.wordsOfWisdom),
-    third_f: text(backblast.thirdF),
+    // The Third F section is gone; saving clears any old one.
+    third_f: null,
     second_f: text(backblast.secondF),
     workout_id: backblast.workoutId ?? null,
   };
@@ -103,7 +103,7 @@ export function fromWorkoutRow(row: WorkoutRow, notes?: string): Workout {
     reusedFrom: row.reused_from ?? undefined,
     originalAuthorId: row.original_author_id ?? undefined,
     notes: notes || undefined,
-    announcements: row.announcements ?? undefined,
+    // Workouts no longer have announcements (a backblast has its own); old ones are dropped.
     wordsOfWisdom: row.words_of_wisdom ?? undefined,
   };
 }
@@ -132,7 +132,7 @@ export function toWorkoutInsert(
           ? { ...t, music: undefined }
           : t,
       ) as unknown as Json,
-    announcements: text(workout.announcements),
+    announcements: null,
     words_of_wisdom: text(workout.wordsOfWisdom),
     reused_from: workout.reusedFrom ?? null,
     original_author_id: workout.originalAuthorId ?? null,

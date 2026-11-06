@@ -39,7 +39,6 @@ export interface Backblast {
   attendees: Attendee[];
   announcements?: string;
   wordsOfWisdom?: string;
-  thirdF?: string;
   secondF?: string;
   /** The workout this backblast was made from, if any. */
   workoutId?: string;
@@ -99,7 +98,6 @@ export const WORKOUT_SECTIONS = [
   "introduction",
   "warmup",
   "thang",
-  "announcements",
   "wordsOfWisdom",
 ] as const satisfies readonly (keyof Backblast)[];
 
@@ -393,7 +391,6 @@ export function backblastParts(
       text: blocks(
         labeled("Announcements", backblast.announcements),
         labeled("Words of Wisdom", backblast.wordsOfWisdom),
-        labeled(terms.thirdF, backblast.thirdF),
         labeled(terms.secondF, backblast.secondF),
       ),
     },

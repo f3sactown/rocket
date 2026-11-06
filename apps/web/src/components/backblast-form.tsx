@@ -45,7 +45,6 @@ type TextKey =
   | "notes"
   | "announcements"
   | "wordsOfWisdom"
-  | "thirdF"
   | "secondF";
 
 /** One page of the backblast form. */
@@ -73,7 +72,6 @@ const WORKOUT_TEXT: TextKey[] = [
   "introduction",
   "warmup",
   "thang",
-  "announcements",
   "wordsOfWisdom",
 ];
 
@@ -140,12 +138,6 @@ function allSteps(language: Language): Step[] {
     },
     {
       kind: "text",
-      name: "thirdF",
-      title: terms.thirdF,
-      hint: "Prayer requests, special intentions, or praises",
-    },
-    {
-      kind: "text",
       name: "secondF",
       title: terms.secondF,
       hint: "Usually coffee",
@@ -174,7 +166,6 @@ function stepsFor(language: Language, mode: FormMode): Step[] {
           ...text("notes"),
           hint: "Notes for you as the Q only. No one else sees them, and they're left out when the workout is copied or shared.",
         },
-        text("announcements"),
         text("wordsOfWisdom"),
         { ...kind("review"), hint: "The workout as it will be copied." },
       ]
@@ -182,7 +173,7 @@ function stepsFor(language: Language, mode: FormMode): Step[] {
         kind("workout"),
         text("notes"),
         kind("attendance"),
-        text("thirdF"),
+        text("announcements"),
         text("secondF"),
         kind("review"),
       ];

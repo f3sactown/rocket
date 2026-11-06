@@ -15,13 +15,7 @@ import { BackblastForm, type FormMode } from "./backblast-form";
 import { TEMPLATE_COLUMNS, type SectionTemplate } from "./section-templates";
 
 /** The workout's sections, which a workout's defaults fill in. */
-const WORKOUT_DEFAULTS = [
-  "introduction",
-  "warmup",
-  "thang",
-  "announcements",
-  "wordsOfWisdom",
-];
+const WORKOUT_DEFAULTS = ["introduction", "warmup", "thang", "wordsOfWisdom"];
 
 /**
  * The default-template sections a new one starts with. A backblast made from a workout takes those
@@ -29,7 +23,7 @@ const WORKOUT_DEFAULTS = [
  */
 function defaultSections(mode: FormMode, backblast: Backblast): string[] {
   if (mode === "workout") return WORKOUT_DEFAULTS;
-  const own = ["thirdF", "secondF"];
+  const own = ["announcements", "secondF"];
   return backblast.workoutId ? own : [...own, ...WORKOUT_DEFAULTS];
 }
 
@@ -49,7 +43,6 @@ function withDefaults(
       | "thang"
       | "announcements"
       | "wordsOfWisdom"
-      | "thirdF"
       | "secondF";
     // Only an empty section is filled, so nothing already written is replaced.
     if (!filled[section]?.trim()) filled[section] = template.body;

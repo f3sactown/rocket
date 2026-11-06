@@ -234,7 +234,6 @@ function RunWorkout({ user }: { user: CurrentUser }) {
             </section>
           )}
           {section("Notes", workout.notes)}
-          {section("Announcements", workout.announcements)}
           {section("Words of Wisdom", workout.wordsOfWisdom)}
         </div>
         {(() => {
