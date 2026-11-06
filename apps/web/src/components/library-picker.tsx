@@ -165,7 +165,8 @@ function LibraryPicker({
               >
                 FiA
               </a>{" "}
-              Exicons (updated weekly), and from regions’ own sheets.
+              Exicons (updated weekly), plus each region&apos;s own Exicon from
+              its sheet (updated daily).
             </p>
           </div>
           <button
