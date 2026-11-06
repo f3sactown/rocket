@@ -59,7 +59,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. **Archive** lists
   what you've archived; **Search** finds workouts and backblasts by any word, with matches
   highlighted.
-- **Settings:** name, email, password, region, F3 or FiA wording, theme, accent color, the launch
+- **Settings:** name, email, password, region, F3 or FiA wording, theme, accent color (F3 red, FiA teal, blue, green, orange or violet), the launch
   animation, what Home shows, whose public workouts show (and whether Discover includes yours),
   and swipe directions. **Your data** exports everything you have
   (settings, workouts with their notes, backblasts, saved templates, archive and likes) as a JSON

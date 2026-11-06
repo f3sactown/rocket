@@ -72,6 +72,11 @@
   --rocket-mid: #b4642a;
   --rocket-dark: #7a421b;
 }
+:root[data-accent="violet"] {
+  --rocket-light: #c4b5fd;
+  --rocket-mid: #6d4bb8;
+  --rocket-dark: #4a3380;
+}
 
 /* Light: the same layering as soft paper and ink, with a deeper red for contrast on white. */
 :root[data-theme="light"] {
@@ -131,6 +136,14 @@
 :root[data-accent="orange"][data-theme="light"] {
   --accent: #ea580c;
   --accent-soft: rgb(234 88 12 / 0.12);
+}
+:root[data-accent="violet"] {
+  --accent: #a78bfa;
+  --accent-soft: rgb(167 139 250 / 0.14);
+}
+:root[data-accent="violet"][data-theme="light"] {
+  --accent: #7c3aed;
+  --accent-soft: rgb(124 58 237 / 0.12);
 }
 
 @theme inline {
