@@ -5,16 +5,22 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
-import { PlusIcon } from "@/components/icons";
+import { PlayIcon, PlusIcon } from "@/components/icons";
 import { WorkoutCards } from "@/components/workout-card";
 import {
   loadFutureWorkouts,
   loadLists,
+  loadTodaysWorkouts,
   type ListItem,
 } from "@/lib/backblast-list";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
 import type { WorkoutStats } from "@/lib/workout-social";
-import { loadLatestPost, loadPaxStats } from "@/lib/regions";
+import {
+  endMinutes,
+  loadLatestPost,
+  loadPaxStats,
+  startMinutes,
+} from "@/lib/regions";
 import { useLoad, useUserRegion } from "@/lib/use-region";
 
 export default function Home() {
@@ -79,6 +85,7 @@ function HomePage({ user }: { user: CurrentUser }) {
         <h1 className="card-title">Hey, {user.name}</h1>
       </header>
       {show.has("totals") && <Totals user={user} />}
+      {show.has("today") && <TodaysWorkouts user={user} />}
 
       {error ? (
         <p className="panel px-3 py-8 text-center text-accent">{error}</p>
@@ -164,6 +171,59 @@ function HomePage({ user }: { user: CurrentUser }) {
 }
 
 /** A heading, with a link to the full list if there is one, above a short list. */
+/** How long after a workout's end time it still shows under Today's workouts. */
+const TODAY_GRACE_MINUTES = 60;
+
+/**
+ * Your finished workouts dated today, by start time; tap one to run it. Each drops off an hour
+ * after its end time (one with no time stays all day), and the section hides when none are left.
+ */
+function TodaysWorkouts({ user }: { user: CurrentUser }) {
+  const workouts = useLoad(() => loadTodaysWorkouts(user.id), [user.id]);
+  // The time now, updated each minute so workouts drop off on their own.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+  const shown = (workouts.value ?? [])
+    .filter((w) => endMinutes(w.time ?? "") + TODAY_GRACE_MINUTES > minutesNow)
+    .sort(
+      (a, b) =>
+        startMinutes(a.time ?? "") - startMinutes(b.time ?? "") ||
+        a.title.localeCompare(b.title),
+    );
+  if (!shown.length) return null;
+  return (
+    <Recent title="Today's workouts">
+      <ul className="panel flex flex-col divide-y divide-line p-2">
+        {shown.map((workout) => (
+          <li key={workout.id}>
+            <Link
+              href={`/workout/run?id=${workout.id}`}
+              className="group flex items-center gap-4 rounded-xl px-3 py-3.5 transition-colors hover:bg-hover"
+            >
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate font-medium text-ink">
+                  {workout.title || "Untitled workout"}
+                </span>
+                <span className="truncate text-sm text-muted">
+                  {[workout.ao, workout.time].filter(Boolean).join(" · ")}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-accent">
+                <PlayIcon />
+                Run
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Recent>
+  );
+}
+
 function Recent({
   title,
   href,

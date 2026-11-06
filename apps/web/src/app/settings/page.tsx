@@ -470,7 +470,11 @@ function HomeSectionsPicker({ sections }: { sections: HomeSection[] }) {
     setChosen(next);
     setError(null);
     const { error } = await createClient().auth.updateUser({
-      data: { home_sections: next },
+      // Also which sections existed, so ones added later can start on.
+      data: {
+        home_sections: next,
+        home_sections_seen: HOME_SECTIONS.map((s) => s.value),
+      },
     });
     if (error) {
       setChosen(before);

@@ -6,7 +6,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 ## What it does
 
 - **Home:** your total posts and Qs from your region's sheet (with the date the sheet was last
-  updated), your drafts, **Future workouts** (your finished workouts dated after today, soonest
+  updated), **Today's workouts** (your finished workouts dated today, by start time; tap one to
+  run it; each drops off an hour after its end time, and the section hides when none are left), your drafts, **Future workouts** (your finished workouts dated after today, soonest
   first; Recent workouts then keeps to today and earlier), trending workouts, and your most recent
   workouts and backblasts. Which of
   these show is chosen in Settings → Home screen (all but trending, to start).

@@ -155,6 +155,23 @@ export async function loadLists(
   return { drafts: asItems(kind, d.data), published: asItems(kind, p.data) };
 }
 
+/** Your finished workouts dated today, leaving out what you've archived. */
+export async function loadTodaysWorkouts(
+  userId: string,
+): Promise<(ListItem & { time: string | null })[]> {
+  const archived = await loadArchivedIds("workout");
+  let query = createClient()
+    .from("workouts")
+    .select(`${listColumns("workout")}, time`)
+    .eq("status", "published")
+    .eq("author_id", userId)
+    .eq("date", localToday());
+  if (archived.length) query = query.not("id", "in", `(${archived.join(",")})`);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return asItems("workout", data) as (ListItem & { time: string | null })[];
+}
+
 /** Your finished workouts dated after today, soonest first, leaving out what you've archived. */
 export async function loadFutureWorkouts(
   userId: string,

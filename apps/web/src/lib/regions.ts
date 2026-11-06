@@ -345,7 +345,7 @@ function weekdayIndex(day: string): number {
 }
 
 /** Minutes after midnight of the first time in a value like "5:15am-6:00am", or a day's worth. */
-function startMinutes(time: string): number {
+export function startMinutes(time: string): number {
   const match = /(\d{1,2})(?::(\d{2}))?\s*([ap])?/i.exec(time);
   if (!match) return 24 * 60;
   let hours = Number(match[1]) % 12;
@@ -373,8 +373,11 @@ export function sitesByDay(sites: Site[]): { day: string; sites: Site[] }[] {
     }));
 }
 
-/** Minutes after midnight of the end of a time like "5:15am-6:00am", or its start if no end. */
-function endMinutes(time: string): number {
+/**
+ * Minutes after midnight of the end of a time like "5:15am-6:00am", or its start if no end; a day's
+ * worth when there's no time at all.
+ */
+export function endMinutes(time: string): number {
   const parts = time.split(/[-–]/);
   return startMinutes(parts[parts.length - 1]!.trim() || time);
 }
