@@ -566,8 +566,15 @@ async function importSettings(
   // single region on the profile.
   let regionId =
     typeof account.region_id === "string" ? account.region_id : null;
-  const profile: { name?: string; region_id: string | null } = {
-    region_id: regionId?.startsWith("all:") ? null : regionId,
+  const scope =
+    regionId === "all:f3" ? "f3" : regionId === "all:fia" ? "fia" : null;
+  const profile: {
+    name?: string;
+    region_id: string | null;
+    region_scope: "f3" | "fia" | null;
+  } = {
+    region_id: scope ? null : regionId,
+    region_scope: scope,
   };
   if (typeof account.name === "string" && account.name.trim())
     profile.name = account.name.trim();
@@ -617,7 +624,11 @@ export async function resetAccount(): Promise<void> {
     // A workout's notes go with it.
     () => supabase.from("workouts").delete().eq("author_id", id),
     () => supabase.from("section_templates").delete().eq("owner_id", id),
-    () => supabase.from("profiles").update({ region_id: null }).eq("id", id),
+    () =>
+      supabase
+        .from("profiles")
+        .update({ region_id: null, region_scope: null })
+        .eq("id", id),
   ];
   for (const step of steps) {
     const { error } = await step();

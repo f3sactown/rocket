@@ -15,18 +15,21 @@ export type Database = {
           id: string;
           name: string;
           region_id: string | null;
+          region_scope: "f3" | "fia" | null;
           created_at: string;
         };
         Insert: {
           id: string;
           name: string;
           region_id?: string | null;
+          region_scope?: "f3" | "fia" | null;
           created_at?: string;
         };
         Update: {
           id?: string;
           name?: string;
           region_id?: string | null;
+          region_scope?: "f3" | "fia" | null;
           created_at?: string;
         };
         Relationships: [
