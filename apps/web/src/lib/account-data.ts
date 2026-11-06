@@ -10,7 +10,6 @@ type Tables = Database["public"]["Tables"];
 type WorkoutRow = Tables["workouts"]["Row"];
 type BackblastRow = Tables["backblasts"]["Row"];
 type TemplateRow = Tables["section_templates"]["Row"];
-type ExerciseRow = Tables["user_exercises"]["Row"];
 
 /** Per-device settings that travel in an export, by their localStorage key. */
 export const DEVICE_KEYS = [
@@ -47,8 +46,6 @@ export interface AccountExport {
   workouts: (WorkoutRow & { notes?: string })[];
   backblasts: BackblastRow[];
   templates: TemplateRow[];
-  /** Your own Library exercises and routines (missing from exports made before they existed). */
-  exercises: ExerciseRow[];
   archives: { workouts: string[]; backblasts: string[] };
   likes: string[];
 }
@@ -83,10 +80,7 @@ function readDevice(): Record<string, string> {
   return device;
 }
 
-/**
- * Gathers the user's settings, workouts, backblasts, templates, own Library exercises, archive
- * and likes.
- */
+/** Gathers the user's settings, workouts, backblasts, templates, archive and likes. */
 export async function exportAccount(): Promise<AccountExport> {
   const supabase = createClient();
   const {
@@ -95,77 +89,61 @@ export async function exportAccount(): Promise<AccountExport> {
   if (!user) throw new Error("Sign in to export your data.");
   const id = user.id;
 
-  const [
-    workouts,
-    notes,
-    backblasts,
-    templates,
-    exercises,
-    wArchives,
-    bArchives,
-    likes,
-  ] = await Promise.all([
-    all<WorkoutRow>((a, b) =>
-      supabase
-        .from("workouts")
-        .select("*")
-        .eq("author_id", id)
-        .order("created_at")
-        .range(a, b),
-    ),
-    all<{ workout_id: string; body: string }>((a, b) =>
-      supabase
-        .from("workout_notes")
-        .select("workout_id, body")
-        .eq("author_id", id)
-        .range(a, b),
-    ),
-    all<BackblastRow>((a, b) =>
-      supabase
-        .from("backblasts")
-        .select("*")
-        .eq("author_id", id)
-        .order("created_at")
-        .range(a, b),
-    ),
-    all<TemplateRow>((a, b) =>
-      supabase
-        .from("section_templates")
-        .select("*")
-        .eq("owner_id", id)
-        .order("name")
-        .range(a, b),
-    ),
-    all<ExerciseRow>((a, b) =>
-      supabase
-        .from("user_exercises")
-        .select("*")
-        .eq("owner_id", id)
-        .order("name")
-        .range(a, b),
-    ),
-    all<{ workout_id: string }>((a, b) =>
-      supabase
-        .from("workout_archives")
-        .select("workout_id")
-        .eq("user_id", id)
-        .range(a, b),
-    ),
-    all<{ backblast_id: string }>((a, b) =>
-      supabase
-        .from("backblast_archives")
-        .select("backblast_id")
-        .eq("user_id", id)
-        .range(a, b),
-    ),
-    all<{ workout_id: string }>((a, b) =>
-      supabase
-        .from("workout_likes")
-        .select("workout_id")
-        .eq("user_id", id)
-        .range(a, b),
-    ),
-  ]);
+  const [workouts, notes, backblasts, templates, wArchives, bArchives, likes] =
+    await Promise.all([
+      all<WorkoutRow>((a, b) =>
+        supabase
+          .from("workouts")
+          .select("*")
+          .eq("author_id", id)
+          .order("created_at")
+          .range(a, b),
+      ),
+      all<{ workout_id: string; body: string }>((a, b) =>
+        supabase
+          .from("workout_notes")
+          .select("workout_id, body")
+          .eq("author_id", id)
+          .range(a, b),
+      ),
+      all<BackblastRow>((a, b) =>
+        supabase
+          .from("backblasts")
+          .select("*")
+          .eq("author_id", id)
+          .order("created_at")
+          .range(a, b),
+      ),
+      all<TemplateRow>((a, b) =>
+        supabase
+          .from("section_templates")
+          .select("*")
+          .eq("owner_id", id)
+          .order("name")
+          .range(a, b),
+      ),
+      all<{ workout_id: string }>((a, b) =>
+        supabase
+          .from("workout_archives")
+          .select("workout_id")
+          .eq("user_id", id)
+          .range(a, b),
+      ),
+      all<{ backblast_id: string }>((a, b) =>
+        supabase
+          .from("backblast_archives")
+          .select("backblast_id")
+          .eq("user_id", id)
+          .range(a, b),
+      ),
+      all<{ workout_id: string }>((a, b) =>
+        supabase
+          .from("workout_likes")
+          .select("workout_id")
+          .eq("user_id", id)
+          .range(a, b),
+      ),
+    ]);
 
   const notesById = new Map(notes.map((n) => [n.workout_id, n.body]));
   const meta = user.user_metadata ?? {};
@@ -189,7 +167,6 @@ export async function exportAccount(): Promise<AccountExport> {
     ),
     backblasts,
     templates,
-    exercises,
     archives: {
       workouts: wArchives.map((a) => a.workout_id),
       backblasts: bArchives.map((a) => a.backblast_id),
@@ -232,7 +209,6 @@ export function parseExport(text: string): AccountExport {
     workouts: data.workouts ?? [],
     backblasts: data.backblasts ?? [],
     templates: data.templates ?? [],
-    exercises: data.exercises ?? [],
     archives: {
       workouts: data.archives?.workouts ?? [],
       backblasts: data.archives?.backblasts ?? [],
@@ -241,7 +217,7 @@ export function parseExport(text: string): AccountExport {
   } as AccountExport;
 }
 
-export type Category = "workouts" | "backblasts" | "templates" | "exercises";
+export type Category = "workouts" | "backblasts" | "templates";
 
 /** What to do with an imported item that matches one already here. */
 export type ConflictChoice = "keep" | "replace" | "both";
@@ -261,12 +237,8 @@ export interface ImportPlan {
     workouts: Set<string>;
     backblasts: Set<string>;
     templates: Map<string, TemplateRow>;
-    /** Your own Library exercises, by name (ignoring case). */
-    exercises: Map<string, ExerciseRow>;
   };
 }
-
-const exerciseKey = (e: { name: string }) => e.name.trim().toLowerCase();
 
 const templateKey = (t: { section: string; name: string }) =>
   `${t.section}\u0000${t.name}`;
@@ -278,7 +250,7 @@ export async function planImport(data: AccountExport): Promise<ImportPlan> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Sign in to import.");
-  const [workouts, backblasts, templates, exercises] = await Promise.all([
+  const [workouts, backblasts, templates] = await Promise.all([
     all<{ id: string }>((a, b) =>
       supabase
         .from("workouts")
@@ -300,19 +272,11 @@ export async function planImport(data: AccountExport): Promise<ImportPlan> {
         .eq("owner_id", user.id)
         .range(a, b),
     ),
-    all<ExerciseRow>((a, b) =>
-      supabase
-        .from("user_exercises")
-        .select("*")
-        .eq("owner_id", user.id)
-        .range(a, b),
-    ),
   ]);
   const existing = {
     workouts: new Set(workouts.map((w) => w.id)),
     backblasts: new Set(backblasts.map((b) => b.id)),
     templates: new Map(templates.map((t) => [templateKey(t), t])),
-    exercises: new Map(exercises.map((e) => [exerciseKey(e), e])),
   };
   const count = (total: number, conflicts: number) => ({
     added: total - conflicts,
@@ -333,11 +297,6 @@ export async function planImport(data: AccountExport): Promise<ImportPlan> {
       templates: count(
         data.templates.length,
         data.templates.filter((t) => existing.templates.has(templateKey(t)))
-          .length,
-      ),
-      exercises: count(
-        data.exercises.length,
-        data.exercises.filter((e) => existing.exercises.has(exerciseKey(e)))
           .length,
       ),
     },
@@ -382,10 +341,7 @@ export async function runImport(
     failed: [],
   };
   const total =
-    data.workouts.length +
-    data.backblasts.length +
-    data.templates.length +
-    data.exercises.length;
+    data.workouts.length + data.backblasts.length + data.templates.length;
   let done = 0;
   const tick = () => onProgress?.(++done, total);
 
@@ -572,44 +528,6 @@ export async function runImport(
     tick();
   }
 
-  // Your own Library exercises match by name (ignoring case).
-  const exerciseNames = new Set(plan.existing.exercises.keys());
-  for (const exercise of data.exercises) {
-    const here = plan.existing.exercises.get(exerciseKey(exercise));
-    const fields = {
-      description: exercise.description ?? "",
-      tags: exercise.tags ?? [],
-      is_routine: !!exercise.is_routine,
-    };
-    try {
-      if (here && options.choices.exercises === "keep") {
-        result.skipped++;
-      } else if (here && options.choices.exercises === "replace") {
-        const { error } = await supabase
-          .from("user_exercises")
-          .update(fields)
-          .eq("id", here.id);
-        if (error) throw new Error(error.message);
-        result.replaced++;
-      } else {
-        let name = exercise.name;
-        for (let n = 1; exerciseNames.has(exerciseKey({ name })); n++)
-          name = `${exercise.name} (imported${n > 1 ? ` ${n}` : ""})`;
-        const { error } = await supabase
-          .from("user_exercises")
-          .insert({ name, ...fields });
-        if (error) throw new Error(error.message);
-        exerciseNames.add(exerciseKey({ name }));
-        result.added++;
-      }
-    } catch (error) {
-      result.failed.push(
-        `Exercise “${exercise.name}”: ${(error as Error).message}`,
-      );
-    }
-    tick();
-  }
-
   // Archive and likes, quietly skipping any that no longer apply.
   for (const id of data.archives.workouts)
     await supabase
@@ -697,7 +615,6 @@ export async function resetAccount(): Promise<void> {
     // A workout's notes go with it.
     () => supabase.from("workouts").delete().eq("author_id", id),
     () => supabase.from("section_templates").delete().eq("owner_id", id),
-    () => supabase.from("user_exercises").delete().eq("owner_id", id),
     () => supabase.from("profiles").update({ region_id: null }).eq("id", id),
   ];
   for (const step of steps) {
