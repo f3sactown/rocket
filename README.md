@@ -50,8 +50,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Library:** at the top right of a workout's Warm-o-rama, and with each thang on The Thang,
   **Library** opens the F3 and FiA Exicons together: search, choose the source (F3, FiA or both),
   Exercises / Routines and tags, read an entry, and add it by name or with its description. Each
-  entry carries an F3 or FiA badge in that organization's color, or in violet when that color is
-  your accent, so it never looks like a highlight (it follows accent changes right away).
+  entry carries an F3 or FiA badge in that organization's color, or (when that color is your accent) F3 in orange and FiA in blue,
+  so it never looks like a highlight; it follows accent changes right away.
   The **Library** page (in the menu, under Discover) browses the same entries on their own, with
   Copy and Copy with description in place of Add.
 - **Templates:** each text section (all but Notes and the Name-o-rama) can be saved as a template,

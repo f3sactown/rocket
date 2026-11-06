@@ -19,8 +19,8 @@ const KINDS: { value: Kind; label: string }[] = [
 ];
 
 /**
- * The sources, each badged in its organization's color, or violet when that color is the accent
- * (see --badge-* in globals.css, which follow the accent as it changes).
+ * The sources, each badged in its organization's color, or (when that color is the accent) F3
+ * orange and FiA blue (see --badge-* in globals.css, which follow the accent as it changes).
  */
 const SOURCES: { value: LibrarySource; label: string; color: string }[] = [
   {
