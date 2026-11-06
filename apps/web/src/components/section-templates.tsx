@@ -23,7 +23,6 @@ export const DEFAULTABLE_SECTIONS = [
   "thang",
   "announcements",
   "wordsOfWisdom",
-  "thirdF",
   "secondF",
 ];
 

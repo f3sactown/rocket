@@ -628,7 +628,7 @@ function LanguagePicker({ language }: { language: Language }) {
       <p className="text-xs text-muted">
         {(() => {
           const t = termsFor(selected);
-          return `${t.warmup} · ${t.thang} · ${t.thirdF} · ${t.secondF}`;
+          return `${t.warmup} · ${t.thang} · ${t.secondF}`;
         })()}
       </p>
       {error && <p className="text-sm text-accent">{error}</p>}

@@ -31,7 +31,6 @@ const BACKBLAST_COLUMNS = [
   "notes",
   "announcements",
   "words_of_wisdom",
-  "third_f",
   "second_f",
 ] as const;
 
@@ -42,7 +41,6 @@ const WORKOUT_COLUMNS = [
   "introduction",
   "warmup",
   "thang",
-  "announcements",
   "words_of_wisdom",
 ] as const;
 

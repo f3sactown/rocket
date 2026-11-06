@@ -12,7 +12,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   workouts and backblasts. Which of
   these show is chosen in Settings → Home screen (all but trending, to start).
 - **Workouts** are written first: Basics (title, AO, date, time), Introduction, Warm-o-rama,
-  The Thang, Notes, Announcements and Words of Wisdom. The Workouts page lists only your own;
+  The Thang, Notes and Words of Wisdom. The Workouts page lists only your own;
   others' public workouts are on Discover. Your finished workouts dated today or earlier show a
   **Needs backblast** badge (in lists and on Home, but never on Discover) until a backblast from them is
   finished; others' workouts never do.
@@ -46,7 +46,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   from, or starts one without a workout. The backblast holds
   its own copy of the workout's sections, which can be edited without changing the workout
   (**Update from workout** copies it again). Its pages are Workout, Notes, Name-o-rama (Qs and
-  PAX, with roster suggestions and the AO's regulars), Third F, Second F and Review.
+  PAX, with roster suggestions and the AO's regulars), Announcements (the backblast's own, not
+  copied from the workout), Coffeeteria (CofFiA in FiA wording) and Review.
   - A backblast can't be finished before its workout's date.
   - **Copy** and **Share** produce Slack-ready text (Event Data, Workout Details, COT), ending with a
     plain comma-separated list of everyone who posted.
