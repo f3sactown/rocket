@@ -1,4 +1,4 @@
-import type { Language } from "@rocket/core";
+import { termsFor, type Language } from "@rocket/core";
 import { asItems, listColumns, type ListItem } from "./backblast-list";
 import { loadRegions, loadSites } from "./regions";
 import { createClient } from "./supabase/client";
@@ -26,7 +26,7 @@ async function aoRegions(language: Language): Promise<Map<string, string>> {
  * as F3 or FiA by its author's region (or, for an author who chose all of an organization's
  * regions, that organization); only those from `sources` are kept, plus any whose author has no
  * region (so they can't be told apart). For an author with all regions, the region shown is the one
- * the workout's AO belongs to.
+ * the workout's AO belongs to, or just "F3" or "FiA" for an AO on no region's list.
  */
 export async function loadPublicWorkouts(
   sources: Language[] = ["f3", "fia"],
@@ -74,8 +74,10 @@ export async function loadPublicWorkouts(
         const scope = author_region?.region_scope;
         return {
           ...row,
+          // An AO that's on no region's list (typed in by hand) shows just F3 or FiA.
           authorRegion: scope
-            ? (aoMaps.get(scope)?.get(row.ao.trim().toLowerCase()) ?? null)
+            ? (aoMaps.get(scope)?.get(row.ao.trim().toLowerCase()) ??
+              termsFor(scope).org)
             : (author_region?.region?.name ?? null),
         };
       }),

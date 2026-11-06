@@ -208,7 +208,7 @@ region of that organization counts: AOs and PAX names come from all of them, reg
 posts and Qs are added up, Discover shows an "At … AOs" group for each region with matching
 workouts, and the organization is locked to F3 or FiA. Their profile records the organization
 (`profiles.region_scope`), so on everyone's workout cards their workouts show the region the
-workout's AO belongs to.
+workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no region's list).
 
 - The sheet must be shared so **anyone with the link can view** it.
 - Each region records which tabs and column headers hold its AOs, roster and attendance, and its
