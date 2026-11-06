@@ -49,8 +49,8 @@ function SourceBadge({ entry }: { entry: LibraryEntry }) {
   const color = source.color;
   return (
     <span
-      className="shrink-0 rounded-full px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-black"
-      style={{ background: color }}
+      className="shrink-0 rounded-full px-2 py-0.5 text-[0.65rem] font-bold tracking-wide"
+      style={{ background: color, color: "var(--badge-text)" }}
     >
       {label}
     </span>
@@ -341,11 +341,15 @@ export function LibraryBrowser({
               aria-pressed={on}
               onClick={() => toggleSource(option.key)}
               className={`rounded-full border px-3 py-1 font-bold transition-colors ${
-                on ? "text-black" : "border-line text-muted"
+                on ? "" : "border-line text-muted"
               }`}
               style={
                 on
-                  ? { background: option.color, borderColor: option.color }
+                  ? {
+                      background: option.color,
+                      borderColor: option.color,
+                      color: "var(--badge-text)",
+                    }
                   : undefined
               }
             >

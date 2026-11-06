@@ -40,12 +40,27 @@
   --badge-fia: #2dd4bf;
   /* A region's own entries: a neutral badge with the region's name. */
   --badge-region: #d4d4d8;
+  /* Badge text: dark on the bright dark-theme colors, white on the deeper light-theme ones. */
+  --badge-text: #000000;
 }
 :root[data-accent] {
   --badge-f3: #e0544a;
 }
 :root[data-accent="fia"] {
   --badge-fia: #60a5fa;
+}
+/* Light theme: deeper shades of the same colors, with white text, so the chips read clearly. */
+:root[data-theme="light"] {
+  --badge-f3: #c2410c;
+  --badge-fia: #0f766e;
+  --badge-region: #52525b;
+  --badge-text: #ffffff;
+}
+:root[data-theme="light"][data-accent] {
+  --badge-f3: #be3329;
+}
+:root[data-theme="light"][data-accent="fia"] {
+  --badge-fia: #2563eb;
 }
 
 /* Rocket trim per accent (see ACCENTS in lib/theme.ts). F3 red is the default. */
