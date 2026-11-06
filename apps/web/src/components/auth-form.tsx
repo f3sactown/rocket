@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { loadRegions, type Region } from "@/lib/regions";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, createRecoveryClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/use-region";
 import { ArrowIcon } from "./icons";
 import { setAccent } from "./theme-switcher";
@@ -28,14 +28,17 @@ export function AuthForm() {
     setMessage(null);
 
     if (mode === "forgot") {
-      // The emailed link opens the reset page, which asks for a new password.
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH}/reset-password/`,
-      });
+      // The emailed link opens the reset page (on any device), which asks for a new password.
+      const { error } = await createRecoveryClient().auth.resetPasswordForEmail(
+        email,
+        {
+          redirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH}/reset-password/`,
+        },
+      );
       setPending(false);
       if (error) return setMessage({ text: error.message, error: true });
       return setMessage({
-        text: "If there's an account for that email, a link to reset its password is on its way. Open it on this device.",
+        text: "If there's an account for that email, a link to reset its password is on its way.",
         error: false,
       });
     }
