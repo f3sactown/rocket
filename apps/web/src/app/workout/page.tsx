@@ -268,25 +268,27 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       </div>
       {actionError && <p className="text-sm text-accent">{actionError}</p>}
 
-      {(() => {
-        // One backblast per workout: open yours if you've started it.
-        const existing = backblasts[0];
-        const href = !existing
-          ? `/backblasts/new?workout=${id}`
-          : existing.status === "draft"
-            ? `/backblasts/edit?id=${existing.id}`
-            : `/backblast?id=${existing.id}`;
-        return (
-          <Link href={href} className="btn w-full">
-            <ArrowIcon />
-            {!existing
-              ? "Create backblast"
-              : existing.status === "draft"
-                ? "Continue your backblast"
-                : "Open your backblast"}
-          </Link>
-        );
-      })()}
+      {/* Only the workout's Q writes its backblast. */}
+      {mine &&
+        (() => {
+          // One backblast per workout: open yours if you've started it.
+          const existing = backblasts[0];
+          const href = !existing
+            ? `/backblasts/new?workout=${id}`
+            : existing.status === "draft"
+              ? `/backblasts/edit?id=${existing.id}`
+              : `/backblast?id=${existing.id}`;
+          return (
+            <Link href={href} className="btn w-full">
+              <ArrowIcon />
+              {!existing
+                ? "Create backblast"
+                : existing.status === "draft"
+                  ? "Continue your backblast"
+                  : "Open your backblast"}
+            </Link>
+          );
+        })()}
     </article>
   );
 }

@@ -42,8 +42,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   going by each author's region; authors with no region always show. Trending on Home follows it, and
   scrolls sideways the same way. The rows' scrollbars are thin and faint, with no arrows.
 - **Backblasts** are made from a finished workout with **Create backblast**, or from **New
-  backblast**, which lists the finished, unarchived workouts that don't have a backblast yet to pick
-  from, or starts one without a workout. The backblast holds
+  backblast**, which lists your finished, unarchived workouts that don't have a backblast yet to
+  pick from, or starts one without a workout. Only a workout's Q writes its backblast, so other
+  people's workouts have no Create backblast button. The backblast holds
   its own copy of the workout's sections, which can be edited without changing the workout
   (**Update from workout** copies it again). Its pages are Workout, Notes, Name-o-rama (Qs and
   PAX, with roster suggestions and the AO's regulars), Announcements (the backblast's own, not

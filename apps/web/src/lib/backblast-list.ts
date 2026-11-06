@@ -194,10 +194,12 @@ export async function loadFutureWorkouts(
 }
 
 /**
- * Finished workouts that don't have a backblast yet (one you can see: published, or your own
- * draft), newest first, leaving out what you've archived.
+ * Your finished workouts that don't have a backblast yet, newest first, leaving out what you've
+ * archived. Only the workout's Q writes its backblast.
  */
-export async function loadWorkoutsNeedingBackblast(): Promise<ListItem[]> {
+export async function loadWorkoutsNeedingBackblast(
+  userId: string,
+): Promise<ListItem[]> {
   const supabase = createClient();
   const [archived, written, workouts] = await Promise.all([
     loadArchivedIds("workout"),
@@ -209,6 +211,8 @@ export async function loadWorkoutsNeedingBackblast(): Promise<ListItem[]> {
       .from("workouts")
       .select(listColumns("workout"))
       .eq("status", "published")
+      // Only your own: a backblast is written by the workout's Q.
+      .eq("author_id", userId)
       .order("date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(200),

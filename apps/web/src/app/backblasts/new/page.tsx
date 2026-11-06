@@ -40,13 +40,14 @@ function NewBackblast({ user }: { user: CurrentUser }) {
   const [from, setFrom] = useState<Backblast | string | null>(null);
 
   useEffect(() => {
-    if (workoutId) loadWorkout(workoutId).then(setFrom);
-  }, [workoutId]);
+    if (workoutId) loadWorkout(workoutId, user.id).then(setFrom);
+  }, [workoutId, user.id]);
 
   if (withoutWorkout) return <BackblastEditor user={user} initial={blank} />;
   if (!workoutId)
     return (
       <ChooseWorkout
+        userId={user.id}
         onChoose={(id) => {
           // Keep the choice in the address, so a reload before the first save returns here.
           window.history.replaceState(
@@ -78,20 +79,25 @@ function NewBackblast({ user }: { user: CurrentUser }) {
 
 /** Asks which workout the new backblast is for, or to start one without a workout. */
 function ChooseWorkout({
+  userId,
   onChoose,
   onWithout,
 }: {
+  userId: string;
   onChoose: (workoutId: string) => void;
   onWithout: () => void;
 }) {
-  const workouts = useLoad(loadWorkoutsNeedingBackblast, []);
+  const workouts = useLoad(
+    () => loadWorkoutsNeedingBackblast(userId),
+    [userId],
+  );
   return (
     <section className="card">
       <header className="flex flex-col gap-1">
         <h1 className="card-title">New backblast</h1>
         <p className="text-sm text-muted">
-          Which workout is it for? These finished workouts don&apos;t have a
-          backblast yet.
+          Which workout is it for? These are your finished workouts that
+          don&apos;t have a backblast yet.
         </p>
       </header>
       <div className="panel p-2">
