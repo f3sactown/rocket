@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   attendeeFromName,
   copyText,
+  workoutLinkText,
   copyWorkout,
   thangText,
   paxList,
@@ -300,6 +301,17 @@ describe("paxList", () => {
         "Hills\n\n\n\nCasper, Sparky, Huggies (South Fork), Rookie, Cubby (2.0), Trench",
       ),
     ).toBe(true);
+  });
+
+  it("puts a closing line (the workout link) right above the PAX list, one blank line apart", () => {
+    const line = workoutLinkText("https://rocket.f3sactown.com/workout/?id=w1");
+    expect(
+      copyText(backblast, "f3", line).endsWith(
+        `Hills\n\n\n\n${line}\n\nCasper, Sparky, Huggies (South Fork), Rookie, Cubby (2.0), Trench`,
+      ),
+    ).toBe(true);
+    expect(line).toContain("like");
+    expect(line).toContain("Reuse");
   });
 });
 

@@ -277,7 +277,25 @@ function Settings({ user }: { user: CurrentUser }) {
         description="Whose public workouts Discover and Trending show, by the author's region. Saved to your account."
       >
         <PublicSourcesPicker sources={user.publicSources} />
-        <IncludeOwnSwitch on={user.discoverIncludeOwn} />
+        <AccountSwitch
+          divided
+          on={user.discoverIncludeOwn}
+          label="Include my workouts on Discover"
+          hint="Adds a My workouts section to see how yours compare."
+          save={(on) => ({
+            discover_include_own: on,
+            discover_own_asked: true,
+          })}
+        />
+      </Section>
+
+      <Section title="Sharing" description="Saved to your account.">
+        <AccountSwitch
+          on={user.shareWorkoutLink}
+          label="Link to the workout in shared backblasts"
+          hint="When a backblast from a public workout is copied or shared, it ends with a link to that workout, asking PAX to like it and reuse it. Not shown on screen."
+          save={(on) => ({ share_workout_link: on })}
+        />
       </Section>
 
       <Section
@@ -316,8 +334,23 @@ function Settings({ user }: { user: CurrentUser }) {
   );
 }
 
-/** Whether Discover includes your own workouts, with a My workouts section to compare them. */
-function IncludeOwnSwitch({ on: saved }: { on: boolean }) {
+/**
+ * An on/off setting saved to the account: `save(on)` returns what to store in its metadata.
+ */
+function AccountSwitch({
+  on: saved,
+  label,
+  hint,
+  save,
+  divided = false,
+}: {
+  on: boolean;
+  label: string;
+  hint?: string;
+  save: (on: boolean) => Record<string, unknown>;
+  /** A line above it, when it follows other switches in the same section. */
+  divided?: boolean;
+}) {
   const [on, setOn] = useState(saved);
   const [error, setError] = useState<string | null>(null);
 
@@ -326,7 +359,7 @@ function IncludeOwnSwitch({ on: saved }: { on: boolean }) {
     setOn(next);
     setError(null);
     const { error } = await createClient().auth.updateUser({
-      data: { discover_include_own: next, discover_own_asked: true },
+      data: save(next),
     });
     if (error) {
       setOn(!next);
@@ -334,15 +367,14 @@ function IncludeOwnSwitch({ on: saved }: { on: boolean }) {
     }
   }
 
-  const label = "Include my workouts on Discover";
   return (
-    <div className="flex flex-col gap-1 border-t border-line pt-3">
+    <div
+      className={`flex flex-col gap-1 ${divided ? "border-t border-line pt-3" : ""}`}
+    >
       <div className="flex items-center justify-between gap-3 py-1.5">
         <span className="flex flex-col">
           <span className="text-sm text-ink">{label}</span>
-          <span className="text-xs text-muted">
-            Adds a My workouts section to see how yours compare.
-          </span>
+          {hint && <span className="text-xs text-muted">{hint}</span>}
         </span>
         <button
           type="button"
