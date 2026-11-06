@@ -12,6 +12,7 @@ import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { CopyButton } from "@/components/copy-button";
 import { CountPanel } from "@/components/count-panel";
+import { ProtectedText } from "@/components/protected-text";
 import { ShareButton } from "@/components/share-button";
 import { ArchiveIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { fromRow } from "@/lib/backblast";
@@ -118,9 +119,12 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         </Link>
       )}
 
-      <pre className="panel overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
+      <ProtectedText
+        copyText={copyText(backblast, user.language, workoutLink)}
+        className="panel overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft"
+      >
         {text}
-      </pre>
+      </ProtectedText>
 
       <div className="grid grid-cols-2 gap-3">
         <CopyButton text={copyText(backblast, user.language, workoutLink)} />
