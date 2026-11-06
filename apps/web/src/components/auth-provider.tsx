@@ -40,10 +40,17 @@ function publicSourcesFrom(value: unknown): Language[] {
 
 /** The sections Home can show. */
 export type HomeSection =
-  "totals" | "drafts" | "upcoming" | "trending" | "workouts" | "backblasts";
+  | "totals"
+  | "today"
+  | "drafts"
+  | "upcoming"
+  | "trending"
+  | "workouts"
+  | "backblasts";
 
 export const HOME_SECTIONS: { value: HomeSection; label: string }[] = [
   { value: "totals", label: "Posts and Qs" },
+  { value: "today", label: "Today's workouts" },
   { value: "drafts", label: "Your drafts" },
   { value: "upcoming", label: "Future workouts" },
   { value: "trending", label: "Trending workouts" },
@@ -54,17 +61,34 @@ export const HOME_SECTIONS: { value: HomeSection; label: string }[] = [
 /** What Home shows until the user changes it in Settings. */
 export const DEFAULT_HOME_SECTIONS: HomeSection[] = [
   "totals",
+  "today",
   "drafts",
   "upcoming",
   "workouts",
   "backblasts",
 ];
 
-function homeSectionsFrom(value: unknown): HomeSection[] {
+/** The sections there were before choices recorded which ones the user had seen. */
+const ORIGINAL_SECTIONS: HomeSection[] = [
+  "totals",
+  "drafts",
+  "upcoming",
+  "trending",
+  "workouts",
+  "backblasts",
+];
+
+/**
+ * The sections a user's saved choice shows. A section added since they last chose (one not in
+ * `seen`) shows if it's on by default, so new sections reach people who customized Home.
+ */
+function homeSectionsFrom(value: unknown, seen: unknown): HomeSection[] {
   if (!Array.isArray(value)) return DEFAULT_HOME_SECTIONS;
-  const known = new Set(HOME_SECTIONS.map((s) => s.value));
+  const seenList = Array.isArray(seen) ? seen : ORIGINAL_SECTIONS;
   return HOME_SECTIONS.map((s) => s.value).filter(
-    (s) => known.has(s) && value.includes(s),
+    (s) =>
+      value.includes(s) ||
+      (!seenList.includes(s) && DEFAULT_HOME_SECTIONS.includes(s)),
   );
 }
 
@@ -89,7 +113,10 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
     // Like Mail: swipe left to delete, right to archive, unless the user swapped them.
     swipeLeft:
       user.user_metadata?.swipe_left === "archive" ? "archive" : "delete",
-    homeSections: homeSectionsFrom(user.user_metadata?.home_sections),
+    homeSections: homeSectionsFrom(
+      user.user_metadata?.home_sections,
+      user.user_metadata?.home_sections_seen,
+    ),
     publicSources: publicSourcesFrom(user.user_metadata?.public_sources),
     discoverIncludeOwn: user.user_metadata?.discover_include_own === true,
     discoverOwnAsked: user.user_metadata?.discover_own_asked === true,
