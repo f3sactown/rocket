@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { Highlight } from "@/components/highlight";
+import { HeartIcon, ReuseIcon } from "@/components/icons";
 import { SourceChips } from "@/components/source-chips";
 import { loadAllPax } from "@/lib/pax";
 import { regionColors } from "@/lib/regions";
@@ -111,21 +112,21 @@ function Pax({ user }: { user: CurrentUser }) {
       ) : (
         <div className="flex flex-col gap-3">
           <p className="px-1 text-xs text-muted">{results.length} PAX</p>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
             {results.slice(0, shown).map((p) => (
               <li key={p.name} className="min-w-0">
                 <Link
                   href={`/pax/profile?name=${encodeURIComponent(p.name)}`}
-                  className="panel flex h-full flex-col gap-2 p-3 transition-colors hover:border-accent/40"
+                  className="panel flex h-full flex-col gap-1.5 p-2 transition-colors hover:border-accent/40 sm:gap-2 sm:p-3"
                 >
-                  <span className="font-medium break-words text-ink">
+                  <span className="text-sm font-medium break-words text-ink sm:text-base">
                     <Highlight text={p.name} words={words} />
                   </span>
                   <span className="flex flex-wrap gap-1">
                     {p.regions.map((r) => (
                       <span
                         key={r.id}
-                        className="rounded-full px-2 py-0.5 text-[0.65rem] font-bold tracking-wide"
+                        className="max-w-full truncate rounded-full px-1.5 py-0.5 text-[0.6rem] font-bold tracking-wide sm:px-2 sm:text-[0.65rem]"
                         style={{
                           background: colors.get(r.id) ?? "var(--badge-region)",
                           color: "var(--badge-text)",
@@ -135,22 +136,43 @@ function Pax({ user }: { user: CurrentUser }) {
                       </span>
                     ))}
                   </span>
-                  <span className="mt-auto grid grid-cols-2 gap-x-3 gap-y-0.5 pt-1 text-xs text-ink-soft">
-                    {(
-                      [
-                        [p.posts, "posts"],
-                        [p.qs, "Qs"],
-                        [p.likes, "likes"],
-                        [p.reuses, "reuses"],
-                      ] as const
-                    ).map(([value, label]) => (
-                      <span key={label}>
-                        <span className="mr-1 font-mono text-sm text-ink tabular-nums">
-                          {value}
+                  <span className="mt-auto flex flex-col gap-1 pt-1 text-xs text-ink-soft">
+                    <span className="flex flex-wrap gap-x-2 gap-y-0.5">
+                      {(
+                        [
+                          [p.posts, "posts"],
+                          [p.qs, "Qs"],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <span key={label}>
+                          <span className="mr-1 font-mono text-sm text-ink tabular-nums">
+                            {value}
+                          </span>
+                          {label}
                         </span>
-                        {label}
+                      ))}
+                    </span>
+                    {/* Likes and reuses as on workout tiles: heart and reuse icons with the counts. */}
+                    <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                      <span
+                        className="inline-flex items-center gap-1.5"
+                        title={`${p.likes} ${p.likes === 1 ? "like" : "likes"}`}
+                      >
+                        <span className="text-accent">
+                          <HeartIcon filled={p.likes > 0} />
+                        </span>
+                        {p.likes}
                       </span>
-                    ))}
+                      <span
+                        className="inline-flex items-center gap-1.5"
+                        title={`${p.reuses} ${p.reuses === 1 ? "reuse" : "reuses"}`}
+                      >
+                        <span className="text-accent">
+                          <ReuseIcon />
+                        </span>
+                        {p.reuses}
+                      </span>
+                    </span>
                   </span>
                 </Link>
               </li>
