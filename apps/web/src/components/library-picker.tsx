@@ -7,7 +7,7 @@ import {
   type LibraryEntry,
   type LibrarySource,
 } from "@/lib/library";
-import { loadRegions } from "@/lib/regions";
+import { loadRegions, regionColors } from "@/lib/regions";
 import { useLoad } from "@/lib/use-region";
 import { BookIcon, CloseIcon } from "./icons";
 
@@ -20,8 +20,8 @@ const KINDS: { value: Kind; label: string }[] = [
 ];
 
 /**
- * The sources, each badged in its organization's color, or (when that color is the accent) F3
- * orange and FiA blue (see --badge-* in globals.css, which follow the accent as it changes).
+ * The sources, each badged in its organization's color: F3 red, FiA teal (see --badge-* in
+ * globals.css, deeper on the light theme).
  * Each configured region is a source of its own too, in a neutral color.
  */
 const SOURCES: { value: LibrarySource; label: string; color: string }[] = [
@@ -42,11 +42,20 @@ const SOURCES: { value: LibrarySource; label: string; color: string }[] = [
   },
 ];
 
-/** A small F3 or FiA badge in that organization's color, or the region's name for its own. */
-function SourceBadge({ entry }: { entry: LibraryEntry }) {
+/**
+ * A small F3 or FiA badge in that organization's color, or, for a region's own entry, the region's
+ * name in the region's color.
+ */
+function SourceBadge({
+  entry,
+  regionColor,
+}: {
+  entry: LibraryEntry;
+  regionColor?: string;
+}) {
   const source = SOURCES.find((s) => s.value === entry.source)!;
   const label = (entry.source === "region" && entry.regionName) || source.label;
-  const color = source.color;
+  const color = (entry.source === "region" && regionColor) || source.color;
   return (
     <span
       className="shrink-0 rounded-full px-2 py-0.5 text-[0.65rem] font-bold tracking-wide"
@@ -246,6 +255,11 @@ export function LibraryBrowser({
   const [open, setOpen] = useState<string | null>(null);
 
   const entries = useMemo(() => library.value ?? [], [library.value]);
+  // Each region's color, the same for every user.
+  const colors = useMemo(
+    () => regionColors(regions.value ?? []),
+    [regions.value],
+  );
   // The chips: F3, FiA, then every configured region (whether or not it has entries yet).
   const chips = useMemo(() => {
     const region = SOURCES.find((s) => s.value === "region")!;
@@ -258,10 +272,10 @@ export function LibraryBrowser({
       ...(regions.value ?? []).map((r) => ({
         key: r.id,
         label: r.name,
-        color: region.color,
+        color: colors.get(r.id) ?? region.color,
       })),
     ];
-  }, [regions.value]);
+  }, [regions.value, colors]);
   // Every tag but "Routine" (that's the Exercises / Routines switch), in alphabetical order.
   const allTags = useMemo(() => {
     const tags = new Set<string>();
@@ -470,6 +484,9 @@ export function LibraryBrowser({
                     )
                   }
                   onAdd={onAdd}
+                  regionColor={
+                    entry.regionId ? colors.get(entry.regionId) : undefined
+                  }
                 />
               ))}
             </ul>
@@ -494,11 +511,14 @@ function Entry({
   open,
   onToggle,
   onAdd,
+  regionColor,
 }: {
   entry: LibraryEntry;
   open: boolean;
   onToggle: () => void;
   onAdd?: (text: string) => void;
+  /** The color of the entry's region, for a region's own entry. */
+  regionColor?: string;
 }) {
   const [copied, setCopied] = useState<string | null>(null);
   async function copy(label: string, text: string) {
@@ -525,7 +545,7 @@ function Entry({
       >
         <span className="flex w-full items-center justify-between gap-2">
           <span className="font-medium text-ink">{entry.name}</span>
-          <SourceBadge entry={entry} />
+          <SourceBadge entry={entry} regionColor={regionColor} />
         </span>
         {entry.aliases.length > 0 && (
           <span className="text-xs text-muted">
