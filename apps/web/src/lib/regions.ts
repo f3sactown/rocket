@@ -32,6 +32,8 @@ export interface Region {
   language: Language;
   config: RegionConfig;
   created_by: string | null;
+  /** When the region was added; it sets the region's Library color. */
+  created_at?: string;
   /** When the nightly sync last copied the sheet into Supabase; null until the first sync. */
   synced_at: string | null;
   /** The newest post date in the attendance records, as of the last nightly sync. */
@@ -92,7 +94,7 @@ export function loadRegions(refresh = false): Promise<Region[]> {
       createClient()
         .from("regions")
         .select(
-          "id, name, sheet_id, language, config, created_by, synced_at, sync_error, latest_post_on",
+          "id, name, sheet_id, language, config, created_by, created_at, synced_at, sync_error, latest_post_on",
         )
         .order("name"),
     ).then(({ data, error }) => {
@@ -429,4 +431,25 @@ export function loadLatestPost(region: Region): Promise<string | null> {
     );
     return sheetDate(rows(table)[0]?.[0] ?? "");
   });
+}
+
+/** How many region colors there are (--region-0 … in globals.css); after that they repeat. */
+export const REGION_COLOR_COUNT = 10;
+
+/**
+ * Each region's Library color, as a CSS value. Colors go out in the order regions were added, so
+ * every user sees the same color for a region, and adding a region never changes the others'.
+ */
+export function regionColors(regions: Region[]): Map<string, string> {
+  const ordered = [...regions].sort(
+    (a, b) =>
+      (a.created_at ?? "").localeCompare(b.created_at ?? "") ||
+      a.id.localeCompare(b.id),
+  );
+  return new Map(
+    ordered.map((region, index) => [
+      region.id,
+      `var(--region-${index % REGION_COLOR_COUNT})`,
+    ]),
+  );
 }
