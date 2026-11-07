@@ -41,10 +41,10 @@ The running app shows its version in the footer, so you can always tell which re
 
 ## What's new in the app
 
-After a release, Home shows each user a one-time note with the version and that version's
-`CHANGELOG.md` entry, read at build time. Before merging the release pull request, edit its
-`CHANGELOG.md` entry into a short summary for users: one bullet per area, each starting with a
-bold label (`* **Home:** …`). The first four bullets show, and the rest sit behind Show more.
+After each build, Home shows each user a one-time note with the version, the build number and the
+changes in that build: the subject lines of its `feat:`, `fix:` and `perf:` commits (for a merged
+pull request, every commit it brought in), with the prefix dropped. So write those subjects for
+the people using the app, e.g. `feat: three PAX tiles across on phones`.
 
 ## Build number
 

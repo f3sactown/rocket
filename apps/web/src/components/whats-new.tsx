@@ -1,67 +1,36 @@
 "use client";
 
-import { releaseNotes } from "@rocket/core";
-import { Fragment, useState } from "react";
+import { buildChanges } from "@rocket/core";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { CurrentUser } from "./auth-provider";
 import { CloseIcon } from "./icons";
 
 const VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "";
-// Only this version's notes: someone who skipped a release sees just the latest.
-const NOTES = releaseNotes(
-  process.env.NEXT_PUBLIC_RELEASE_NOTES ?? "",
-  VERSION,
-);
-/** How many items show before "Show more", to keep the note small. */
+const BUILD = process.env.NEXT_PUBLIC_BUILD_NUMBER ?? "";
+// Only the latest build's changes: someone who skipped builds sees just the newest.
+const CHANGES = buildChanges(process.env.NEXT_PUBLIC_BUILD_CHANGES ?? "");
+/** How many changes show before "Show more", to keep the note small. */
 const FIRST = 4;
 
-/** A changelog item with its **bold** parts bold and `code` marks dropped. */
-function Item({ text }: { text: string }) {
-  return text
-    .replace(/`/g, "")
-    .split(/\*\*(.+?)\*\*/)
-    .map((part, i) =>
-      i % 2 ? (
-        <strong key={i} className="font-semibold text-ink">
-          {part}
-        </strong>
-      ) : (
-        <Fragment key={i}>{part}</Fragment>
-      ),
-    );
-}
-
 /**
- * Home's one-time note after an update: the version and its changelog summary, until it's
- * dismissed. The dismissal is saved to the account, so it doesn't come back on another device.
+ * Home's one-time note after an update: the version, build number and what that build changed,
+ * until it's dismissed. The dismissal is saved to the account (as the build number), so it
+ * doesn't come back on another device; the next build brings a new note.
  */
 export function WhatsNew({ user }: { user: CurrentUser }) {
   const [dismissed, setDismissed] = useState(false);
   const [all, setAll] = useState(false);
-  if (!NOTES || dismissed || user.whatsNewSeen === VERSION) return null;
+  if (!BUILD || !CHANGES.length || dismissed || user.whatsNewSeen === BUILD)
+    return null;
 
   function dismiss() {
     setDismissed(true);
     createClient()
-      .auth.updateUser({ data: { whats_new_seen: VERSION } })
+      .auth.updateUser({ data: { whats_new_seen: BUILD } })
       .then(() => {});
   }
 
-  const titled = NOTES.sections.length > 1;
-  const total = NOTES.sections.reduce((n, s) => n + s.items.length, 0);
-  // The first few items across the sections, or all of them once asked.
-  const limit = all ? total : FIRST;
-  const sections = NOTES.sections
-    .map((section, i) => {
-      const before = NOTES.sections
-        .slice(0, i)
-        .reduce((n, s) => n + s.items.length, 0);
-      return {
-        ...section,
-        items: section.items.slice(0, Math.max(limit - before, 0)),
-      };
-    })
-    .filter((section) => section.items.length);
   return (
     <aside
       aria-label="What's new"
@@ -69,12 +38,10 @@ export function WhatsNew({ user }: { user: CurrentUser }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col">
-          <h2 className="font-semibold text-ink">
-            What&apos;s new in v{VERSION}
-          </h2>
-          {NOTES.date && (
-            <span className="font-mono text-xs text-muted">{NOTES.date}</span>
-          )}
+          <h2 className="font-semibold text-ink">What&apos;s new</h2>
+          <span className="font-mono text-xs text-muted">
+            v{VERSION} · build {BUILD}
+          </span>
         </div>
         <button
           type="button"
@@ -85,25 +52,18 @@ export function WhatsNew({ user }: { user: CurrentUser }) {
           <CloseIcon />
         </button>
       </div>
-      {sections.map((section) => (
-        <div key={section.title} className="flex flex-col gap-1">
-          {titled && <span className="label">{section.title}</span>}
-          <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-ink-soft marker:text-accent">
-            {section.items.map((item) => (
-              <li key={item}>
-                <Item text={item} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-      {total > FIRST && (
+      <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-ink-soft marker:text-accent">
+        {(all ? CHANGES : CHANGES.slice(0, FIRST)).map((change) => (
+          <li key={change}>{change}</li>
+        ))}
+      </ul>
+      {CHANGES.length > FIRST && (
         <button
           type="button"
           onClick={() => setAll(!all)}
           className="link self-start text-sm"
         >
-          {all ? "Show less" : `Show ${total - FIRST} more`}
+          {all ? "Show less" : `Show ${CHANGES.length - FIRST} more`}
         </button>
       )}
       <button
