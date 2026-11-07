@@ -1,4 +1,4 @@
-import type { Language } from "@rocket/core";
+import { paxBaseName, type Language } from "@rocket/core";
 import { asItems, listColumns, type ListItem } from "./backblast-list";
 import { trending } from "./discover";
 import {
@@ -103,15 +103,20 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
       ),
     ]);
     const byName = new Map<string, PaxEntry>();
+    // Each organization's region names: "Baby Shark (Dry Creek)" on one F3 region's roster is the
+    // same PAX as "Baby Shark" of F3 DryCreek, but never the same as a FiA PAX.
+    const regionNames = (org: Language) =>
+      regions.filter((r) => r.language === org).map((r) => r.name);
     await Promise.all(
       regions.map(async (region) => {
         const [names, stats] = await Promise.all([
           loadRoster(region).catch(() => [] as string[]),
           loadAllPaxStats(region).catch(() => new Map()),
         ]);
-        for (const name of names) {
-          const lower = name.trim().toLowerCase();
+        for (const listed of names) {
+          const lower = listed.trim().toLowerCase();
           if (!lower) continue;
+          const name = paxBaseName(listed, regionNames(region.language));
           const key = paxKey(region.language, name);
           // Their own organization's, plus any from a same-named account with no region.
           const own = social.get(key) ?? { likes: 0, reuses: 0 };
@@ -120,7 +125,7 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
             reuses: 0,
           };
           const entry = byName.get(key) ?? {
-            name: name.trim(),
+            name,
             org: region.language,
             regions: [],
             posts: 0,
@@ -128,8 +133,13 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
             likes: own.likes + any.likes,
             reuses: own.reuses + any.reuses,
           };
+          // The sheet counts them under the name as listed there.
           const s = stats.get(lower) ?? { posts: 0, qs: 0 };
-          entry.regions.push({ id: region.id, name: region.name, ...s });
+          const here = entry.regions.find((r) => r.id === region.id);
+          if (here) {
+            here.posts += s.posts;
+            here.qs += s.qs;
+          } else entry.regions.push({ id: region.id, name: region.name, ...s });
           entry.posts += s.posts;
           entry.qs += s.qs;
           byName.set(key, entry);
