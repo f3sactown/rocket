@@ -11,6 +11,13 @@ describe("paxBaseName", () => {
     expect(paxBaseName(" Tinman  (sactown) ", F3)).toBe("Tinman");
   });
 
+  it("drops a Down Range mark", () => {
+    expect(paxBaseName("Atlas (DR)", F3)).toBe("Atlas");
+    expect(paxBaseName("Atlas (dr)", [])).toBe("Atlas");
+    expect(paxBaseName("Atlas (D.R.)", F3)).toBe("Atlas");
+    expect(paxBaseName("Atlas (Down Range)", F3)).toBe("Atlas");
+  });
+
   it("keeps parentheses that aren't one of the regions", () => {
     expect(paxBaseName("Cubby (2.0)", F3)).toBe("Cubby (2.0)");
     expect(paxBaseName("McLovin (Seattle)", F3)).toBe("McLovin (Seattle)");
