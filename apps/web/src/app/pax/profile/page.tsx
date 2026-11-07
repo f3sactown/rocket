@@ -1,5 +1,6 @@
 "use client";
 
+import { LANGUAGES, type Language } from "@rocket/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
@@ -27,14 +28,20 @@ export default function PaxProfilePage() {
  * name, their recent public workouts and the ones trending lately.
  */
 function PaxProfile({ user }: { user: CurrentUser }) {
-  const name = useSearchParams().get("name") ?? "";
+  const params = useSearchParams();
+  const name = params.get("name") ?? "";
+  // The same name in F3 and FiA is two different PAX.
+  const org: Language = params.get("org") === "fia" ? "fia" : "f3";
   const all = useLoad(loadAllPax, []);
-  const workouts = useLoad(name ? () => loadPaxWorkouts(name) : null, [name]);
+  const workouts = useLoad(name ? () => loadPaxWorkouts(name, org) : null, [
+    name,
+    org,
+  ]);
   const [statsOverride, setStatsOverride] = useState<Map<string, WorkoutStats>>(
     new Map(),
   );
   const entry = all.value?.pax.find(
-    (p) => p.name.toLowerCase() === name.trim().toLowerCase(),
+    (p) => p.org === org && p.name.toLowerCase() === name.trim().toLowerCase(),
   );
   const colors = useMemo(
     () => regionColors(all.value?.regions ?? []),
@@ -54,11 +61,18 @@ function PaxProfile({ user }: { user: CurrentUser }) {
       </Link>
       <header className="flex flex-col gap-1">
         <h1 className="card-title break-words">{name || "PAX"}</h1>
+        {name && (
+          <p className="text-sm text-muted">
+            {LANGUAGES.find((l) => l.value === org)?.label}
+          </p>
+        )}
       </header>
 
       {all.value && !entry && (
         <p className="panel px-3 py-6 text-center text-muted">
-          {name ? `${name} isn’t on any region’s roster.` : "No PAX chosen."}
+          {name
+            ? `${name} isn’t on any ${LANGUAGES.find((l) => l.value === org)?.label} region’s roster.`
+            : "No PAX chosen."}
         </p>
       )}
       {entry && (
@@ -82,23 +96,33 @@ function PaxProfile({ user }: { user: CurrentUser }) {
               </div>
             ))}
           </div>
-          <ul className="flex flex-col gap-2">
+          {/* Each region as a mini tile in its chip color, with the posts and Qs there. */}
+          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {entry.regions.map((r) => (
               <li
                 key={r.id}
-                className="flex items-center justify-between gap-3 text-sm"
+                className="flex min-w-0 flex-col gap-1 rounded-xl px-2.5 py-2"
+                style={{
+                  background: colors.get(r.id) ?? "var(--badge-region)",
+                  color: "var(--badge-text)",
+                }}
               >
-                <span
-                  className="rounded-full px-2 py-0.5 text-[0.7rem] font-bold tracking-wide"
-                  style={{
-                    background: colors.get(r.id) ?? "var(--badge-region)",
-                    color: "var(--badge-text)",
-                  }}
-                >
+                <span className="line-clamp-2 text-xs font-bold tracking-wide break-words">
                   {r.name}
                 </span>
-                <span className="font-mono text-ink-soft tabular-nums">
-                  {r.posts} posts · {r.qs} Qs
+                <span className="mt-auto flex gap-2 text-xs">
+                  <span>
+                    <span className="font-mono text-sm font-semibold tabular-nums">
+                      {r.posts}
+                    </span>{" "}
+                    posts
+                  </span>
+                  <span>
+                    <span className="font-mono text-sm font-semibold tabular-nums">
+                      {r.qs}
+                    </span>{" "}
+                    Qs
+                  </span>
                 </span>
               </li>
             ))}

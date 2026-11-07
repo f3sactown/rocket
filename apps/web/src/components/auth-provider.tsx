@@ -29,7 +29,7 @@ export interface CurrentUser {
   shareWorkoutLink: boolean;
   /** Regions (by ID) turned off in the PAX page's From picker; all are on by default. */
   paxSourcesOff: string[];
-  /** The app version whose "What's new" note on Home was last dismissed. */
+  /** The build number whose "What's new" note on Home was last dismissed. */
   whatsNewSeen: string | null;
 }
 

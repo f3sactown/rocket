@@ -5,10 +5,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 
 ## What it does
 
-- **What's new:** after an update, Home shows a one-time note with the new version and its entry
-  from `CHANGELOG.md` (only the latest release; the first four items, with Show more). Dismissing
-  it is saved to the account, so it stays gone on every device; new accounts start on the current
-  version and see the next one.
+- **What's new:** after each update, Home shows a one-time note with the version, the build
+  number and the changes in that build (its `feat:`, `fix:` and `perf:` commits; only the latest
+  build, the first four with Show more). Dismissing it is saved to the account, so it stays gone on
+  every device until the next build; new accounts start on the current build.
 - **Home:** your total posts and Qs from your region's sheet (with the date the sheet was last
   updated), **Today's workouts** (your finished workouts dated today, by start time; tap one to
   run it; each drops off an hour after its end time, and the section hides when none are left), your drafts, **Future workouts** (your finished workouts dated after today, soonest
@@ -52,6 +52,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   workout tiles. A **From** picker of regions, in each
   region's color, narrows the list and the totals; the choice is saved to your account. A tile
   opens the PAX's profile: posts, Qs, likes and reuses in one row on top, their stats per region and their Trending and Recent public workouts.
+  The regions show as mini tiles in each region's color with the posts and Qs there.
+  The same name in F3 and in FiA is two different PAX, each with their own tile, profile and
+  numbers; likes, reuses and workouts come from the Rocket account of that name in the same
+  organization (or one with no region, which can't be told apart).
 - **Backblasts** are made from a finished workout with **Create backblast**, or from **New
   backblast**, which lists your finished, unarchived workouts that don't have a backblast yet to
   pick from, or starts one without a workout. Only a workout's Q writes its backblast, so other
