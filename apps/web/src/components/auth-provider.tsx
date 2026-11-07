@@ -29,6 +29,8 @@ export interface CurrentUser {
   shareWorkoutLink: boolean;
   /** Regions (by ID) turned off in the PAX page's From picker; all are on by default. */
   paxSourcesOff: string[];
+  /** When the newest signup in the PAX page's "New on Rocket" note last dismissed joined. */
+  paxNewSeen: string | null;
   /** The build number whose "What's new" note on Home was last dismissed. */
   whatsNewSeen: string | null;
 }
@@ -130,6 +132,10 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
           (v): v is string => typeof v === "string",
         )
       : [],
+    paxNewSeen:
+      typeof user.user_metadata?.pax_new_seen === "string"
+        ? user.user_metadata.pax_new_seen
+        : null,
     whatsNewSeen:
       typeof user.user_metadata?.whats_new_seen === "string"
         ? user.user_metadata.whats_new_seen

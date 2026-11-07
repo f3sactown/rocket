@@ -6,10 +6,11 @@ import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { Highlight } from "@/components/highlight";
 import { HeartIcon, ReuseIcon } from "@/components/icons";
 import { SourceChips } from "@/components/source-chips";
-import { loadAllPax } from "@/lib/pax";
+import { loadAllPax, loadNewPax } from "@/lib/pax";
 import { regionColors } from "@/lib/regions";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/use-region";
+import { CloseIcon } from "@/components/icons";
 
 export default function PaxPage() {
   return <SignedIn>{(user) => <Pax user={user} />}</SignedIn>;
@@ -76,6 +77,7 @@ function Pax({ user }: { user: CurrentUser }) {
           tap one for their profile.
         </p>
       </header>
+      <NewOnRocket user={user} />
       <div className="flex flex-col gap-3">
         <input
           type="search"
@@ -190,5 +192,75 @@ function Pax({ user }: { user: CurrentUser }) {
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * A note at the top of the PAX page naming who has signed up for Rocket since it was last
+ * dismissed (the last two weeks, the first time), each linking to their profile. Dismissing it is
+ * saved to the account, and it comes back when someone else signs up.
+ */
+function NewOnRocket({ user }: { user: CurrentUser }) {
+  const people = useLoad(
+    () => loadNewPax(user.paxNewSeen, user.id),
+    [user.id, user.paxNewSeen],
+  );
+  const [dismissed, setDismissed] = useState(false);
+  const list = people.value ?? [];
+  if (dismissed || !list.length) return null;
+
+  function dismiss() {
+    setDismissed(true);
+    // The newest signup shown; anyone who joins after them brings the note back.
+    const newest = list.reduce((a, p) => (p.joined > a ? p.joined : a), "");
+    createClient()
+      .auth.updateUser({ data: { pax_new_seen: newest } })
+      .then(() => {});
+  }
+
+  return (
+    <aside
+      aria-label="New on Rocket"
+      className="panel flex flex-col gap-2 border-accent/50 p-4"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="font-semibold text-ink">
+          New on Rocket
+          <span className="ml-2 text-sm font-normal text-muted">
+            {list.length} signed up
+          </span>
+        </h2>
+        <button
+          type="button"
+          onClick={dismiss}
+          aria-label="Dismiss"
+          className="-m-1 rounded-full p-1 text-muted transition-colors hover:text-ink"
+        >
+          <CloseIcon />
+        </button>
+      </div>
+      <ul className="flex flex-wrap gap-2">
+        {list.map((p) => (
+          <li key={p.id}>
+            <Link
+              href={`/pax/profile?name=${encodeURIComponent(p.name)}&org=${p.org ?? user.language}`}
+              className="flex flex-col rounded-xl border border-line px-3 py-1.5 transition-colors hover:border-accent/60"
+            >
+              <span className="text-sm font-medium text-ink">{p.name}</span>
+              {p.region && (
+                <span className="text-xs text-muted">{p.region}</span>
+              )}
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        onClick={dismiss}
+        className="self-start rounded-full border border-line-strong px-4 py-1.5 text-sm font-medium text-ink transition hover:border-accent/60"
+      >
+        Got it
+      </button>
+    </aside>
   );
 }
