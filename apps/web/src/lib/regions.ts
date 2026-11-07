@@ -271,6 +271,51 @@ export function loadRegulars(region: Region, ao: string): Promise<Regular[]> {
   });
 }
 
+/**
+ * Every PAX's total posts and Qs in the region's records, by name (lower case): from the nightly
+ * sync, or straight from the sheet for a region that hasn't been synced yet (e.g. one just added).
+ */
+export function loadAllPaxStats(
+  region: Region,
+): Promise<Map<string, PaxStats>> {
+  return cached(`allstats:${region.id}`, async () => {
+    const stats = new Map<string, PaxStats>();
+    if (region.synced_at) {
+      const size = 1000;
+      // Page through (the database returns at most 1000 rows at a time).
+      for (let from = 0; from < size * 20; from += size) {
+        const { data, error } = await createClient()
+          .from("region_pax_stats")
+          .select("pax, posts, qs")
+          .eq("region_id", region.id)
+          .range(from, from + size - 1);
+        if (error) throw error;
+        for (const row of data ?? [])
+          stats.set(row.pax.trim().toLowerCase(), {
+            posts: row.posts,
+            qs: row.qs,
+          });
+        if (!data || data.length < size) break;
+      }
+      return stats;
+    }
+    const { sheet, pax, post, q } = region.config.attendance;
+    const cols = await columns(region.sheet_id, sheet, { pax, post, q });
+    const table = await querySheet(
+      region.sheet_id,
+      sheet,
+      `select ${cols.pax}, sum(${cols.post}), sum(${cols.q}) group by ${cols.pax}`,
+    );
+    for (const [name, posts, qs] of rows(table))
+      if (name?.trim())
+        stats.set(name.trim().toLowerCase(), {
+          posts: Math.round(Number(posts) || 0),
+          qs: Math.round(Number(qs) || 0),
+        });
+    return stats;
+  });
+}
+
 /** A PAX's total posts and Qs in the region's records. */
 export function loadPaxStats(region: Region, name: string): Promise<PaxStats> {
   if (region.synced_at)
