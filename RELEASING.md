@@ -39,6 +39,13 @@ Breaking changes use `feat!:` or a `BREAKING CHANGE:` footer.
 
 The running app shows its version in the footer, so you can always tell which release you're on.
 
+## What's new in the app
+
+After a release, Home shows each user a one-time note with the version and that version's
+`CHANGELOG.md` entry, read at build time. Before merging the release pull request, edit its
+`CHANGELOG.md` entry into a short summary for users: one bullet per area, each starting with a
+bold label (`* **Home:** …`). The first four bullets show, and the rest sit behind Show more.
+
 ## Build number
 
 Alongside the version, the footer shows a **build number** and the short commit ID, e.g.

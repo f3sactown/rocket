@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import type { NextConfig } from "next";
 import rootPackage from "../../package.json" with { type: "json" };
 
@@ -21,6 +22,32 @@ function git(args: string): string {
 const buildNumber = git("rev-list --count HEAD");
 const commit = git("rev-parse --short HEAD");
 
+/**
+ * This version's entry in CHANGELOG.md (its heading down to the next release's), for Home's
+ * one-time "What's new" note; the app parses it with `releaseNotes` from @rocket/core.
+ */
+function changelogEntry(version: string): string {
+  try {
+    const changelog = readFileSync(
+      new URL("../../CHANGELOG.md", import.meta.url),
+      "utf8",
+    );
+    const start = changelog.search(
+      new RegExp(
+        `^## \\[?v?${version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+        "m",
+      ),
+    );
+    if (start < 0) return "";
+    const next = changelog.slice(start + 3).search(/^## /m);
+    return next < 0
+      ? changelog.slice(start)
+      : changelog.slice(start, start + 3 + next);
+  } catch {
+    return "";
+  }
+}
+
 const nextConfig: NextConfig = {
   output: "export",
   basePath,
@@ -30,6 +57,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION: rootPackage.version,
     NEXT_PUBLIC_BUILD_NUMBER: buildNumber,
     NEXT_PUBLIC_COMMIT: commit,
+    NEXT_PUBLIC_RELEASE_NOTES: changelogEntry(rootPackage.version),
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
   turbopack: {

@@ -29,6 +29,8 @@ export interface CurrentUser {
   shareWorkoutLink: boolean;
   /** Regions (by ID) turned off in the PAX page's From picker; all are on by default. */
   paxSourcesOff: string[];
+  /** The app version whose "What's new" note on Home was last dismissed. */
+  whatsNewSeen: string | null;
 }
 
 /** Both F3 and FiA, which public workouts show until the user narrows it in Settings. */
@@ -128,6 +130,10 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
           (v): v is string => typeof v === "string",
         )
       : [],
+    whatsNewSeen:
+      typeof user.user_metadata?.whats_new_seen === "string"
+        ? user.user_metadata.whats_new_seen
+        : null,
     regionId:
       typeof user.user_metadata?.region_id === "string"
         ? user.user_metadata.region_id

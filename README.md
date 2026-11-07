@@ -5,6 +5,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 
 ## What it does
 
+- **What's new:** after an update, Home shows a one-time note with the new version and its entry
+  from `CHANGELOG.md` (only the latest release; the first four items, with Show more). Dismissing
+  it is saved to the account, so it stays gone on every device; new accounts start on the current
+  version and see the next one.
 - **Home:** your total posts and Qs from your region's sheet (with the date the sheet was last
   updated), **Today's workouts** (your finished workouts dated today, by start time; tap one to
   run it; each drops off an hour after its end time, and the section hides when none are left), your drafts, **Future workouts** (your finished workouts dated after today, soonest

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
 import { PlayIcon, PlusIcon } from "@/components/icons";
+import { WhatsNew } from "@/components/whats-new";
 import { WorkoutCards } from "@/components/workout-card";
 import {
   loadFutureWorkouts,
@@ -84,6 +85,7 @@ function HomePage({ user }: { user: CurrentUser }) {
       <header className="flex flex-col gap-1">
         <h1 className="card-title">Hey, {user.name}</h1>
       </header>
+      <WhatsNew user={user} />
       {show.has("totals") && <Totals user={user} />}
       {show.has("today") && <TodaysWorkouts user={user} />}
 
