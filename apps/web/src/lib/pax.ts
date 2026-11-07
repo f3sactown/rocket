@@ -1,7 +1,12 @@
 import type { Language } from "@rocket/core";
 import { asItems, listColumns, type ListItem } from "./backblast-list";
 import { trending } from "./discover";
-import { loadRegions, loadRoster, type Region } from "./regions";
+import {
+  loadAllPaxStats,
+  loadRegions,
+  loadRoster,
+  type Region,
+} from "./regions";
 import { createClient } from "./supabase/client";
 import { loadWorkoutStats, type WorkoutStats } from "./workout-social";
 
@@ -82,29 +87,6 @@ async function likesAndReusesByName(): Promise<
   return totals;
 }
 
-/** Every PAX's posts and Qs in a synced region, by name (lower case). */
-async function regionStats(
-  region: Region,
-): Promise<Map<string, { posts: number; qs: number }>> {
-  const stats = new Map<string, { posts: number; qs: number }>();
-  if (!region.synced_at) return stats;
-  const supabase = createClient();
-  const size = 1000;
-  // Page through (the database returns at most 1000 rows at a time).
-  for (let from = 0; from < size * 20; from += size) {
-    const { data, error } = await supabase
-      .from("region_pax_stats")
-      .select("pax, posts, qs")
-      .eq("region_id", region.id)
-      .range(from, from + size - 1);
-    if (error) throw new Error(error.message);
-    for (const row of data ?? [])
-      stats.set(row.pax.trim().toLowerCase(), { posts: row.posts, qs: row.qs });
-    if (!data || data.length < size) break;
-  }
-  return stats;
-}
-
 let cache: Promise<{ regions: Region[]; pax: PaxEntry[] }> | null = null;
 
 /**
@@ -125,7 +107,7 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
       regions.map(async (region) => {
         const [names, stats] = await Promise.all([
           loadRoster(region).catch(() => [] as string[]),
-          regionStats(region).catch(() => new Map()),
+          loadAllPaxStats(region).catch(() => new Map()),
         ]);
         for (const name of names) {
           const lower = name.trim().toLowerCase();
