@@ -96,23 +96,33 @@ function PaxProfile({ user }: { user: CurrentUser }) {
               </div>
             ))}
           </div>
-          <ul className="flex flex-col gap-2">
+          {/* Each region as a mini tile in its chip color, with the posts and Qs there. */}
+          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {entry.regions.map((r) => (
               <li
                 key={r.id}
-                className="flex items-center justify-between gap-3 text-sm"
+                className="flex min-w-0 flex-col gap-1 rounded-xl px-2.5 py-2"
+                style={{
+                  background: colors.get(r.id) ?? "var(--badge-region)",
+                  color: "var(--badge-text)",
+                }}
               >
-                <span
-                  className="rounded-full px-2 py-0.5 text-[0.7rem] font-bold tracking-wide"
-                  style={{
-                    background: colors.get(r.id) ?? "var(--badge-region)",
-                    color: "var(--badge-text)",
-                  }}
-                >
+                <span className="line-clamp-2 text-xs font-bold tracking-wide break-words">
                   {r.name}
                 </span>
-                <span className="font-mono text-ink-soft tabular-nums">
-                  {r.posts} posts · {r.qs} Qs
+                <span className="mt-auto flex gap-2 text-xs">
+                  <span>
+                    <span className="font-mono text-sm font-semibold tabular-nums">
+                      {r.posts}
+                    </span>{" "}
+                    posts
+                  </span>
+                  <span>
+                    <span className="font-mono text-sm font-semibold tabular-nums">
+                      {r.qs}
+                    </span>{" "}
+                    Qs
+                  </span>
                 </span>
               </li>
             ))}
