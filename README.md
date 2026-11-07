@@ -5,6 +5,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 
 ## What it does
 
+- **What's new:** after an update, Home shows a one-time note with the new version and its entry
+  from `CHANGELOG.md` (only the latest release; the first four items, with Show more). Dismissing
+  it is saved to the account, so it stays gone on every device; new accounts start on the current
+  version and see the next one.
 - **Home:** your total posts and Qs from your region's sheet (with the date the sheet was last
   updated), **Today's workouts** (your finished workouts dated today, by start time; tap one to
   run it; each drops off an hour after its end time, and the section hides when none are left), your drafts, **Future workouts** (your finished workouts dated after today, soonest
@@ -63,7 +67,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   **Library** opens the F3 and FiA Exicons together: search, choose the source (F3, FiA or both),
   Exercises / Routines and tags (on a phone, two rows of tags that scroll sideways), read an entry, and add it by name or with its description. Each
   entry carries a badge: F3 in F3 red, FiA in FiA teal, and a region's own entries in that region's
-  color. Each region gets a color in the order regions were added, so it's the same for every user.
+  color. Each region gets a color in the order regions were added (blue, then pink, violet, amber, lime and on), so it's the same for every user.
   On the light theme the badges and source chips use deeper shades with white text.
   The **Library** page (in the menu, under Discover) browses the same entries on their own, with
   Copy and Copy with description in place of Add.

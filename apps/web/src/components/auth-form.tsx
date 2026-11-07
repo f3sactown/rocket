@@ -56,6 +56,8 @@ export function AuthForm() {
             region_id: region?.id ?? null,
             // A region sets the starting wording (F3 or FiA); it can be changed in Settings.
             ...(region && { language: region.language }),
+            // A new account starts on this version, so Home's "What's new" waits for the next.
+            whats_new_seen: process.env.NEXT_PUBLIC_APP_VERSION,
           },
           emailRedirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH}/`,
         },
