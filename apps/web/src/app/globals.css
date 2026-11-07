@@ -54,28 +54,28 @@
  * F3 and FiA colors; bright for the dark theme, deeper (for white text) for the light theme.
  */
 :root {
-  --region-0: #a78bfa;
-  --region-1: #fbbf24;
-  --region-2: #f472b6;
-  --region-3: #a3e635;
-  --region-4: #38bdf8;
-  --region-5: #e879f9;
-  --region-6: #34d399;
-  --region-7: #818cf8;
-  --region-8: #facc15;
-  --region-9: #fb7185;
+  --region-0: #38bdf8; /* blue */
+  --region-1: #f472b6; /* pink */
+  --region-2: #a78bfa; /* violet */
+  --region-3: #fbbf24; /* amber */
+  --region-4: #a3e635; /* lime */
+  --region-5: #e879f9; /* fuchsia */
+  --region-6: #34d399; /* emerald */
+  --region-7: #818cf8; /* indigo */
+  --region-8: #facc15; /* yellow */
+  --region-9: #fb7185; /* rose */
 }
 :root[data-theme="light"] {
-  --region-0: #6d28d9;
-  --region-1: #a16207;
-  --region-2: #be185d;
-  --region-3: #4d7c0f;
-  --region-4: #0369a1;
-  --region-5: #a21caf;
-  --region-6: #047857;
-  --region-7: #4338ca;
-  --region-8: #854d0e;
-  --region-9: #be123c;
+  --region-0: #0369a1; /* blue */
+  --region-1: #be185d; /* pink */
+  --region-2: #6d28d9; /* violet */
+  --region-3: #a16207; /* amber */
+  --region-4: #4d7c0f; /* lime */
+  --region-5: #a21caf; /* fuchsia */
+  --region-6: #047857; /* emerald */
+  --region-7: #4338ca; /* indigo */
+  --region-8: #854d0e; /* yellow */
+  --region-9: #be123c; /* rose */
 }
 
 /* Rocket trim per accent (see ACCENTS in lib/theme.ts). F3 red is the default. */

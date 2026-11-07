@@ -67,7 +67,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   **Library** opens the F3 and FiA Exicons together: search, choose the source (F3, FiA or both),
   Exercises / Routines and tags (on a phone, two rows of tags that scroll sideways), read an entry, and add it by name or with its description. Each
   entry carries a badge: F3 in F3 red, FiA in FiA teal, and a region's own entries in that region's
-  color. Each region gets a color in the order regions were added, so it's the same for every user.
+  color. Each region gets a color in the order regions were added (blue, then pink, violet, amber, lime and on), so it's the same for every user.
   On the light theme the badges and source chips use deeper shades with white text.
   The **Library** page (in the menu, under Discover) browses the same entries on their own, with
   Copy and Copy with description in place of Add.
