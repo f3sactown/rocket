@@ -114,9 +114,9 @@ function Pax({ user }: { user: CurrentUser }) {
           <p className="px-1 text-xs text-muted">{results.length} PAX</p>
           <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
             {results.slice(0, shown).map((p) => (
-              <li key={p.name} className="min-w-0">
+              <li key={`${p.org}:${p.name}`} className="min-w-0">
                 <Link
-                  href={`/pax/profile?name=${encodeURIComponent(p.name)}`}
+                  href={`/pax/profile?name=${encodeURIComponent(p.name)}&org=${p.org}`}
                   className="panel flex h-full flex-col gap-1.5 p-2 transition-colors hover:border-accent/40 sm:gap-2 sm:p-3"
                 >
                   <span className="text-sm font-medium break-words text-ink sm:text-base">

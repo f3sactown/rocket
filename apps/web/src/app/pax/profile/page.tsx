@@ -1,5 +1,6 @@
 "use client";
 
+import { LANGUAGES, type Language } from "@rocket/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
@@ -27,14 +28,20 @@ export default function PaxProfilePage() {
  * name, their recent public workouts and the ones trending lately.
  */
 function PaxProfile({ user }: { user: CurrentUser }) {
-  const name = useSearchParams().get("name") ?? "";
+  const params = useSearchParams();
+  const name = params.get("name") ?? "";
+  // The same name in F3 and FiA is two different PAX.
+  const org: Language = params.get("org") === "fia" ? "fia" : "f3";
   const all = useLoad(loadAllPax, []);
-  const workouts = useLoad(name ? () => loadPaxWorkouts(name) : null, [name]);
+  const workouts = useLoad(name ? () => loadPaxWorkouts(name, org) : null, [
+    name,
+    org,
+  ]);
   const [statsOverride, setStatsOverride] = useState<Map<string, WorkoutStats>>(
     new Map(),
   );
   const entry = all.value?.pax.find(
-    (p) => p.name.toLowerCase() === name.trim().toLowerCase(),
+    (p) => p.org === org && p.name.toLowerCase() === name.trim().toLowerCase(),
   );
   const colors = useMemo(
     () => regionColors(all.value?.regions ?? []),
@@ -54,11 +61,18 @@ function PaxProfile({ user }: { user: CurrentUser }) {
       </Link>
       <header className="flex flex-col gap-1">
         <h1 className="card-title break-words">{name || "PAX"}</h1>
+        {name && (
+          <p className="text-sm text-muted">
+            {LANGUAGES.find((l) => l.value === org)?.label}
+          </p>
+        )}
       </header>
 
       {all.value && !entry && (
         <p className="panel px-3 py-6 text-center text-muted">
-          {name ? `${name} isn’t on any region’s roster.` : "No PAX chosen."}
+          {name
+            ? `${name} isn’t on any ${LANGUAGES.find((l) => l.value === org)?.label} region’s roster.`
+            : "No PAX chosen."}
         </p>
       )}
       {entry && (

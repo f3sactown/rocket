@@ -52,6 +52,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   workout tiles. A **From** picker of regions, in each
   region's color, narrows the list and the totals; the choice is saved to your account. A tile
   opens the PAX's profile: posts, Qs, likes and reuses in one row on top, their stats per region and their Trending and Recent public workouts.
+  The same name in F3 and in FiA is two different PAX, each with their own tile, profile and
+  numbers; likes, reuses and workouts come from the Rocket account of that name in the same
+  organization (or one with no region, which can't be told apart).
 - **Backblasts** are made from a finished workout with **Create backblast**, or from **New
   backblast**, which lists your finished, unarchived workouts that don't have a backblast yet to
   pick from, or starts one without a workout. Only a workout's Q writes its backblast, so other
