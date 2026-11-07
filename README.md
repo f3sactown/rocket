@@ -57,6 +57,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   last dismissed it (the last two weeks, the first time), with their region, each linking to their
   profile. Dismissing it is saved to the account; it comes back when someone new signs up.
   The regions show as mini tiles in each region's color with the posts and Qs there.
+  A name with one of the same organization's regions in parentheses, like "Baby Shark (Dry
+  Creek)" on F3 SacTown's roster, is the same PAX as "Baby Shark" of F3 DryCreek: one tile, with
+  both regions' posts and Qs (spaces, case and the F3 or FiA prefix don't matter). An F3 PAX is
+  never merged with a FiA one.
   The same name in F3 and in FiA is two different PAX, each with their own tile, profile and
   numbers; likes, reuses and workouts come from the Rocket account of that name in the same
   organization (or one with no region, which can't be told apart).
