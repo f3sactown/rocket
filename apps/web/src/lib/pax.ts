@@ -198,3 +198,56 @@ export async function loadPaxWorkouts(
     stats,
   };
 }
+
+/** Someone who signed up for Rocket, for the PAX page's "New on Rocket" note. */
+export interface NewPax {
+  id: string;
+  name: string;
+  /** Their organization, if their account has a region (or all of one organization's). */
+  org: Language | null;
+  region: string | null;
+  joined: string;
+}
+
+/** How far back "new on Rocket" reaches for someone who has never dismissed the note. */
+const NEW_PAX_DAYS = 14;
+
+/**
+ * Accounts created after `since` (or in the last two weeks, when it's null), newest first,
+ * leaving out the viewer's own.
+ */
+export async function loadNewPax(
+  since: string | null,
+  userId: string,
+): Promise<NewPax[]> {
+  const from =
+    since ?? new Date(Date.now() - NEW_PAX_DAYS * 86_400_000).toISOString();
+  const { data, error } = await createClient()
+    .from("profiles")
+    .select(
+      "id, name, created_at, region_scope, region:regions!profiles_region_id_fkey(language, name)",
+    )
+    .gt("created_at", from)
+    .neq("id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw new Error(error.message);
+  return (
+    (data ?? []) as unknown as {
+      id: string;
+      name: string;
+      created_at: string;
+      region_scope: Language | null;
+      region: { language: Language; name: string } | null;
+    }[]
+  )
+    .filter((p) => p.name.trim())
+    .map((p) => ({
+      id: p.id,
+      name: p.name.trim(),
+      org: orgOf(p),
+      region: p.region?.name ?? null,
+      joined: p.created_at,
+    }))
+    .sort((a, b) => b.joined.localeCompare(a.joined));
+}

@@ -53,6 +53,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   workout tiles. A **From** picker of regions, in each
   region's color, narrows the list and the totals; the choice is saved to your account. A tile
   opens the PAX's profile: posts, Qs, likes and reuses in one row on top, their stats per region and their Trending and Recent public workouts.
+  At the top, a **New on Rocket** note names whoever has signed up for a Rocket account since you
+  last dismissed it (the last two weeks, the first time), with their region, each linking to their
+  profile. Dismissing it is saved to the account; it comes back when someone new signs up.
   The regions show as mini tiles in each region's color with the posts and Qs there.
   The same name in F3 and in FiA is two different PAX, each with their own tile, profile and
   numbers; likes, reuses and workouts come from the Rocket account of that name in the same
