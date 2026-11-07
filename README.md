@@ -236,8 +236,9 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
 - The sheet must be shared so **anyone with the link can view** it.
 - Each region records which tabs and column headers hold its AOs, roster and attendance, and its
   organization: choosing a region switches the user to its wording and colors. **F3 SacTown** (F3)
-  is set up by `supabase/migrations/20261101000000_regions.sql` and **FiA SacTown** (FiA) by
-  `supabase/migrations/20261105020000_fia_sactown_region.sql`. Others can be added in Settings,
+  is set up by `supabase/migrations/20261101000000_regions.sql`, **FiA SacTown** (FiA) by
+  `supabase/migrations/20261105020000_fia_sactown_region.sql` and **F3 Delta** (F3) by
+  `supabase/migrations/20261107010000_f3_delta_region.sql`. Others can be added in Settings,
   with a **Check sheet** button that confirms every column exists.
 - **Nightly sync:** `.github/workflows/sync-regions.yml` runs `scripts/sync-regions.mjs` every
   night (about 2–3am Pacific, or on demand from the Actions tab). It copies each region's active
