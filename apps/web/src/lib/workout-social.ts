@@ -45,14 +45,15 @@ export async function setLiked(workoutId: string, liked: boolean) {
   if (error) throw new Error(error.message);
 }
 
-/** Makes a workout public (the default once finished) or private to its Q. */
+/** Makes a finished workout or backblast public (anyone signed in can see it) or private. */
 export async function setVisibility(
-  workoutId: string,
+  id: string,
   visibility: "public" | "private",
+  kind: "workout" | "backblast" = "workout",
 ) {
   const { error } = await createClient()
-    .from("workouts")
+    .from(kind === "workout" ? "workouts" : "backblasts")
     .update({ visibility })
-    .eq("id", workoutId);
+    .eq("id", id);
   if (error) throw new Error(error.message);
 }

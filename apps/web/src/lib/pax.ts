@@ -161,18 +161,23 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
   return cache;
 }
 
+/** How many of a PAX's public workouts and backblasts their profile lists. */
+const PROFILE_LIMIT = 200;
+
 /**
- * A PAX's public workouts on Rocket, matched to their roster name by their Rocket account's name
- * in the same organization (or an account with no region): the most recent first, and the ones
- * getting the most attention lately.
+ * A PAX's public workouts and backblasts on Rocket, matched to their roster name by their Rocket
+ * account's name in the same organization (or an account with no region): all of them, newest
+ * first, and the workouts getting the most attention lately. Archiving doesn't hide anything
+ * here; making it private does.
  */
 export async function loadPaxWorkouts(
   name: string,
   org: Language,
 ): Promise<{
   hasAccount: boolean;
-  recent: ListItem[];
+  workouts: ListItem[];
   trending: ListItem[];
+  backblasts: ListItem[];
   stats: Map<string, WorkoutStats>;
 }> {
   const supabase = createClient();
@@ -188,23 +193,36 @@ export async function loadPaxWorkouts(
     .filter((p) => (orgOf(p) ?? org) === org)
     .map((p) => p.id);
   if (!ids.length)
-    return { hasAccount: false, recent: [], trending: [], stats: new Map() };
-  const { data, error: workoutsError } = await supabase
-    .from("workouts")
-    .select(listColumns("workout"))
-    .in("author_id", ids)
-    .eq("status", "published")
-    .eq("visibility", "public")
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (workoutsError) throw new Error(workoutsError.message);
-  const workouts = asItems("workout", data);
-  const stats = await loadWorkoutStats(workouts.map((w) => w.id));
+    return {
+      hasAccount: false,
+      workouts: [],
+      trending: [],
+      backblasts: [],
+      stats: new Map(),
+    };
+  const publicOf = (kind: "workout" | "backblast") =>
+    supabase
+      .from(kind === "workout" ? "workouts" : "backblasts")
+      .select(listColumns(kind))
+      .in("author_id", ids)
+      .eq("status", "published")
+      .eq("visibility", "public")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(PROFILE_LIMIT);
+  const [w, b] = await Promise.all([
+    publicOf("workout"),
+    publicOf("backblast"),
+  ]);
+  if (w.error) throw new Error(w.error.message);
+  if (b.error) throw new Error(b.error.message);
+  const workouts = asItems("workout", w.data);
+  const stats = await loadWorkoutStats(workouts.map((x) => x.id));
   return {
     hasAccount: true,
-    recent: workouts.slice(0, 10),
+    workouts,
     trending: trending(workouts, stats).slice(0, 10),
+    backblasts: asItems("backblast", b.data),
     stats,
   };
 }

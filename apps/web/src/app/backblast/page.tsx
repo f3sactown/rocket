@@ -14,11 +14,16 @@ import { CopyButton } from "@/components/copy-button";
 import { CountPanel } from "@/components/count-panel";
 import { ProtectedText } from "@/components/protected-text";
 import { ShareButton } from "@/components/share-button";
+import {
+  VisibilitySwitch,
+  type Visibility,
+} from "@/components/visibility-switch";
 import { ArchiveIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { fromRow } from "@/lib/backblast";
 import { useWorkoutLink } from "@/lib/workout-link";
 import { archive, unarchive } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
+import { setVisibility } from "@/lib/workout-social";
 
 // A query parameter instead of /backblasts/[id], because a static site can't serve dynamic paths.
 export default function BackblastPage() {
@@ -40,8 +45,10 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     backblast: Backblast | null;
     authorId?: string;
     authorName?: string;
+    status?: string;
     error?: string;
   } | null>(null);
+  const [visibility, setVisibilityState] = useState<Visibility>("public");
 
   useEffect(() => {
     if (!id) return;
@@ -50,14 +57,16 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
       .select("*, author:profiles!backblasts_author_id_fkey(name)")
       .eq("id", id)
       .maybeSingle()
-      .then(({ data, error }) =>
+      .then(({ data, error }) => {
+        if (data) setVisibilityState(data.visibility ?? "public");
         setResult({
           backblast: data && fromRow(data),
           authorId: data?.author_id,
           authorName: data?.author?.name,
+          status: data?.status,
           error: error?.message,
-        }),
-      );
+        });
+      });
   }, [id]);
 
   useEffect(() => {
@@ -92,6 +101,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     );
 
   const { backblast } = result;
+  const mine = result.authorId === user.id;
   const text = formatBackblast(backblast, user.language);
   return (
     <article className="card">
@@ -110,6 +120,26 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         <span className="font-medium text-ink">{backblast.ao}</span>
         <span className="text-ink-soft">{formatDate(backblast.date)}</span>
       </div>
+      {mine && result.status === "published" && (
+        <div className="-mt-2 flex justify-end">
+          <VisibilitySwitch
+            value={visibility}
+            label="Who can see this backblast"
+            publicHint="Anyone signed in can see it on your PAX profile"
+            onChange={async (next) => {
+              const before = visibility;
+              setVisibilityState(next);
+              setDeleteError(null);
+              try {
+                await setVisibility(id!, next, "backblast");
+              } catch (error) {
+                setVisibilityState(before);
+                setDeleteError((error as Error).message);
+              }
+            }}
+          />
+        </div>
+      )}
       {backblast.workoutId && (
         <Link
           href={`/workout?id=${backblast.workoutId}`}
@@ -133,14 +163,14 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
           text={copyText(backblast, user.language, workoutLink)}
         />
       </div>
-      {result.authorId === user.id && (
+      {mine && (
         <Link href={`/backblasts/edit?id=${id}`} className="btn -mt-2 w-full">
           <PencilIcon />
           Edit backblast
         </Link>
       )}
       <div className="-mt-1 flex justify-center gap-6">
-        {archived !== null && (
+        {mine && archived !== null && (
           <button
             type="button"
             onClick={toggleArchive}
@@ -150,7 +180,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
             {archived ? "Unarchive" : "Archive"}
           </button>
         )}
-        {result.authorId === user.id && (
+        {mine && (
           <button
             type="button"
             onClick={async () => {

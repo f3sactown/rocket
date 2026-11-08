@@ -9,6 +9,7 @@ import { WorkoutCards } from "@/components/workout-card";
 import { loadAllPax, loadPaxWorkouts } from "@/lib/pax";
 import { regionColors } from "@/lib/regions";
 import { useLoad } from "@/lib/use-region";
+import type { ListItem } from "@/lib/backblast-list";
 import type { WorkoutStats } from "@/lib/workout-social";
 
 export default function PaxProfilePage() {
@@ -25,7 +26,7 @@ export default function PaxProfilePage() {
 
 /**
  * One PAX: their regions with posts and Qs in each, and, from the Rocket account with the same
- * name, their recent public workouts and the ones trending lately.
+ * name, the public workouts trending lately and all their public workouts and backblasts.
  */
 function PaxProfile({ user }: { user: CurrentUser }) {
   const params = useSearchParams();
@@ -138,7 +139,7 @@ function PaxProfile({ user }: { user: CurrentUser }) {
         )
       ) : !workouts.value.hasAccount ? (
         <p className="text-sm text-muted">
-          {name} doesn&apos;t have workouts on Rocket yet.
+          {name} doesn&apos;t have workouts or backblasts on Rocket yet.
         </p>
       ) : (
         <>
@@ -155,11 +156,11 @@ function PaxProfile({ user }: { user: CurrentUser }) {
               <p className="text-sm text-muted">Nothing trending lately.</p>
             )}
           </Group>
-          <Group title="Recent workouts">
-            {workouts.value.recent.length ? (
+          <Group title="All workouts" count={workouts.value.workouts.length}>
+            {workouts.value.workouts.length ? (
               <WorkoutCards
                 tiles
-                workouts={workouts.value.recent}
+                workouts={workouts.value.workouts}
                 stats={stats}
                 userId={user.id}
                 onStatsChange={onStatsChange}
@@ -168,23 +169,62 @@ function PaxProfile({ user }: { user: CurrentUser }) {
               <p className="text-sm text-muted">No public workouts yet.</p>
             )}
           </Group>
+          <Group
+            title="All backblasts"
+            count={workouts.value.backblasts.length}
+          >
+            {workouts.value.backblasts.length ? (
+              <BackblastTiles backblasts={workouts.value.backblasts} />
+            ) : (
+              <p className="text-sm text-muted">No public backblasts yet.</p>
+            )}
+          </Group>
         </>
       )}
     </article>
   );
 }
 
+/** Public backblasts as a row of tiles that scrolls sideways, like the workout tiles. */
+function BackblastTiles({ backblasts }: { backblasts: ListItem[] }) {
+  return (
+    <ul className="scroll-row -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:-mx-8 sm:scroll-px-8 sm:px-8">
+      {backblasts.map((b) => (
+        <li key={b.id} className="w-40 shrink-0 snap-start sm:w-48">
+          <Link
+            href={`/backblast?id=${b.id}`}
+            className="panel flex h-full flex-col gap-2 p-3 transition-colors hover:border-accent/40"
+          >
+            <span className="line-clamp-2 font-medium break-words text-ink">
+              {b.title || "Untitled backblast"}
+            </span>
+            <span className="mt-auto flex flex-col gap-0.5 text-xs">
+              <span className="truncate text-ink-soft">{b.ao}</span>
+              <span className="font-mono text-muted">{b.date}</span>
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function Group({
   title,
+  count,
   children,
 }: {
   title: string;
+  count?: number;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-2">
       <h2 className="px-1 text-lg font-semibold tracking-tight text-ink">
         {title}
+        {count ? (
+          <span className="ml-2 text-sm font-normal text-muted">{count}</span>
+        ) : null}
       </h2>
       {children}
     </div>
