@@ -2,7 +2,7 @@ name: Deploy dev site
 
 # The dev site (dev.rocket.f3sactown.com) runs against its own Supabase project, so changes can be
 # tried without touching production. Every push to the `dev` branch applies new migrations to the
-# dev database, builds the site with the dev settings and publishes it to the `gh-pages` branch of
+# dev database, builds the site with the dev settings and publishes it to the `main` branch of
 # f3sactown/rocket-dev, which serves it. Run it by hand (Actions tab) to put any branch on dev.
 #
 # Settings live in the `development` environment (Settings → Environments), where they override
@@ -70,8 +70,9 @@ jobs:
         with:
           deploy_key: ${{ secrets.DEV_SITE_DEPLOY_KEY }}
           external_repository: f3sactown/rocket-dev
-          publish_branch: gh-pages
+          publish_branch: main
           publish_dir: apps/web/out
           cname: dev.rocket.f3sactown.com
+          # Each deploy replaces the branch with just the site.
           force_orphan: true
           full_commit_message: "Deploy ${{ github.ref_name }} @ ${{ github.sha }}"

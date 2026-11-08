@@ -205,8 +205,9 @@ touching production. Search engines are kept out (`robots.txt`).
 
 - **Deploying:** every push to the `dev` branch runs `.github/workflows/deploy-dev.yml`. It applies
   any new migrations to the dev database (`supabase db push`), builds the site with the dev
-  settings and publishes it to the `gh-pages` branch of
+  settings and publishes it to the `main` branch of
   [f3sactown/rocket-dev](https://github.com/f3sactown/rocket-dev), whose GitHub Pages serves it.
+  Each deploy replaces everything on that branch, so keep nothing else there.
   To put any other branch on dev, run **Deploy dev site** from the Actions tab and pick the branch.
   A migration applied this way stays in the dev database even if its branch is dropped.
 - **Data:** the nightly region sync and the weekly Exicon sync each run a second job, `sync-dev`,
@@ -241,10 +242,10 @@ One-time setup:
    Supabase → **Connect** → **Session pooler** (GitHub's runners can't reach the direct connection),
    with the database password filled in and percent-encoded.
 5. **First deploy:** create the `dev` branch from `main` and push it. The first run applies every
-   migration and creates the `gh-pages` branch in rocket-dev. Then run **Sync region data** and
+   migration and fills rocket-dev's `main` branch. Then run **Sync region data** and
    **Sync Exicon library** from the Actions tab to fill the dev database.
 6. **Pages and domain:** in rocket-dev, Settings → Pages, set **Source** to **Deploy from a
-   branch**, `gh-pages`, `/ (root)`. Add a DNS `CNAME` record from `dev.rocket` to
+   branch**, `main`, `/ (root)`. Add a DNS `CNAME` record from `dev.rocket` to
    `f3sactown.github.io`, then turn on **Enforce HTTPS** once the certificate is ready.
 
 ## Scripts
