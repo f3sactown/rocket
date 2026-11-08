@@ -345,6 +345,34 @@ the dev database when it deploys. On the production project, apply them with `pn
 paste them into the Supabase SQL Editor in filename order. A pull request that adds one says so,
 and should be merged only after the migration has run on production.
 
+## Backups
+
+`.github/workflows/backup-db.yml` backs up the production database every night (about 2am Pacific,
+or on demand from the Actions tab). It runs `supabase db dump` three times (roles, schema, and data
+including `auth.users`), encrypts the result with a passphrase and keeps it as a workflow artifact
+named `rocket-db-YYYY-MM-DD` for 90 days. Anyone signed in to GitHub can download artifacts from a
+public repository, so the dump is only ever stored encrypted.
+
+It needs two repository **secrets**:
+
+- `SUPABASE_DB_URL`: the production database's **Session pooler** connection string (Supabase →
+  Connect), with the database password filled in.
+- `BACKUP_PASSPHRASE`: a long random passphrase (at least 20 characters). Keep a copy somewhere
+  safe outside GitHub, such as a password manager. Without it the backups can't be opened.
+
+To restore one, download the artifact from the run's page (or with
+`gh run download <run-id> -n rocket-db-YYYY-MM-DD`), then:
+
+```bash
+gpg -d rocket-db-YYYY-MM-DD.tar.gz.gpg | tar -xz   # asks for the passphrase
+psql "$TARGET_DB_URL" --single-transaction -v ON_ERROR_STOP=1 \
+  -f roles.sql -f schema.sql -c 'SET session_replication_role = replica' -f data.sql
+```
+
+Restore into a new, empty Supabase project, or into the local stack, rather than over the live
+database. Never commit a decrypted dump (`backup/` is git-ignored): it holds users' emails and
+password hashes.
+
 ## Versions and releases
 
 Rocket is in **alpha** (`0.1.0-alpha.N`); the running version and build number show in the footer.
