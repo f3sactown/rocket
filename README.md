@@ -203,6 +203,9 @@ A second copy of the app at [rocket-dev.f3sactown.com](https://rocket-dev.f3sact
 against its own Supabase project, with its own accounts and data, so changes can be tried without
 touching production. Search engines are kept out (`robots.txt`).
 
+- **Workflow:** pull requests go into `dev` first. Merging one deploys it here (with its
+  migrations applied to the dev database) to try out; when it's ready, a `dev` → `main` pull
+  request takes it to production, after its migrations are run there.
 - **Deploying:** every push to the `dev` branch runs `.github/workflows/deploy-dev.yml`. It applies
   any new migrations to the dev database (`supabase db push`), builds the site with the dev
   settings and publishes it to the `main` branch of
