@@ -199,7 +199,7 @@ One-time setup:
 
 ## Dev site
 
-A second copy of the app at [dev.rocket.f3sactown.com](https://dev.rocket.f3sactown.com) runs
+A second copy of the app at [rocket-dev.f3sactown.com](https://rocket-dev.f3sactown.com) runs
 against its own Supabase project, with its own accounts and data, so changes can be tried without
 touching production. Search engines are kept out (`robots.txt`).
 
@@ -231,7 +231,7 @@ One-time setup:
 
 1. **Supabase project:** create `rocket-dev` at [supabase.com](https://supabase.com) (the free plan
    allows two active projects). In Authentication → URL Configuration, set the **Site URL** to
-   `https://dev.rocket.f3sactown.com/` and add the same address under **Redirect URLs**.
+   `https://rocket-dev.f3sactown.com/` and add the same address under **Redirect URLs**.
 2. **Repository for the site:** create an empty public repository, `f3sactown/rocket-dev`.
 3. **Deploy key:** run `ssh-keygen -t ed25519 -N "" -C rocket-dev-deploy -f rocket-dev-deploy`. Add
    `rocket-dev-deploy.pub` to rocket-dev under Settings → Deploy keys with **Allow write access**,
@@ -245,7 +245,7 @@ One-time setup:
    migration and fills rocket-dev's `main` branch. Then run **Sync region data** and
    **Sync Exicon library** from the Actions tab to fill the dev database.
 6. **Pages and domain:** in rocket-dev, Settings → Pages, set **Source** to **Deploy from a
-   branch**, `main`, `/ (root)`. Add a DNS `CNAME` record from `dev.rocket` to
+   branch**, `main`, `/ (root)`. Add a DNS `CNAME` record from `rocket-dev` to
    `f3sactown.github.io`, then turn on **Enforce HTTPS** once the certificate is ready.
 
 ## Scripts
