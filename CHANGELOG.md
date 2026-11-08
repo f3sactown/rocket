@@ -4,6 +4,19 @@ All notable changes to Rocket are recorded here. This file is maintained automat
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commit](https://www.conventionalcommits.org) messages; see [RELEASING.md](RELEASING.md).
 
+## [0.1.0-alpha.6](https://github.com/f3sactown/rocket/compare/v0.1.0-alpha.5...v0.1.0-alpha.6) (2026-11-08)
+
+
+### Features
+
+* nightly encrypted database backups to Google Drive ([b5ce9b0](https://github.com/f3sactown/rocket/commit/b5ce9b03126997e2375b0794cd03021b2661a4d1))
+
+
+### Bug Fixes
+
+* leave release-please's manifest out of the formatting check ([9cf44ca](https://github.com/f3sactown/rocket/commit/9cf44ca035bc59155055240e08900f3797ac106d))
+* leave release-please's manifest out of the formatting check ([74a159e](https://github.com/f3sactown/rocket/commit/74a159ed64f336bcd7b35d855317053ea645eef6))
+
 ## [0.1.0-alpha.5](https://github.com/f3sactown/rocket/compare/v0.1.0-alpha.4...v0.1.0-alpha.5) (2026-11-08)
 
 
