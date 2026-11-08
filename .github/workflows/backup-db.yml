@@ -32,9 +32,12 @@ jobs:
           fail() { echo "::error::$1 (Settings → Secrets and variables → Actions)"; exit 1; }
           [ -n "$SUPABASE_DB_URL" ] || fail "Set the SUPABASE_DB_URL repository secret."
           [ ${#BACKUP_PASSPHRASE} -ge 20 ] || fail "Set a BACKUP_PASSPHRASE secret of at least 20 characters."
-          for s in GDRIVE_CLIENT_ID GDRIVE_CLIENT_SECRET GDRIVE_TOKEN; do
-            [ -n "${!s}" ] || fail "Set the $s repository secret."
-          done
+          [ -n "$GDRIVE_TOKEN" ] || fail "Set the GDRIVE_TOKEN repository secret."
+          # Only for a Google Cloud OAuth client of your own; without them rclone uses its own.
+          if [[ -z "$GDRIVE_CLIENT_ID" && -n "$GDRIVE_CLIENT_SECRET" ||
+                -n "$GDRIVE_CLIENT_ID" && -z "$GDRIVE_CLIENT_SECRET" ]]; then
+            fail "Set both GDRIVE_CLIENT_ID and GDRIVE_CLIENT_SECRET, or neither."
+          fi
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -70,7 +73,8 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq rclone
       - name: Upload to Google Drive
         env:
-          # A Drive remote named "gdrive", set up from secrets instead of a config file.
+          # A Drive remote named "gdrive", set up from secrets instead of a config file. An empty
+          # client ID and secret mean rclone's own Google app, which must match how the token was made.
           RCLONE_CONFIG_GDRIVE_TYPE: drive
           RCLONE_CONFIG_GDRIVE_SCOPE: drive.file
           RCLONE_CONFIG_GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
@@ -78,6 +82,8 @@ jobs:
           RCLONE_CONFIG_GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
           FILE: ${{ steps.encrypt.outputs.name }}.tar.gz.gpg
         run: |
+          [ -n "$RCLONE_CONFIG_GDRIVE_CLIENT_ID" ] ||
+            unset RCLONE_CONFIG_GDRIVE_CLIENT_ID RCLONE_CONFIG_GDRIVE_CLIENT_SECRET
           rclone copy "$FILE" "gdrive:Rocket backups" --config /dev/null
           rclone lsl "gdrive:Rocket backups" --config /dev/null --include "$FILE" | grep -q . ||
             { echo "::error::$FILE isn't in Google Drive after the upload."; exit 1; }

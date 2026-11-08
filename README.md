@@ -360,29 +360,22 @@ It needs these repository **secrets**:
   Connect), with the database password filled in.
 - `BACKUP_PASSPHRASE`: a long random passphrase (at least 20 characters). Keep a copy somewhere
   safe outside GitHub, such as a password manager. Without it the backups can't be opened.
-- `GDRIVE_CLIENT_ID`, `GDRIVE_CLIENT_SECRET` and `GDRIVE_TOKEN`: access to your Google Drive,
-  set up once as below.
+- `GDRIVE_TOKEN`: access to your Google Drive. On your computer, with
+  [rclone installed](https://rclone.org/install/), run the command below, sign in with the Google
+  account whose Drive should hold the backups, then run `rclone config show gdrive` and copy the
+  JSON after `token =`:
 
-Setting up Google Drive access:
+  ```bash
+  rclone config create gdrive drive scope=drive.file
+  ```
 
-1. In the [Google Cloud console](https://console.cloud.google.com/), create a project and enable
-   the **Google Drive API**.
-2. Under **Google Auth Platform**, set up the consent screen as **External**, add yourself as a
-   test user, then under **Audience** click **Publish app**. An app left in "Testing" has its
-   access revoked after 7 days. Rocket only asks for the `drive.file` scope, which needs no review
-   by Google. If signing in says "Access blocked: … has not completed the Google verification
-   process", the app is still in Testing and the account isn't a test user: publish it (or add that
-   exact Google account under **Audience → Test users**) and sign in again.
-3. Under **Clients**, create an OAuth client of type **Desktop app**. Its ID and secret are
-   `GDRIVE_CLIENT_ID` and `GDRIVE_CLIENT_SECRET`.
-4. On your computer, with [rclone installed](https://rclone.org/install/), run the command below and
-   sign in with the Google account whose Drive should hold the backups:
-
-   ```bash
-   rclone config create gdrive drive client_id=<client id> client_secret=<client secret> scope=drive.file
-   ```
-
-5. Run `rclone config show gdrive` and copy the JSON after `token =` into `GDRIVE_TOKEN`.
+This signs in through rclone's own Google app, which Google has verified, so there's no Google
+Cloud setup. It shares Google's rate limits with other rclone users, which one small file a night
+won't notice. To use an OAuth client of your own instead, create a **Desktop app** client in a
+Google Cloud project with the Drive API enabled and its consent screen **published** (an app left
+in "Testing" blocks sign-in for anyone who isn't a test user, and its tokens expire after 7 days).
+Then add `client_id=… client_secret=…` to the command above and set the `GDRIVE_CLIENT_ID` and
+`GDRIVE_CLIENT_SECRET` secrets to match. The token only works with the client that made it.
 
 With `drive.file`, rclone can see only the files and folders it created, not the rest of your
 Drive. The workflow creates **Rocket backups** itself on its first run; a folder of the same name
