@@ -11,3 +11,5 @@ coverage/
 .vercel
 *.log
 next-env.d.ts
+backup/
+*.dump

@@ -345,6 +345,55 @@ the dev database when it deploys. On the production project, apply them with `pn
 paste them into the Supabase SQL Editor in filename order. A pull request that adds one says so,
 and should be merged only after the migration has run on production.
 
+## Backups
+
+`.github/workflows/backup-db.yml` backs up the production database every night (about 2am Pacific,
+or on demand from the Actions tab). It runs `supabase db dump` three times (roles, schema, and data
+including `auth.users`), encrypts the result with a passphrase and uploads it with
+[rclone](https://rclone.org/drive/) to a **Rocket backups** folder in Google Drive as
+`rocket-db-YYYY-MM-DD.tar.gz.gpg`. Backups older than 90 days are moved to Drive's trash. Nothing is
+kept on GitHub, and the dump only leaves the runner encrypted.
+
+It needs these repository **secrets**:
+
+- `SUPABASE_DB_URL`: the production database's **Session pooler** connection string (Supabase →
+  Connect), with the database password filled in.
+- `BACKUP_PASSPHRASE`: a long random passphrase (at least 20 characters). Keep a copy somewhere
+  safe outside GitHub, such as a password manager. Without it the backups can't be opened.
+- `GDRIVE_TOKEN`: access to your Google Drive. On your computer, with
+  [rclone installed](https://rclone.org/install/), run the command below, sign in with the Google
+  account whose Drive should hold the backups, then run `rclone config show gdrive` and copy the
+  JSON after `token =`:
+
+  ```bash
+  rclone config create gdrive drive scope=drive.file
+  ```
+
+This signs in through rclone's own Google app, which Google has verified, so there's no Google
+Cloud setup. It shares Google's rate limits with other rclone users, which one small file a night
+won't notice. To use an OAuth client of your own instead, create a **Desktop app** client in a
+Google Cloud project with the Drive API enabled and its consent screen **published** (an app left
+in "Testing" blocks sign-in for anyone who isn't a test user, and its tokens expire after 7 days).
+Then add `client_id=… client_secret=…` to the command above and set the `GDRIVE_CLIENT_ID` and
+`GDRIVE_CLIENT_SECRET` secrets to match. The token only works with the client that made it.
+
+With `drive.file`, rclone can see only the files and folders it created, not the rest of your
+Drive. The workflow creates **Rocket backups** itself on its first run; a folder of the same name
+that you made by hand stays empty, and the workflow makes its own beside it. Don't rename or move
+the folder Rocket created, or the next run starts a new one.
+
+To restore one, download it from Drive, then:
+
+```bash
+gpg -d rocket-db-YYYY-MM-DD.tar.gz.gpg | tar -xz   # asks for the passphrase
+psql "$TARGET_DB_URL" --single-transaction -v ON_ERROR_STOP=1 \
+  -f roles.sql -f schema.sql -c 'SET session_replication_role = replica' -f data.sql
+```
+
+Restore into a new, empty Supabase project, or into the local stack, rather than over the live
+database. Never commit a decrypted dump (`backup/` is git-ignored): it holds users' emails and
+password hashes.
+
 ## Versions and releases
 
 Rocket is in **alpha** (`0.1.0-alpha.N`); the running version and build number show in the footer.
