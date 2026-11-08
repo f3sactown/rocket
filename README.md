@@ -197,6 +197,56 @@ One-time setup:
    `https://<owner>.github.io/<repo>/` and add the same address under **Redirect URLs**.
 5. Re-run the **Deploy to GitHub Pages** workflow (Actions tab), or push to `main`.
 
+## Dev site
+
+A second copy of the app at [dev.rocket.f3sactown.com](https://dev.rocket.f3sactown.com) runs
+against its own Supabase project, with its own accounts and data, so changes can be tried without
+touching production. Search engines are kept out (`robots.txt`).
+
+- **Deploying:** every push to the `dev` branch runs `.github/workflows/deploy-dev.yml`. It applies
+  any new migrations to the dev database (`supabase db push`), builds the site with the dev
+  settings and publishes it to the `gh-pages` branch of
+  [f3sactown/rocket-dev](https://github.com/f3sactown/rocket-dev), whose GitHub Pages serves it.
+  To put any other branch on dev, run **Deploy dev site** from the Actions tab and pick the branch.
+  A migration applied this way stays in the dev database even if its branch is dropped.
+- **Data:** the nightly region sync and the weekly Exicon sync each run a second job, `sync-dev`,
+  that copies the same sheets into the dev project. That activity also keeps the free project from
+  pausing.
+- **Settings:** the `development` environment (Settings → Environments) holds the dev values under
+  the same names as production's repository settings, and overrides them in the dev jobs. Every dev
+  job checks that its Supabase settings name the dev project, so a missing one can't fall back to
+  production. The dev jobs are skipped until `DEV_SUPABASE_PROJECT_REF` is set.
+
+| Where                               | Name                        | Value                                                                   |
+| ----------------------------------- | --------------------------- | ----------------------------------------------------------------------- |
+| Repository variable                 | `DEV_SUPABASE_PROJECT_REF`  | The dev project's ref (the ID in its Supabase URL)                      |
+| `development` environment, variable | `SUPABASE_URL`              | The dev project's URL                                                   |
+| `development` environment, variable | `SUPABASE_PUBLISHABLE_KEY`  | The dev project's publishable key                                       |
+| `development` environment, secret   | `SUPABASE_SERVICE_ROLE_KEY` | The dev project's secret key, for the syncs                             |
+| `development` environment, secret   | `SUPABASE_DB_URL`           | The dev database's **Session pooler** connection string, for migrations |
+| `development` environment, secret   | `DEV_SITE_DEPLOY_KEY`       | The private half of f3sactown/rocket-dev's deploy key                   |
+
+One-time setup:
+
+1. **Supabase project:** create `rocket-dev` at [supabase.com](https://supabase.com) (the free plan
+   allows two active projects). In Authentication → URL Configuration, set the **Site URL** to
+   `https://dev.rocket.f3sactown.com/` and add the same address under **Redirect URLs**.
+2. **Repository for the site:** create an empty public repository, `f3sactown/rocket-dev`.
+3. **Deploy key:** run `ssh-keygen -t ed25519 -N "" -C rocket-dev-deploy -f rocket-dev-deploy`. Add
+   `rocket-dev-deploy.pub` to rocket-dev under Settings → Deploy keys with **Allow write access**,
+   and the private `rocket-dev-deploy` as the `DEV_SITE_DEPLOY_KEY` secret below, then delete both
+   files.
+4. **Settings:** in this repository, create the `development` environment and add the settings in
+   the table, then the `DEV_SUPABASE_PROJECT_REF` repository variable. For `SUPABASE_DB_URL`, use
+   Supabase → **Connect** → **Session pooler** (GitHub's runners can't reach the direct connection),
+   with the database password filled in and percent-encoded.
+5. **First deploy:** create the `dev` branch from `main` and push it. The first run applies every
+   migration and creates the `gh-pages` branch in rocket-dev. Then run **Sync region data** and
+   **Sync Exicon library** from the Actions tab to fill the dev database.
+6. **Pages and domain:** in rocket-dev, Settings → Pages, set **Source** to **Deploy from a
+   branch**, `gh-pages`, `/ (root)`. Add a DNS `CNAME` record from `dev.rocket` to
+   `f3sactown.github.io`, then turn on **Enforce HTTPS** once the certificate is ready.
+
 ## Scripts
 
 | Command                        | What it does                                        |
@@ -244,8 +294,10 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
 - Each region records which tabs and column headers hold its AOs, roster and attendance, and its
   organization: choosing a region switches the user to its wording and colors. **F3 SacTown** (F3)
   is set up by `supabase/migrations/20261101000000_regions.sql`, **FiA SacTown** (FiA) by
-  `supabase/migrations/20261105020000_fia_sactown_region.sql` and **F3 Delta** (F3) by
-  `supabase/migrations/20261107010000_f3_delta_region.sql`. Others can be added in Settings,
+  `supabase/migrations/20261105020000_fia_sactown_region.sql`, **F3 Delta** (F3) by
+  `supabase/migrations/20261107010000_f3_delta_region.sql` and **F3 DryCreek** (F3) by
+  `supabase/migrations/20261108000000_f3_drycreek_region.sql` (its Sites tab has no address
+  column, so the AO's Location is used). Others can be added in Settings,
   with a **Check sheet** button that confirms every column exists.
 - **Nightly sync:** `.github/workflows/sync-regions.yml` runs `scripts/sync-regions.mjs` every
   night (about 2–3am Pacific, or on demand from the Actions tab). It copies each region's active
@@ -288,9 +340,10 @@ The Codex list isn't a documented API, so a change on their side could break the
 
 ## Database changes
 
-Each change to the database is a file in `supabase/migrations`. On the hosted project, apply new
-ones with `pnpm db:push`, or paste them into the Supabase SQL Editor in filename order. A pull request
-that adds one says so, and should be merged only after the migration has run.
+Each change to the database is a file in `supabase/migrations`. The dev site applies new ones to
+the dev database when it deploys. On the production project, apply them with `pnpm db:push`, or
+paste them into the Supabase SQL Editor in filename order. A pull request that adds one says so,
+and should be merged only after the migration has run on production.
 
 ## Versions and releases
 

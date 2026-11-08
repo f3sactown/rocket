@@ -24,3 +24,28 @@ jobs:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           # Supabase → Project Settings → API Keys → secret key. Keep it a secret, never a variable.
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+  # The same copy into the dev Supabase project (see "Dev site" in the README), once it's set up.
+  sync-dev:
+    if: vars.DEV_SUPABASE_PROJECT_REF != ''
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Check dev settings
+        env:
+          REF: ${{ vars.DEV_SUPABASE_PROJECT_REF }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+        # A setting missing from the environment falls back to production's.
+        run: |
+          if [[ "$SUPABASE_URL" != *"$REF"* ]]; then
+            echo "::error::SUPABASE_URL in the development environment isn't the dev project ($REF)."
+            exit 1
+          fi
+      - run: node scripts/sync-exicon.mjs
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
