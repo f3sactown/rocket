@@ -29,6 +29,12 @@ export interface CurrentUser {
   shareWorkoutLink: boolean;
   /** Regions (by ID) turned off in the PAX page's From picker; all are on by default. */
   paxSourcesOff: string[];
+  /** Whether new workouts start public (the default) or private. */
+  defaultWorkoutVisibility: "public" | "private";
+  /** Whether new backblasts start public (the default) or private. */
+  defaultBackblastVisibility: "public" | "private";
+  /** When the newest signup in the PAX page's "New on Rocket" note last dismissed joined. */
+  paxNewSeen: string | null;
   /** The build number whose "What's new" note on Home was last dismissed. */
   whatsNewSeen: string | null;
 }
@@ -130,6 +136,18 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
           (v): v is string => typeof v === "string",
         )
       : [],
+    defaultWorkoutVisibility:
+      user.user_metadata?.default_workout_visibility === "private"
+        ? "private"
+        : "public",
+    defaultBackblastVisibility:
+      user.user_metadata?.default_backblast_visibility === "private"
+        ? "private"
+        : "public",
+    paxNewSeen:
+      typeof user.user_metadata?.pax_new_seen === "string"
+        ? user.user_metadata.pax_new_seen
+        : null,
     whatsNewSeen:
       typeof user.user_metadata?.whats_new_seen === "string"
         ? user.user_metadata.whats_new_seen

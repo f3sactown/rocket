@@ -16,6 +16,7 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { ShareButton } from "@/components/share-button";
+import { VisibilitySwitch } from "@/components/visibility-switch";
 import { WorkoutStatsBar } from "@/components/workout-stats";
 import {
   loadWorkoutStats,
@@ -290,44 +291,5 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
           );
         })()}
     </article>
-  );
-}
-
-/** Public (anyone signed in can see, like and reuse it) or private (only you). */
-function VisibilitySwitch({
-  value,
-  onChange,
-}: {
-  value: "public" | "private";
-  onChange: (value: "public" | "private") => void;
-}) {
-  return (
-    <div
-      role="radiogroup"
-      aria-label="Who can see this workout"
-      className="inline-flex gap-1 rounded-full border border-line bg-panel p-1 text-xs"
-    >
-      {(["public", "private"] as const).map((option) => (
-        <button
-          key={option}
-          type="button"
-          role="radio"
-          aria-checked={value === option}
-          title={
-            option === "public"
-              ? "Anyone signed in can see, like and reuse it"
-              : "Only you can see it"
-          }
-          onClick={() => value !== option && onChange(option)}
-          className={`rounded-full px-3 py-1 font-medium transition-colors ${
-            value === option
-              ? "bg-surface-raised text-ink shadow-sm"
-              : "text-muted hover:text-ink"
-          }`}
-        >
-          {option === "public" ? "Public" : "Private"}
-        </button>
-      ))}
-    </div>
   );
 }

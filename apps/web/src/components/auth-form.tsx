@@ -58,6 +58,8 @@ export function AuthForm() {
             ...(region && { language: region.language }),
             // A new account starts on this build, so Home's "What's new" waits for the next.
             whats_new_seen: process.env.NEXT_PUBLIC_BUILD_NUMBER,
+            // Likewise the PAX page's "New on Rocket" note starts with whoever joins after them.
+            pax_new_seen: new Date().toISOString(),
           },
           emailRedirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH}/`,
         },

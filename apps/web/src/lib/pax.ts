@@ -1,7 +1,12 @@
-import type { Language } from "@rocket/core";
+import { paxBaseName, type Language } from "@rocket/core";
 import { asItems, listColumns, type ListItem } from "./backblast-list";
 import { trending } from "./discover";
-import { loadRegions, loadRoster, type Region } from "./regions";
+import {
+  loadAllPaxStats,
+  loadRegions,
+  loadRoster,
+  type Region,
+} from "./regions";
 import { createClient } from "./supabase/client";
 import { loadWorkoutStats, type WorkoutStats } from "./workout-social";
 
@@ -82,29 +87,6 @@ async function likesAndReusesByName(): Promise<
   return totals;
 }
 
-/** Every PAX's posts and Qs in a synced region, by name (lower case). */
-async function regionStats(
-  region: Region,
-): Promise<Map<string, { posts: number; qs: number }>> {
-  const stats = new Map<string, { posts: number; qs: number }>();
-  if (!region.synced_at) return stats;
-  const supabase = createClient();
-  const size = 1000;
-  // Page through (the database returns at most 1000 rows at a time).
-  for (let from = 0; from < size * 20; from += size) {
-    const { data, error } = await supabase
-      .from("region_pax_stats")
-      .select("pax, posts, qs")
-      .eq("region_id", region.id)
-      .range(from, from + size - 1);
-    if (error) throw new Error(error.message);
-    for (const row of data ?? [])
-      stats.set(row.pax.trim().toLowerCase(), { posts: row.posts, qs: row.qs });
-    if (!data || data.length < size) break;
-  }
-  return stats;
-}
-
 let cache: Promise<{ regions: Region[]; pax: PaxEntry[] }> | null = null;
 
 /**
@@ -121,15 +103,20 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
       ),
     ]);
     const byName = new Map<string, PaxEntry>();
+    // Each organization's region names: "Baby Shark (Dry Creek)" on one F3 region's roster is the
+    // same PAX as "Baby Shark" of F3 DryCreek, but never the same as a FiA PAX.
+    const regionNames = (org: Language) =>
+      regions.filter((r) => r.language === org).map((r) => r.name);
     await Promise.all(
       regions.map(async (region) => {
         const [names, stats] = await Promise.all([
           loadRoster(region).catch(() => [] as string[]),
-          regionStats(region).catch(() => new Map()),
+          loadAllPaxStats(region).catch(() => new Map()),
         ]);
-        for (const name of names) {
-          const lower = name.trim().toLowerCase();
+        for (const listed of names) {
+          const lower = listed.trim().toLowerCase();
           if (!lower) continue;
+          const name = paxBaseName(listed, regionNames(region.language));
           const key = paxKey(region.language, name);
           // Their own organization's, plus any from a same-named account with no region.
           const own = social.get(key) ?? { likes: 0, reuses: 0 };
@@ -138,7 +125,7 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
             reuses: 0,
           };
           const entry = byName.get(key) ?? {
-            name: name.trim(),
+            name,
             org: region.language,
             regions: [],
             posts: 0,
@@ -146,8 +133,13 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
             likes: own.likes + any.likes,
             reuses: own.reuses + any.reuses,
           };
+          // The sheet counts them under the name as listed there.
           const s = stats.get(lower) ?? { posts: 0, qs: 0 };
-          entry.regions.push({ id: region.id, name: region.name, ...s });
+          const here = entry.regions.find((r) => r.id === region.id);
+          if (here) {
+            here.posts += s.posts;
+            here.qs += s.qs;
+          } else entry.regions.push({ id: region.id, name: region.name, ...s });
           entry.posts += s.posts;
           entry.qs += s.qs;
           byName.set(key, entry);
@@ -169,18 +161,23 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
   return cache;
 }
 
+/** How many of a PAX's public workouts and backblasts their profile lists. */
+const PROFILE_LIMIT = 200;
+
 /**
- * A PAX's public workouts on Rocket, matched to their roster name by their Rocket account's name
- * in the same organization (or an account with no region): the most recent first, and the ones
- * getting the most attention lately.
+ * A PAX's public workouts and backblasts on Rocket, matched to their roster name by their Rocket
+ * account's name in the same organization (or an account with no region): all of them, newest
+ * first, and the workouts getting the most attention lately. Archiving doesn't hide anything
+ * here; making it private does.
  */
 export async function loadPaxWorkouts(
   name: string,
   org: Language,
 ): Promise<{
   hasAccount: boolean;
-  recent: ListItem[];
+  workouts: ListItem[];
   trending: ListItem[];
+  backblasts: ListItem[];
   stats: Map<string, WorkoutStats>;
 }> {
   const supabase = createClient();
@@ -196,23 +193,89 @@ export async function loadPaxWorkouts(
     .filter((p) => (orgOf(p) ?? org) === org)
     .map((p) => p.id);
   if (!ids.length)
-    return { hasAccount: false, recent: [], trending: [], stats: new Map() };
-  const { data, error: workoutsError } = await supabase
-    .from("workouts")
-    .select(listColumns("workout"))
-    .in("author_id", ids)
-    .eq("status", "published")
-    .eq("visibility", "public")
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (workoutsError) throw new Error(workoutsError.message);
-  const workouts = asItems("workout", data);
-  const stats = await loadWorkoutStats(workouts.map((w) => w.id));
+    return {
+      hasAccount: false,
+      workouts: [],
+      trending: [],
+      backblasts: [],
+      stats: new Map(),
+    };
+  const publicOf = (kind: "workout" | "backblast") =>
+    supabase
+      .from(kind === "workout" ? "workouts" : "backblasts")
+      .select(listColumns(kind))
+      .in("author_id", ids)
+      .eq("status", "published")
+      .eq("visibility", "public")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(PROFILE_LIMIT);
+  const [w, b] = await Promise.all([
+    publicOf("workout"),
+    publicOf("backblast"),
+  ]);
+  if (w.error) throw new Error(w.error.message);
+  if (b.error) throw new Error(b.error.message);
+  const workouts = asItems("workout", w.data);
+  const stats = await loadWorkoutStats(workouts.map((x) => x.id));
   return {
     hasAccount: true,
-    recent: workouts.slice(0, 10),
+    workouts,
     trending: trending(workouts, stats).slice(0, 10),
+    backblasts: asItems("backblast", b.data),
     stats,
   };
+}
+
+/** Someone who signed up for Rocket, for the PAX page's "New on Rocket" note. */
+export interface NewPax {
+  id: string;
+  name: string;
+  /** Their organization, if their account has a region (or all of one organization's). */
+  org: Language | null;
+  region: string | null;
+  joined: string;
+}
+
+/** How far back "new on Rocket" reaches for someone who has never dismissed the note. */
+const NEW_PAX_DAYS = 14;
+
+/**
+ * Accounts created after `since` (or in the last two weeks, when it's null), newest first,
+ * leaving out the viewer's own.
+ */
+export async function loadNewPax(
+  since: string | null,
+  userId: string,
+): Promise<NewPax[]> {
+  const from =
+    since ?? new Date(Date.now() - NEW_PAX_DAYS * 86_400_000).toISOString();
+  const { data, error } = await createClient()
+    .from("profiles")
+    .select(
+      "id, name, created_at, region_scope, region:regions!profiles_region_id_fkey(language, name)",
+    )
+    .gt("created_at", from)
+    .neq("id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw new Error(error.message);
+  return (
+    (data ?? []) as unknown as {
+      id: string;
+      name: string;
+      created_at: string;
+      region_scope: Language | null;
+      region: { language: Language; name: string } | null;
+    }[]
+  )
+    .filter((p) => p.name.trim())
+    .map((p) => ({
+      id: p.id,
+      name: p.name.trim(),
+      org: orgOf(p),
+      region: p.region?.name ?? null,
+      joined: p.created_at,
+    }))
+    .sort((a, b) => b.joined.localeCompare(a.joined));
 }

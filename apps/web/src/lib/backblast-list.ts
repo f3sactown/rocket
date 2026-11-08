@@ -155,30 +155,30 @@ export async function loadLists(
   return { drafts: asItems(kind, d.data), published: asItems(kind, p.data) };
 }
 
-/** Your finished workouts dated today, leaving out what you've archived. */
+/**
+ * Your finished workouts dated today. Archived ones are included: archiving only hides them from
+ * your Workouts and Backblasts lists.
+ */
 export async function loadTodaysWorkouts(
   userId: string,
 ): Promise<(ListItem & { time: string | null })[]> {
-  const archived = await loadArchivedIds("workout");
-  let query = createClient()
+  const query = createClient()
     .from("workouts")
     .select(`${listColumns("workout")}, time`)
     .eq("status", "published")
     .eq("author_id", userId)
     .eq("date", localToday());
-  if (archived.length) query = query.not("id", "in", `(${archived.join(",")})`);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return asItems("workout", data) as (ListItem & { time: string | null })[];
 }
 
-/** Your finished workouts dated after today, soonest first, leaving out what you've archived. */
+/** Your finished workouts dated after today, soonest first, archived ones included. */
 export async function loadFutureWorkouts(
   userId: string,
   limit = 50,
 ): Promise<ListItem[]> {
-  const archived = await loadArchivedIds("workout");
-  let query = createClient()
+  const query = createClient()
     .from("workouts")
     .select(listColumns("workout"))
     .eq("status", "published")
@@ -187,22 +187,20 @@ export async function loadFutureWorkouts(
     .order("date", { ascending: true })
     .order("created_at", { ascending: true })
     .limit(limit);
-  if (archived.length) query = query.not("id", "in", `(${archived.join(",")})`);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return asItems("workout", data);
 }
 
 /**
- * Your finished workouts that don't have a backblast yet, newest first, leaving out what you've
- * archived. Only the workout's Q writes its backblast.
+ * Your finished workouts that don't have a backblast yet, newest first (archived ones included).
+ * Only the workout's Q writes its backblast.
  */
 export async function loadWorkoutsNeedingBackblast(
   userId: string,
 ): Promise<ListItem[]> {
   const supabase = createClient();
-  const [archived, written, workouts] = await Promise.all([
-    loadArchivedIds("workout"),
+  const [written, workouts] = await Promise.all([
     supabase
       .from("backblasts")
       .select("workout_id")
@@ -219,9 +217,8 @@ export async function loadWorkoutsNeedingBackblast(
   ]);
   if (written.error) throw new Error(written.error.message);
   if (workouts.error) throw new Error(workouts.error.message);
-  const skip = new Set([
-    ...archived,
-    ...(written.data ?? []).map((row) => row.workout_id as string),
-  ]);
+  const skip = new Set(
+    (written.data ?? []).map((row) => row.workout_id as string),
+  );
   return asItems("workout", workouts.data).filter((w) => !skip.has(w.id));
 }

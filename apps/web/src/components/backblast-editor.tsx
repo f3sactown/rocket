@@ -185,7 +185,15 @@ export function BackblastEditor({
           if (error) throw error;
         } else {
           const { data, error } = await table
-            .insert({ ...row, author_id: user.id } as never)
+            .insert({
+              ...row,
+              author_id: user.id,
+              // New ones start public or private as chosen in Settings.
+              visibility:
+                mode === "workout"
+                  ? user.defaultWorkoutVisibility
+                  : user.defaultBackblastVisibility,
+            } as never)
             .select("id")
             .single();
           if (error) throw error;
@@ -204,7 +212,13 @@ export function BackblastEditor({
       queue.current = run.catch(() => {});
       return run;
     },
-    [user.id, mode, words],
+    [
+      user.id,
+      user.defaultWorkoutVisibility,
+      user.defaultBackblastVisibility,
+      mode,
+      words,
+    ],
   );
 
   const saveNow = useCallback(() => {

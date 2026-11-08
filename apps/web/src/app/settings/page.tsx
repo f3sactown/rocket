@@ -18,6 +18,10 @@ import {
   SplashToggle,
   ThemeSwitcher,
 } from "@/components/theme-switcher";
+import {
+  VisibilitySwitch,
+  type Visibility,
+} from "@/components/visibility-switch";
 import { createClient } from "@/lib/supabase/client";
 import { useRegionScope } from "@/lib/use-region";
 
@@ -273,7 +277,20 @@ function Settings({ user }: { user: CurrentUser }) {
       </Section>
 
       <Section title="Sharing" description="Saved to your account.">
+        <DefaultVisibility
+          label="New workouts start"
+          hint="Public workouts show on Discover and your PAX profile, where others can like and reuse them. You can change each one on its page."
+          saved={user.defaultWorkoutVisibility}
+          metaKey="default_workout_visibility"
+        />
+        <DefaultVisibility
+          label="New backblasts start"
+          hint="Public backblasts show on your PAX profile. You can change each one on its page."
+          saved={user.defaultBackblastVisibility}
+          metaKey="default_backblast_visibility"
+        />
         <AccountSwitch
+          divided
           on={user.shareWorkoutLink}
           label="Link to the workout in shared backblasts"
           hint="When a backblast from a public workout is copied or shared, it ends with a link to that workout, asking PAX to like it and reuse it. Not shown on screen."
@@ -320,6 +337,48 @@ function Settings({ user }: { user: CurrentUser }) {
 /**
  * An on/off setting saved to the account: `save(on)` returns what to store in its metadata.
  */
+/** Whether new workouts or backblasts start public or private, saved to the account. */
+function DefaultVisibility({
+  label,
+  hint,
+  saved,
+  metaKey,
+}: {
+  label: string;
+  hint: string;
+  saved: Visibility;
+  metaKey: "default_workout_visibility" | "default_backblast_visibility";
+}) {
+  const [value, setValue] = useState(saved);
+  const [error, setError] = useState<string | null>(null);
+
+  async function choose(next: Visibility) {
+    const before = value;
+    setValue(next);
+    setError(null);
+    const { error } = await createClient().auth.updateUser({
+      data: { [metaKey]: next },
+    });
+    if (error) {
+      setValue(before);
+      setError(error.message);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between gap-3 py-1.5">
+        <span className="flex flex-col">
+          <span className="text-sm text-ink">{label}</span>
+          <span className="text-xs text-muted">{hint}</span>
+        </span>
+        <VisibilitySwitch value={value} onChange={choose} label={label} />
+      </div>
+      {error && <p className="text-sm text-accent">{error}</p>}
+    </div>
+  );
+}
+
 function AccountSwitch({
   on: saved,
   label,

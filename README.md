@@ -32,7 +32,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     choose again. Each workout shows how many times it's been reused by other Qs (counting archived copies; reusing your own doesn't count, just as you can't like your own).
     A reused workout credits the Q who wrote the first one (`workouts.original_author_id`), even
     when it's a reuse of a reuse: its page shows "Originally by" them and their region.
-  - A finished workout is **public** by default: anyone signed in can see, like and reuse it. Its Q
+  - A finished workout is **public** by default (Settings → Sharing can make new ones start
+    private): anyone signed in can see, like and reuse it. Its Q
     can make it **private** on its page: it disappears for everyone else (Discover, Trending, lists
     and search) but keeps its likes and reuse count, which only its Q sees until it's public again. **Likes:** one per person, on other people's public
     workouts.
@@ -47,19 +48,30 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   scrolls sideways the same way. The rows' scrollbars are thin and faint, with no arrows.
 - **PAX** (in the menu, under Search) lists everyone on your region's roster (or every region's,
   when you've chosen all regions) as tiles in alphabetical order (three across on a phone, four on larger screens), with a search box that matches
-  names. Each tile shows the PAX's regions, posts and Qs (from the synced region stats) and the
+  names. Each tile shows the PAX's regions, posts and Qs (from the synced region stats, or read
+  straight from the sheet for a region added since the last sync) and the
   total likes and reuses on their public Rocket workouts, with the same heart and reuse icons as
   workout tiles. A **From** picker of regions, in each
   region's color, narrows the list and the totals; the choice is saved to your account. A tile
-  opens the PAX's profile: posts, Qs, likes and reuses in one row on top, their stats per region and their Trending and Recent public workouts.
+  opens the PAX's profile: posts, Qs, likes and reuses in one row on top, their stats per region and their Trending workouts, then **All workouts** and **All backblasts** (every public one, newest first;
+  archived ones included, private ones left out).
+  At the top, a **New on Rocket** note names whoever has signed up for a Rocket account since you
+  last dismissed it (the last two weeks, the first time), with their region, each linking to their
+  profile. Dismissing it is saved to the account; it comes back when someone new signs up.
   The regions show as mini tiles in each region's color with the posts and Qs there.
+  A name with one of the same organization's regions in parentheses, like "Baby Shark (Dry
+  Creek)" on F3 SacTown's roster, is the same PAX as "Baby Shark" of F3 DryCreek: one tile, with
+  both regions' posts and Qs (spaces, case and the F3 or FiA prefix don't matter). Likewise
+  "Atlas (DR)" (Down Range) is the same PAX as "Atlas". An F3 PAX is never merged with a FiA one.
   The same name in F3 and in FiA is two different PAX, each with their own tile, profile and
   numbers; likes, reuses and workouts come from the Rocket account of that name in the same
   organization (or one with no region, which can't be told apart).
 - **Backblasts** are made from a finished workout with **Create backblast**, or from **New
-  backblast**, which lists your finished, unarchived workouts that don't have a backblast yet to
+  backblast**, which lists your finished workouts (archived ones too) that don't have a backblast yet to
   pick from, or starts one without a workout. Only a workout's Q writes its backblast, so other
-  people's workouts have no Create backblast button. The backblast holds
+  people's workouts have no Create backblast button. A finished backblast is **public** by default
+  (Settings → Sharing can make new ones start private): anyone signed in can read it, and it shows on
+  its Q's PAX profile. Its Q can switch it to **private** on its page. The backblast holds
   its own copy of the workout's sections, which can be edited without changing the workout
   (**Update from workout** copies it again). Its pages are Workout, Notes, Name-o-rama (Qs and
   PAX, with roster suggestions and the AO's regulars), Announcements (the backblast's own, not
@@ -77,8 +89,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   Copy and Copy with description in place of Add.
 - **Templates:** each text section (all but Notes and the Name-o-rama) can be saved as a template,
   and one per section can be starred as the default that fills new workouts or backblasts.
-- **Lists:** swipe to archive or delete (directions set in Settings), with Undo. **Archive** lists
-  what you've archived; **Search** finds workouts and backblasts by any word, with matches
+- **Lists:** swipe to archive or delete (directions set in Settings), with Undo. Archiving hides a
+  workout or backblast only from your own Workouts and Backblasts lists (and Home's Recent lists);
+  everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
+  still shows unless it's private. **Archive** lists what you've archived; **Search** finds workouts and backblasts by any word, with matches
   highlighted.
 - **Forgot password:** Sign in → **Forgot password?** emails a reset link (Supabase's built-in
   mailer and standard template, no custom SMTP needed). The link opens `/reset-password` on any
@@ -87,7 +101,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Settings:** name, email, password, region, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
   locked while you have one, and free to choose with no region or one you added), theme, accent color (F3 red, FiA teal, blue, green, orange or violet), the launch
   animation, what Home shows,
-  swipe directions, and **Sharing**: a copied or shared backblast from a public workout ends with
+  swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,
+  and whether a copied or shared backblast from a public workout ends with
   a link to that workout asking PAX to like and reuse it (right above the hidden PAX list; on by
   default, never shown on screen).
 - **Copying:** the backblast and workout text on their pages and on the review step can't be
@@ -135,8 +150,8 @@ The app runs entirely in the browser, so access rules live in the database as ro
 (`supabase/migrations`). They hold no matter which app or client talks to Supabase:
 
 - Signed-out visitors can't read anything.
-- Signed-in users can read every profile and every finished **public** workout. Private workouts,
-  drafts and **all backblasts** are visible only to their author.
+- Signed-in users can read every profile and every finished **public** workout and backblast
+  (`visibility`, public by default). Private ones and drafts are visible only to their author.
 - Likes (`workout_likes`): you can like someone else's public workout once, and see only your own
   likes; counts of likes and reuses come from `workout_stats()`, which returns totals only.
 - Only the author can edit or delete a workout or backblast.
@@ -146,7 +161,7 @@ The app runs entirely in the browser, so access rules live in the database as ro
   can't add likes.
 - A workout's notes (`workout_notes`) can be read and written only by the workout's author.
 - Archiving is personal (`workout_archives`, `backblast_archives`): it hides an item from your own
-  lists only, and never changes whether a workout is public.
+  lists only, and never changes whether a workout or backblast is public.
 
 ## Getting started
 
@@ -229,8 +244,9 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
 - Each region records which tabs and column headers hold its AOs, roster and attendance, and its
   organization: choosing a region switches the user to its wording and colors. **F3 SacTown** (F3)
   is set up by `supabase/migrations/20261101000000_regions.sql`, **FiA SacTown** (FiA) by
-  `supabase/migrations/20261105020000_fia_sactown_region.sql`, and **F3 DryCreek** (F3) by
-  `supabase/migrations/20261107010000_f3_drycreek_region.sql` (its Sites tab has no address
+  `supabase/migrations/20261105020000_fia_sactown_region.sql`, **F3 Delta** (F3) by
+  `supabase/migrations/20261107010000_f3_delta_region.sql` and **F3 DryCreek** (F3) by
+  `supabase/migrations/20261108000000_f3_drycreek_region.sql` (its Sites tab has no address
   column, so the AO's Location is used). Others can be added in Settings,
   with a **Check sheet** button that confirms every column exists.
 - **Nightly sync:** `.github/workflows/sync-regions.yml` runs `scripts/sync-regions.mjs` every
