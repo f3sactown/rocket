@@ -14,6 +14,7 @@ import {
   DumbbellIcon,
   HomeIcon,
   GearIcon,
+  InfoIcon,
   MenuIcon,
   PeopleIcon,
   PlusIcon,
@@ -103,6 +104,12 @@ const LINKS: {
     label: "Settings",
     icon: <GearIcon />,
     match: (path) => path.startsWith("/settings"),
+  },
+  {
+    href: "/about",
+    label: "About",
+    icon: <InfoIcon />,
+    match: (path) => path.startsWith("/about"),
   },
 ];
 
