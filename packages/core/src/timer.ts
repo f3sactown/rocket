@@ -1,12 +1,17 @@
 /** The kinds of timer a thang can have on the Run workout screen. */
 export type TimerType =
-  "countdown" | "stopwatch" | "amrap" | "intervals" | "emom";
+  "countdown" | "stopwatch" | "amrap" | "tabata" | "intervals" | "emom";
+
+/** A Tabata round: 20 seconds of work, then 10 of rest. */
+export const TABATA_WORK = 20;
+export const TABATA_REST = 10;
 
 /** A thang's timer and its settings. Times are in seconds. */
 export type Timer =
   | { type: "countdown"; seconds: number }
   | { type: "stopwatch" }
   | { type: "amrap"; seconds: number }
+  | { type: "tabata"; rounds: number }
   | { type: "intervals"; work: number; rest: number; rounds: number }
   | { type: "emom"; every: number; rounds: number };
 
@@ -31,9 +36,16 @@ export const TIMER_TYPES: {
     description: "As many rounds as possible in a set time",
   },
   {
+    type: "tabata",
+    label: "Tabata",
+    description:
+      "20 seconds on, 10 seconds off, for 8 rounds (or as many as you set)",
+  },
+  {
     type: "intervals",
     label: "Intervals",
-    description: "Work and rest, repeated for a number of rounds (e.g. Tabata)",
+    description:
+      "Work and rest of your choosing, repeated for a number of rounds",
   },
   {
     type: "emom",
@@ -51,6 +63,8 @@ export function newTimer(type: TimerType): Timer {
       return { type };
     case "amrap":
       return { type, seconds: 600 };
+    case "tabata":
+      return { type, rounds: 8 };
     case "intervals":
       return { type, work: 20, rest: 10, rounds: 8 };
     case "emom":
@@ -73,6 +87,8 @@ export function timerLabel(timer: Timer): string {
       return "Stopwatch";
     case "amrap":
       return `AMRAP · ${formatTimer(timer.seconds)}`;
+    case "tabata":
+      return `Tabata · ${timer.rounds} × ${formatTimer(TABATA_WORK)} on / ${formatTimer(TABATA_REST)} off`;
     case "intervals":
       return `Intervals · ${timer.rounds} × ${formatTimer(timer.work)} on / ${formatTimer(timer.rest)} off`;
     case "emom":
@@ -97,6 +113,13 @@ export function timerPhases(timer: Timer): TimerPhase[] {
       return [];
     case "amrap":
       return [{ label: "AMRAP", seconds: timer.seconds }];
+    case "tabata":
+      return timerPhases({
+        type: "intervals",
+        work: TABATA_WORK,
+        rest: TABATA_REST,
+        rounds: timer.rounds,
+      });
     case "intervals":
       return Array.from({ length: timer.rounds }, (_, i) => [
         {
@@ -135,6 +158,10 @@ export function parseTimer(value: unknown): Timer | undefined {
         : undefined;
     case "stopwatch":
       return { type: "stopwatch" };
+    case "tabata":
+      return positive(t.rounds)
+        ? { type: "tabata", rounds: t.rounds as number }
+        : undefined;
     case "intervals":
       return positive(t.work) && positive(t.rounds)
         ? {
@@ -150,4 +177,17 @@ export function parseTimer(value: unknown): Timer | undefined {
         : undefined;
   }
   return undefined;
+}
+
+/** How a beep sounds: a short one counting down, or the long, louder one as a stretch ends. */
+export type BeepKind = "tick" | "end";
+
+/**
+ * The beep for a moment in a stretch, like a Tabata timer's: short beeps with 3, 2 and 1 seconds
+ * left, then a long, louder one as it ends (4 in all). None at other times.
+ */
+export function beepAt(secondsLeft: number): BeepKind | null {
+  if (secondsLeft === 0) return "end";
+  if (secondsLeft >= 1 && secondsLeft <= 3) return "tick";
+  return null;
 }
