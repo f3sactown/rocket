@@ -370,7 +370,9 @@ Setting up Google Drive access:
 2. Under **Google Auth Platform**, set up the consent screen as **External**, add yourself as a
    test user, then under **Audience** click **Publish app**. An app left in "Testing" has its
    access revoked after 7 days. Rocket only asks for the `drive.file` scope, which needs no review
-   by Google.
+   by Google. If signing in says "Access blocked: … has not completed the Google verification
+   process", the app is still in Testing and the account isn't a test user: publish it (or add that
+   exact Google account under **Audience → Test users**) and sign in again.
 3. Under **Clients**, create an OAuth client of type **Desktop app**. Its ID and secret are
    `GDRIVE_CLIENT_ID` and `GDRIVE_CLIENT_SECRET`.
 4. On your computer, with [rclone installed](https://rclone.org/install/), run the command below and
