@@ -1,9 +1,9 @@
 name: Back up database
 
 # Every night, dump the production Supabase database (roles, schema and data, including the users in
-# auth.users) with `supabase db dump`, encrypt it with a passphrase and keep it as a workflow
-# artifact for 90 days. Artifacts on a public repository can be downloaded by anyone signed in to
-# GitHub, so the dump is only ever stored encrypted. See "Backups" in the README to restore one.
+# auth.users) with `supabase db dump`, encrypt it with a passphrase and upload it with rclone to the
+# "Rocket backups" folder in Google Drive, deleting backups older than 90 days. Nothing is kept on
+# GitHub. See "Backups" in the README to set it up and to restore one.
 on:
   schedule:
     # 09:43 UTC is about 2am Pacific, before the region sync.
@@ -25,10 +25,16 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+          GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
         run: |
           fail() { echo "::error::$1 (Settings → Secrets and variables → Actions)"; exit 1; }
           [ -n "$SUPABASE_DB_URL" ] || fail "Set the SUPABASE_DB_URL repository secret."
           [ ${#BACKUP_PASSPHRASE} -ge 20 ] || fail "Set a BACKUP_PASSPHRASE secret of at least 20 characters."
+          for s in GDRIVE_CLIENT_ID GDRIVE_CLIENT_SECRET GDRIVE_TOKEN; do
+            [ -n "${!s}" ] || fail "Set the $s repository secret."
+          done
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -60,11 +66,21 @@ jobs:
               --passphrase-fd 3 -o "$name.tar.gz.gpg" 3<<<"$BACKUP_PASSPHRASE"
           rm -rf backup
           echo "name=$name" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.encrypt.outputs.name }}
-          path: ${{ steps.encrypt.outputs.name }}.tar.gz.gpg
-          retention-days: 90
-          # Already compressed and encrypted.
-          compression-level: 0
-          if-no-files-found: error
+      - name: Install rclone
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq rclone
+      - name: Upload to Google Drive
+        env:
+          # A Drive remote named "gdrive", set up from secrets instead of a config file.
+          RCLONE_CONFIG_GDRIVE_TYPE: drive
+          RCLONE_CONFIG_GDRIVE_SCOPE: drive.file
+          RCLONE_CONFIG_GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          RCLONE_CONFIG_GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+          RCLONE_CONFIG_GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
+          FILE: ${{ steps.encrypt.outputs.name }}.tar.gz.gpg
+        run: |
+          rclone copy "$FILE" "gdrive:Rocket backups" --config /dev/null
+          rclone lsl "gdrive:Rocket backups" --config /dev/null --include "$FILE" | grep -q . ||
+            { echo "::error::$FILE isn't in Google Drive after the upload."; exit 1; }
+          rm -f "$FILE"
+          # Old backups go to Drive's trash, which empties itself after 30 days.
+          rclone delete "gdrive:Rocket backups" --config /dev/null --min-age 90d --include "rocket-db-*" -v

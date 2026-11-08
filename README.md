@@ -349,19 +349,45 @@ and should be merged only after the migration has run on production.
 
 `.github/workflows/backup-db.yml` backs up the production database every night (about 2am Pacific,
 or on demand from the Actions tab). It runs `supabase db dump` three times (roles, schema, and data
-including `auth.users`), encrypts the result with a passphrase and keeps it as a workflow artifact
-named `rocket-db-YYYY-MM-DD` for 90 days. Anyone signed in to GitHub can download artifacts from a
-public repository, so the dump is only ever stored encrypted.
+including `auth.users`), encrypts the result with a passphrase and uploads it with
+[rclone](https://rclone.org/drive/) to a **Rocket backups** folder in Google Drive as
+`rocket-db-YYYY-MM-DD.tar.gz.gpg`. Backups older than 90 days are moved to Drive's trash. Nothing is
+kept on GitHub, and the dump only leaves the runner encrypted.
 
-It needs two repository **secrets**:
+It needs these repository **secrets**:
 
 - `SUPABASE_DB_URL`: the production database's **Session pooler** connection string (Supabase →
   Connect), with the database password filled in.
 - `BACKUP_PASSPHRASE`: a long random passphrase (at least 20 characters). Keep a copy somewhere
   safe outside GitHub, such as a password manager. Without it the backups can't be opened.
+- `GDRIVE_CLIENT_ID`, `GDRIVE_CLIENT_SECRET` and `GDRIVE_TOKEN`: access to your Google Drive,
+  set up once as below.
 
-To restore one, download the artifact from the run's page (or with
-`gh run download <run-id> -n rocket-db-YYYY-MM-DD`), then:
+Setting up Google Drive access:
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), create a project and enable
+   the **Google Drive API**.
+2. Under **Google Auth Platform**, set up the consent screen as **External**, add yourself as a
+   test user, then under **Audience** click **Publish app**. An app left in "Testing" has its
+   access revoked after 7 days. Rocket only asks for the `drive.file` scope, which needs no review
+   by Google.
+3. Under **Clients**, create an OAuth client of type **Desktop app**. Its ID and secret are
+   `GDRIVE_CLIENT_ID` and `GDRIVE_CLIENT_SECRET`.
+4. On your computer, with [rclone installed](https://rclone.org/install/), run the command below and
+   sign in with the Google account whose Drive should hold the backups:
+
+   ```bash
+   rclone config create gdrive drive client_id=<client id> client_secret=<client secret> scope=drive.file
+   ```
+
+5. Run `rclone config show gdrive` and copy the JSON after `token =` into `GDRIVE_TOKEN`.
+
+With `drive.file`, rclone can see only the files and folders it created, not the rest of your
+Drive. The workflow creates **Rocket backups** itself on its first run; a folder of the same name
+that you made by hand stays empty, and the workflow makes its own beside it. Don't rename or move
+the folder Rocket created, or the next run starts a new one.
+
+To restore one, download it from Drive, then:
 
 ```bash
 gpg -d rocket-db-YYYY-MM-DD.tar.gz.gpg | tar -xz   # asks for the passphrase
