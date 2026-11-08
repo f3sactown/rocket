@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { formatTimer, parseTimer, timerLabel, timerPhases } from "./timer";
+import {
+  beepAt,
+  formatTimer,
+  parseTimer,
+  timerLabel,
+  timerPhases,
+} from "./timer";
 
 describe("timers", () => {
   it("formats times as m:ss", () => {
@@ -30,6 +36,34 @@ describe("timers", () => {
       ["Round 1 of 2 · Work", 20],
       ["Round 1 of 2 · Rest", 10],
       ["Round 2 of 2 · Work", 20],
+    ]);
+  });
+
+  it("runs Tabata as 20 seconds on and 10 off", () => {
+    expect(timerLabel({ type: "tabata", rounds: 8 })).toBe(
+      "Tabata · 8 × 0:20 on / 0:10 off",
+    );
+    const phases = timerPhases({ type: "tabata", rounds: 2 });
+    expect(phases.map((p) => [p.label, p.seconds])).toEqual([
+      ["Round 1 of 2 · Work", 20],
+      ["Round 1 of 2 · Rest", 10],
+      ["Round 2 of 2 · Work", 20],
+    ]);
+    expect(parseTimer({ type: "tabata", rounds: 8 })).toEqual({
+      type: "tabata",
+      rounds: 8,
+    });
+    expect(parseTimer({ type: "tabata" })).toBeUndefined();
+  });
+
+  it("beeps on the last 4 seconds, the last one long", () => {
+    expect([5, 4, 3, 2, 1, 0].map(beepAt)).toEqual([
+      null,
+      null,
+      "tick",
+      "tick",
+      "tick",
+      "end",
     ]);
   });
 

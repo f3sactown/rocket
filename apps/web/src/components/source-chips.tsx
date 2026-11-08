@@ -8,8 +8,9 @@ export interface SourceChip {
 }
 
 /**
- * A "From" row of colored chips to choose which sources to show, like the Library's. All are on
- * to start; `off` lists the ones turned off, and at least one always stays on.
+ * A "From" row of colored chips to choose which sources to show (Library, PAX, Discover). All are
+ * on to start; `off` lists the ones turned off, and at least one always stays on. On a phone it's
+ * one line that scrolls sideways; on a wider screen the chips wrap.
  */
 export function SourceChips({
   chips,
@@ -31,9 +32,9 @@ export function SourceChips({
   return (
     <div
       aria-label="Sources"
-      className="flex flex-wrap items-center gap-2 text-xs text-ink-soft"
+      className="scroll-row -mx-4 flex shrink-0 items-center gap-2 overflow-x-auto px-4 pb-1 text-xs text-ink-soft sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
     >
-      <span>{label}</span>
+      <span className="shrink-0">{label}</span>
       {chips.map((chip) => {
         const on = !off.includes(chip.key);
         return (
@@ -42,7 +43,7 @@ export function SourceChips({
             type="button"
             aria-pressed={on}
             onClick={() => toggle(chip.key)}
-            className={`rounded-full border px-3 py-1 font-bold transition-colors ${
+            className={`shrink-0 rounded-full border px-3 py-1 font-bold whitespace-nowrap transition-colors ${
               on ? "" : "border-line text-muted"
             }`}
             style={

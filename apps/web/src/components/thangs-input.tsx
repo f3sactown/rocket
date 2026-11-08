@@ -281,6 +281,19 @@ function TimerSettings({
           onChange={(seconds) => onChange({ ...timer, seconds })}
         />
       );
+    case "tabata":
+      return (
+        <div className="flex flex-wrap items-end gap-3">
+          <CountField
+            label="Rounds"
+            value={timer.rounds}
+            onChange={(rounds) => onChange({ ...timer, rounds })}
+          />
+          <p className="pb-2 text-xs text-muted">
+            Each round is 20 seconds of work, then 10 of rest.
+          </p>
+        </div>
+      );
     case "intervals":
       return (
         <div className="flex flex-wrap gap-3">
