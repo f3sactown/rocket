@@ -2,6 +2,7 @@
 
 import {
   DEFAULT_INTRODUCTION,
+  FIA_DISCLAIMER,
   attendeeFromName,
   joinQs,
   qNames,
@@ -94,11 +95,12 @@ function allSteps(language: Language): Step[] {
       name: "introduction",
       title: "Introduction",
       hint: "The preamble to include the mission statement, core principles, disclaimer, and credo",
-      // The built-in text is F3's mission, principles and credo, so it's offered in F3 only.
+      // A built-in template for each organization: F3's welcome, mission, principles and credo, or
+      // FiA's disclaimer.
       builtIns:
         language === "f3"
           ? [{ name: "F3 standard", body: DEFAULT_INTRODUCTION }]
-          : undefined,
+          : [{ name: "FiA Disclaimer", body: FIA_DISCLAIMER }],
     },
     {
       kind: "text",
