@@ -2,7 +2,7 @@ name: Back up database
 
 # Every night, dump the production Supabase database (roles, schema and data, including the users in
 # auth.users) with `supabase db dump`, encrypt it with a passphrase and upload it with rclone to the
-# "Rocket backups" folder in Google Drive, deleting backups older than 90 days. Nothing is kept on
+# Apps/Rocket/Backup folder in Google Drive, deleting backups older than 90 days. Nothing is kept on
 # GitHub. See "Backups" in the README to set it up and to restore one.
 on:
   schedule:
@@ -81,12 +81,14 @@ jobs:
           RCLONE_CONFIG_GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
           RCLONE_CONFIG_GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
           FILE: ${{ steps.encrypt.outputs.name }}.tar.gz.gpg
+          # Apps\Rocket\Backup in Google Drive; rclone creates any of these folders that are missing.
+          FOLDER: gdrive:Apps/Rocket/Backup
         run: |
           [ -n "$RCLONE_CONFIG_GDRIVE_CLIENT_ID" ] ||
             unset RCLONE_CONFIG_GDRIVE_CLIENT_ID RCLONE_CONFIG_GDRIVE_CLIENT_SECRET
-          rclone copy "$FILE" "gdrive:Rocket backups" --config /dev/null
-          rclone lsl "gdrive:Rocket backups" --config /dev/null --include "$FILE" | grep -q . ||
+          rclone copy "$FILE" "$FOLDER" --config /dev/null
+          rclone lsl "$FOLDER" --config /dev/null --include "$FILE" | grep -q . ||
             { echo "::error::$FILE isn't in Google Drive after the upload."; exit 1; }
           rm -f "$FILE"
           # Old backups go to Drive's trash, which empties itself after 30 days.
-          rclone delete "gdrive:Rocket backups" --config /dev/null --min-age 90d --include "rocket-db-*" -v
+          rclone delete "$FOLDER" --config /dev/null --min-age 90d --include "rocket-db-*" -v

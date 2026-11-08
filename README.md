@@ -350,7 +350,7 @@ and should be merged only after the migration has run on production.
 `.github/workflows/backup-db.yml` backs up the production database every night (about 2am Pacific,
 or on demand from the Actions tab). It runs `supabase db dump` three times (roles, schema, and data
 including `auth.users`), encrypts the result with a passphrase and uploads it with
-[rclone](https://rclone.org/drive/) to a **Rocket backups** folder in Google Drive as
+[rclone](https://rclone.org/drive/) to the **Apps › Rocket › Backup** folder in Google Drive as
 `rocket-db-YYYY-MM-DD.tar.gz.gpg`. Backups older than 90 days are moved to Drive's trash. Nothing is
 kept on GitHub, and the dump only leaves the runner encrypted.
 
@@ -378,9 +378,9 @@ Then add `client_id=… client_secret=…` to the command above and set the `GDR
 `GDRIVE_CLIENT_SECRET` secrets to match. The token only works with the client that made it.
 
 With `drive.file`, rclone can see only the files and folders it created, not the rest of your
-Drive. The workflow creates **Rocket backups** itself on its first run; a folder of the same name
-that you made by hand stays empty, and the workflow makes its own beside it. Don't rename or move
-the folder Rocket created, or the next run starts a new one.
+Drive. The workflow creates **Apps**, **Rocket** and **Backup** itself on its first run; a folder
+of the same name that you made by hand stays empty, and the workflow makes its own beside it.
+Don't rename or move the folders Rocket created, or the next run starts new ones.
 
 To restore one, download it from Drive, then:
 
