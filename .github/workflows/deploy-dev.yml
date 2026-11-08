@@ -1,0 +1,77 @@
+name: Deploy dev site
+
+# The dev site (dev.rocket.f3sactown.com) runs against its own Supabase project, so changes can be
+# tried without touching production. Every push to the `dev` branch applies new migrations to the
+# dev database, builds the site with the dev settings and publishes it to the `gh-pages` branch of
+# f3sactown/rocket-dev, which serves it. Run it by hand (Actions tab) to put any branch on dev.
+#
+# Settings live in the `development` environment (Settings → Environments), where they override
+# the repository's production ones of the same name; see "Dev site" in the README.
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time; don't cancel one that's already applying migrations.
+concurrency:
+  group: dev-site
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Skipped until the dev project is set up.
+    if: vars.DEV_SUPABASE_PROJECT_REF != ''
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+      url: https://dev.rocket.f3sactown.com/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history, so the build number (the commit count) is right.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Check dev settings
+        env:
+          REF: ${{ vars.DEV_SUPABASE_PROJECT_REF }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          DEPLOY_KEY: ${{ secrets.DEV_SITE_DEPLOY_KEY }}
+        # A setting missing from the environment falls back to production's, so make sure the site
+        # and the migrations both point at the dev project.
+        run: |
+          fail() { echo "::error::$1 (Settings → Environments → development)"; exit 1; }
+          [[ "$SUPABASE_URL" == *"$REF"* ]] || fail "SUPABASE_URL isn't the dev project ($REF)."
+          [ -n "$SUPABASE_PUBLISHABLE_KEY" ] || fail "Set the SUPABASE_PUBLISHABLE_KEY variable."
+          [[ "$SUPABASE_DB_URL" == *"$REF"* ]] || fail "SUPABASE_DB_URL secret isn't the dev project ($REF)."
+          [ -n "$DEPLOY_KEY" ] || fail "Set the DEV_SITE_DEPLOY_KEY secret."
+      - run: pnpm install --frozen-lockfile
+      - name: Apply migrations to the dev database
+        run: pnpm exec supabase db push --db-url "$SUPABASE_DB_URL" --yes
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      - run: pnpm --filter @rocket/web build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_BASE_PATH: ""
+      - name: Keep search engines out
+        run: |
+          printf 'User-agent: *\nDisallow: /\n' > apps/web/out/robots.txt
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.DEV_SITE_DEPLOY_KEY }}
+          external_repository: f3sactown/rocket-dev
+          publish_branch: gh-pages
+          publish_dir: apps/web/out
+          cname: dev.rocket.f3sactown.com
+          force_orphan: true
+          full_commit_message: "Deploy ${{ github.ref_name }} @ ${{ github.sha }}"
