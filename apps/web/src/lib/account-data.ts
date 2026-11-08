@@ -32,6 +32,8 @@ const ACCOUNT_KEYS = [
   "discover_own_asked",
   "share_workout_link",
   "pax_sources_off",
+  "default_workout_visibility",
+  "default_backblast_visibility",
 ] as const;
 
 /** Everything a user owns, as written to an export file. */
@@ -647,6 +649,8 @@ export async function resetAccount(): Promise<void> {
       discover_own_asked: null,
       share_workout_link: null,
       pax_sources_off: null,
+      default_workout_visibility: null,
+      default_backblast_visibility: null,
     },
   });
   if (error) throw new Error(error.message);

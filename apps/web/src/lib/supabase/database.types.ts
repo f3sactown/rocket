@@ -65,6 +65,7 @@ export type Database = {
           created_at: string;
           status: "draft" | "published";
           updated_at: string;
+          visibility: "public" | "private";
         };
         Insert: {
           id?: string;
@@ -88,6 +89,7 @@ export type Database = {
           created_at?: string;
           status?: "draft" | "published";
           updated_at?: string;
+          visibility?: "public" | "private";
         };
         Update: Partial<Database["public"]["Tables"]["backblasts"]["Insert"]>;
         Relationships: [
