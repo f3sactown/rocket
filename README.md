@@ -111,7 +111,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
   still shows unless it's private. **Archive** lists what you've archived; **Search** finds workouts and backblasts by any word, with matches
   highlighted.
-- **Continue with Google:** sign in or sign up with a Google account instead of a password. The
+- **Continue with Google:** the sign-in screen leads with Google: one **Continue with Google**
+  button, with a small **Sign in or sign up with email** link under it that opens the email and
+  password form (sign up and forgot password included), which has **Use Google instead** to go
+  back. Google signs in or signs up with no password. The
   first time, a **Welcome** step asks for your F3 name and region (Google gives your real name and
   no region, and Rocket matches PAX to their roster by F3 name), then you're in. Signing in with
   Google using the same email as an existing account opens that account. The F3 name is also kept
