@@ -129,7 +129,8 @@ function Settings({ user }: { user: CurrentUser }) {
       .eq("id", user.id);
     if (error) return { text: error.message, error: true };
     const { error: authError } = await supabase.auth.updateUser({
-      data: { name: trimmed },
+      // f3_name too, since signing in with Google overwrites `name`.
+      data: { name: trimmed, f3_name: trimmed },
     });
     if (authError) return { text: authError.message, error: true };
     return { text: "Name saved.", error: false };
