@@ -5,6 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AuthForm } from "./auth-form";
+import { FinishProfile } from "./finish-profile";
 
 export interface CurrentUser {
   /** Permanent unique account ID; all of a user's data is tied to this, never to their name. */
@@ -29,6 +30,10 @@ export interface CurrentUser {
   shareWorkoutLink: boolean;
   /** Regions (by ID) turned off in the PAX page's From picker; all are on by default. */
   paxSourcesOff: string[];
+  /** How the account signs in, e.g. ["email"], ["google"] or both. */
+  providers: string[];
+  /** Signed in with Google for the first time: still to give an F3 name and region. */
+  needsProfile: boolean;
   /** Whether new workouts start public (the default) or private. */
   defaultWorkoutVisibility: "public" | "private";
   /** Whether new backblasts start public (the default) or private. */
@@ -114,10 +119,19 @@ const AuthContext = createContext<{
 
 function toCurrentUser(user: User | undefined): CurrentUser | null {
   if (!user) return null;
-  const name = user.user_metadata?.name as string | undefined;
+  // The F3 name is kept as f3_name too, since signing in with Google overwrites `name` with the
+  // name on the Google account each time.
+  const name = (user.user_metadata?.f3_name ?? user.user_metadata?.name) as
+    string | undefined;
+  // Signed in with Google but hasn't given an F3 name and region yet (see FinishProfile).
+  const providers = (user.app_metadata?.providers ?? []) as string[];
+  const needsProfile =
+    providers.includes("google") && !user.user_metadata?.f3_name;
   return {
     id: user.id,
     name: name || user.email || "PAX",
+    needsProfile,
+    providers,
     email: user.email ?? "",
     language: user.user_metadata?.language === "fia" ? "fia" : "f3",
     // Like Mail: swipe left to delete, right to archive, unless the user swapped them.
@@ -201,5 +215,6 @@ export function SignedIn({
   const { user, loading } = useAuth();
   if (loading) return <div className="card h-64 animate-pulse" />;
   if (!user) return <AuthForm />;
+  if (user.needsProfile) return <FinishProfile user={user} />;
   return children(user);
 }

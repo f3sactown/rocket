@@ -22,7 +22,7 @@ import type { CurrentUser } from "./auth-provider";
  * or FiA) and accent color to the region's. `region` can also be every region of one organization
  * (for PAX who post across several), which has no single home region on the profile.
  */
-async function chooseRegion(
+export async function chooseRegion(
   userId: string,
   region: Region | { all: Language } | null,
 ) {

@@ -22,6 +22,7 @@ export const DEVICE_KEYS = [
 /** The account settings saved in the user's metadata. */
 const ACCOUNT_KEYS = [
   "name",
+  "f3_name",
   "language",
   "swipe_left",
   "home_sections",
@@ -579,8 +580,11 @@ async function importSettings(
     region_id: scope ? null : regionId,
     region_scope: scope,
   };
-  if (typeof account.name === "string" && account.name.trim())
+  if (typeof account.name === "string" && account.name.trim()) {
     profile.name = account.name.trim();
+    // An export from before f3_name: the name it holds is the F3 name.
+    account.f3_name ??= profile.name;
+  }
   let { error } = await supabase
     .from("profiles")
     .update(profile)
