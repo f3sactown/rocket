@@ -15,8 +15,6 @@ export function AuthForm() {
     error: boolean;
   } | null>(null);
   const [pending, setPending] = useState(false);
-  // Google is the way in; email and password sit behind a link for those without Google.
-  const [useEmail, setUseEmail] = useState(false);
   const regions = useLoad(mode === "sign-up" ? () => loadRegions() : null, [
     mode,
   ]);
@@ -101,48 +99,6 @@ export function AuthForm() {
       if (error) return setMessage({ text: error.message, error: true });
     }
   }
-
-  if (!useEmail)
-    return (
-      <section className="card">
-        <header className="flex items-start justify-between gap-4">
-          <h1 className="pt-1 text-ink">
-            <Wordmark className="h-10" />
-          </h1>
-          <span className="status mt-2">Sign in</span>
-        </header>
-        <p className="text-ink-soft">
-          Sign in or create your account with Google. It&apos;s one tap, with no
-          password to remember.
-        </p>
-        <button
-          type="button"
-          onClick={withGoogle}
-          disabled={pending}
-          className="btn w-full"
-        >
-          <GoogleIcon />
-          {pending ? "…" : "Continue with Google"}
-        </button>
-        {message && (
-          <p
-            className={`text-sm ${message.error ? "text-accent" : "text-ink-soft"}`}
-          >
-            {message.text}
-          </p>
-        )}
-        <button
-          type="button"
-          onClick={() => {
-            setMessage(null);
-            setUseEmail(true);
-          }}
-          className="link -mt-2 self-center text-sm"
-        >
-          Sign in or sign up with email
-        </button>
-      </section>
-    );
 
   return (
     <form onSubmit={onSubmit} className="card">
@@ -230,6 +186,24 @@ export function AuthForm() {
               ? "Create account"
               : "Send reset link"}
       </button>
+      {mode !== "forgot" && (
+        <>
+          <div className="flex items-center gap-3 text-xs text-muted">
+            <span className="h-px flex-1 bg-line" />
+            or
+            <span className="h-px flex-1 bg-line" />
+          </div>
+          <button
+            type="button"
+            onClick={withGoogle}
+            disabled={pending}
+            className="btn w-full"
+          >
+            <GoogleIcon />
+            Continue with Google
+          </button>
+        </>
+      )}
       <button
         type="button"
         className="link -mt-2 self-center"
@@ -243,18 +217,6 @@ export function AuthForm() {
           : mode === "sign-up"
             ? "Have an account? Sign in"
             : "Back to sign in"}
-      </button>
-      <button
-        type="button"
-        className="link -mt-3 self-center inline-flex items-center gap-1.5 text-sm"
-        onClick={() => {
-          setMessage(null);
-          setMode("sign-in");
-          setUseEmail(false);
-        }}
-      >
-        <GoogleIcon />
-        Use Google instead
       </button>
     </form>
   );
