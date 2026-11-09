@@ -14,7 +14,11 @@ import { loadPublicWorkouts, trending } from "@/lib/discover";
 import { loadSites, type Region } from "@/lib/regions";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad, useRegionScope } from "@/lib/use-region";
-import { NO_STATS, type WorkoutStats } from "@/lib/workout-social";
+import {
+  loadLikedWorkouts,
+  NO_STATS,
+  type WorkoutStats,
+} from "@/lib/workout-social";
 
 export default function DiscoverPage() {
   return <SignedIn>{(user) => <Discover user={user} />}</SignedIn>;
@@ -72,6 +76,18 @@ function Discover({ user }: { user: CurrentUser }) {
     [scope?.regions.map((r) => r.id).join() ?? ""],
   );
 
+  // The workouts you've liked, whatever the From choice, most recently liked first.
+  const [liked, setLiked] = useState<ListItem[]>([]);
+  useEffect(() => {
+    loadLikedWorkouts(user.id).then(
+      (loaded) => {
+        setStats((current) => new Map([...loaded.stats, ...current]));
+        setLiked(loaded.workouts);
+      },
+      () => setLiked([]),
+    );
+  }, [user.id]);
+
   useEffect(() => {
     loadPublicWorkouts(sources.split(",") as Language[]).then(
       (loaded) => {
@@ -107,6 +123,7 @@ function Discover({ user }: { user: CurrentUser }) {
       : [];
     return [
       { title: "My workouts", items: mine, all: true },
+      { title: "Liked by you", items: liked, all: true },
       { title: "Trending", items: trending(shown, stats) },
       {
         title: "Most liked",
@@ -131,7 +148,7 @@ function Discover({ user }: { user: CurrentUser }) {
     // Sorting reads `stats`, which changes as people like things; keep the order stable by only
     // regrouping when the list itself loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workouts, regionAos.value, includeOwn, user.id]);
+  }, [workouts, liked, regionAos.value, includeOwn, user.id]);
 
   return (
     <section className="card">

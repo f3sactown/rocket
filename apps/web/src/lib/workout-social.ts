@@ -1,3 +1,4 @@
+import { asItems, listColumns, type ListItem } from "./backblast-list";
 import { createClient } from "./supabase/client";
 
 /** A workout's likes and reuses, and whether the signed-in user likes it. */
@@ -56,4 +57,56 @@ export async function setVisibility(
     .update({ visibility })
     .eq("id", id);
   if (error) throw new Error(error.message);
+}
+
+/**
+ * The likes and reuses your finished workouts have had from others, added up (private ones
+ * included: their counts are kept).
+ */
+export async function loadMyTotals(
+  userId: string,
+): Promise<{ likes: number; reuses: number }> {
+  const { data, error } = await createClient()
+    .from("workouts")
+    .select("id")
+    .eq("author_id", userId)
+    .eq("status", "published")
+    .limit(1000);
+  if (error) throw new Error(error.message);
+  const stats = await loadWorkoutStats((data ?? []).map((w) => w.id));
+  let likes = 0;
+  let reuses = 0;
+  for (const s of stats.values()) {
+    likes += s.likes;
+    reuses += s.reuses;
+  }
+  return { likes, reuses };
+}
+
+/**
+ * The workouts you've liked, most recently liked first, with their stats. One made private (or
+ * deleted) since drops out, since it can't be opened.
+ */
+export async function loadLikedWorkouts(userId: string): Promise<{
+  workouts: ListItem[];
+  stats: Map<string, WorkoutStats>;
+}> {
+  const supabase = createClient();
+  const { data: likes, error } = await supabase
+    .from("workout_likes")
+    .select("workout_id, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw new Error(error.message);
+  const ids = (likes ?? []).map((l) => l.workout_id);
+  if (!ids.length) return { workouts: [], stats: new Map() };
+  const { data, error: workoutsError } = await supabase
+    .from("workouts")
+    .select(listColumns("workout"))
+    .in("id", ids);
+  if (workoutsError) throw new Error(workoutsError.message);
+  const byId = new Map(asItems("workout", data).map((w) => [w.id, w]));
+  const workouts = ids.flatMap((id) => byId.get(id) ?? []);
+  return { workouts, stats: await loadWorkoutStats(workouts.map((w) => w.id)) };
 }
