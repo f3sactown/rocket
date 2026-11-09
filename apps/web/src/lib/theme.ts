@@ -27,14 +27,16 @@ export const ACCENTS: {
   rocket: RocketColors;
 }[] = [
   {
+    // F3's red: the default, and what choosing an F3 region switches to.
     value: "f3",
-    label: "F3",
+    label: "Red",
     swatch: "#e0544a",
     rocket: { light: "#ec8a81", mid: "#9e3a33", dark: "#6b2621" },
   },
   {
+    // FiA's teal: what choosing a FiA region switches to.
     value: "fia",
-    label: "FiA",
+    label: "Teal",
     swatch: "#2dd4bf",
     rocket: { light: "#7ee8da", mid: "#1f8a7e", dark: "#155e57" },
   },

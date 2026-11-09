@@ -125,7 +125,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   device, signed in for the reset, where you choose a new password. Supabase → Authentication →
   URL Configuration must have the site as the Site URL and under Redirect URLs.
 - **Settings:** name, email, password, region, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
-  locked while you have one, and free to choose with no region or one you added), theme, accent color (F3 red, FiA teal, blue, green, orange or violet), the launch
+  locked while you have one, and free to choose with no region or one you added), theme, accent color (Red, Teal, Blue, Green, Orange or Violet; choosing a region sets Red for F3 or Teal for FiA), the launch
   animation, what Home shows,
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,
   and whether a copied or shared backblast from a public workout ends with
