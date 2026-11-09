@@ -4,17 +4,21 @@ import { useState } from "react";
 import { ShareIcon } from "./icons";
 
 /**
- * Opens the device's share sheet (Messages, Slack, email…) with the text. Where sharing isn't
- * available, e.g. most desktop browsers, it copies the text instead.
+ * Opens the device's share sheet (Messages, Band, Slack, email…) with the text. Where sharing isn't
+ * available, e.g. most desktop browsers, it copies the text instead. Without a title, only the
+ * text is shared, so apps get exactly what Copy gives (some put a title in front of the text).
  */
 export function ShareButton({
   title,
   text,
   className = "btn w-full px-4",
+  disabled = false,
 }: {
-  title: string;
+  title?: string;
   text: string;
   className?: string;
+  /** While the text is still being put together. */
+  disabled?: boolean;
 }) {
   const [message, setMessage] = useState<string | null>(null);
 
@@ -22,7 +26,7 @@ export function ShareButton({
     setMessage(null);
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title, text });
+        await navigator.share(title ? { title, text } : { text });
       } catch (error) {
         // Closing the share sheet isn't an error worth showing.
         if ((error as Error).name !== "AbortError")
@@ -40,7 +44,12 @@ export function ShareButton({
 
   return (
     <div className="flex flex-col gap-1">
-      <button type="button" onClick={share} className={className}>
+      <button
+        type="button"
+        onClick={share}
+        disabled={disabled}
+        className={`${className} disabled:opacity-50`}
+      >
         <ShareIcon />
         Share
       </button>

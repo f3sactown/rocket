@@ -82,6 +82,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     out with the reason, and New backblast shows that workout greyed out with the date it opens.
   - **Copy** and **Share** produce Band- and Slack-ready text (Event Data, Workout Details, COT), ending with a
     plain comma-separated list of everyone who posted.
+  - On a finished backblast's page, **Copy**, **Share** and copying the text on screen all give
+    exactly the same text, including the link to its workout. Share sends only that text (no
+    separate title), and Copy and Share wait the moment it takes to check the workout is public.
 - **Library:** at the top right of a workout's Warm-o-rama, and with each thang on The Thang,
   **Library** opens the F3 and FiA Exicons together: search, choose the source (F3, FiA or both),
   Exercises / Routines and tags (tags that differ only in case, like "Warm-Up" and "Warm-up", are
