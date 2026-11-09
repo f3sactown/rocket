@@ -194,20 +194,22 @@ describe("formatBackblast", () => {
 });
 
 describe("FiA vocabulary", () => {
-  it("uses Warm-up, The Workout and CoFiA", () => {
+  it("uses Warm-up, The Workout, CoT and CoFiA", () => {
     const fia = formatBackblast(
       {
         ...base,
         warmup: "SSH x20",
         thang: "11s on the hill",
+        wordsOfWisdom: "Be strong",
         secondF: "Coffee",
       },
       "fia",
     );
     expect(fia).toContain("Warm-up:\nSSH x20");
     expect(fia).toContain("The Workout:\n11s on the hill");
+    expect(fia).toContain("CoT:\nBe strong");
     expect(fia).toContain("CoFiA:\nCoffee");
-    expect(fia).not.toMatch(/Warm-o-rama|Thang|Coffeeteria/);
+    expect(fia).not.toMatch(/Warm-o-rama|Thang|Coffeeteria|Words of Wisdom/);
   });
 
   it("keeps F3 words by default", () => {

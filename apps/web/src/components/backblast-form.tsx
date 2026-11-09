@@ -37,7 +37,6 @@ import { Regulars } from "./regulars";
 import { useAuth } from "./auth-provider";
 import { ArrowIcon, PencilIcon, SkipIcon, TrashIcon } from "./icons";
 import { ProtectedText } from "./protected-text";
-import { ShareButton } from "./share-button";
 import {
   SectionTemplates,
   type BuiltInTemplate,
@@ -140,7 +139,7 @@ function allSteps(language: Language): Step[] {
     {
       kind: "text",
       name: "wordsOfWisdom",
-      title: "Words of Wisdom",
+      title: terms.wordsOfWisdom,
       hint: "The wisdom you'd like to bestow onto the PAX this day",
     },
     {
@@ -775,11 +774,6 @@ export function BackblastForm({
                 </ProtectedText>
               </section>
             ))}
-            <ShareButton
-              title={backblast.title}
-              text={reviewCopyText}
-              className="btn w-full px-4 text-base"
-            />
           </>
         )}
       </div>
