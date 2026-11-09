@@ -1,5 +1,8 @@
 "use client";
 
+import { BackblastNotYet } from "@/components/backblast-not-yet";
+import { isUpcoming } from "@/lib/backblast-list";
+
 import { backblastParts, termsFor, type Workout } from "@rocket/core";
 import Link from "next/link";
 import { Linkify } from "@/components/linkify";
@@ -237,11 +240,13 @@ function RunWorkout({ user }: { user: CurrentUser }) {
             </section>
           )}
           {section("Notes", workout.notes)}
-          {section("Words of Wisdom", workout.wordsOfWisdom)}
+          {section(terms.wordsOfWisdom, workout.wordsOfWisdom)}
         </div>
         {result.mine &&
           (() => {
             const existing = backblasts[0];
+            if (!existing && isUpcoming(workout.date))
+              return <BackblastNotYet date={workout.date!} />;
             const href = existing
               ? existing.status === "draft"
                 ? `/backblasts/edit?id=${existing.id}`

@@ -401,7 +401,7 @@ export function backblastParts(
       title: "COT / Closing",
       text: blocks(
         labeled("Announcements", backblast.announcements),
-        labeled("Words of Wisdom", backblast.wordsOfWisdom),
+        labeled(terms.wordsOfWisdom, backblast.wordsOfWisdom),
         labeled(terms.secondF, backblast.secondF),
       ),
     },

@@ -1,5 +1,7 @@
 "use client";
 
+import { BackblastNotYet } from "@/components/backblast-not-yet";
+
 import { formatBackblast, formatDate, type Workout } from "@rocket/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -25,7 +27,12 @@ import {
   type WorkoutStats,
 } from "@/lib/workout-social";
 import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
-import { archive, deleteItem, unarchive } from "@/lib/backblast-list";
+import {
+  archive,
+  deleteItem,
+  unarchive,
+  isUpcoming,
+} from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 
 // A query parameter instead of /workouts/[id], because a static site can't serve dynamic paths.
@@ -274,6 +281,8 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         (() => {
           // One backblast per workout: open yours if you've started it.
           const existing = backblasts[0];
+          if (!existing && isUpcoming(workout.date))
+            return <BackblastNotYet date={workout.date!} />;
           const href = !existing
             ? `/backblasts/new?workout=${id}`
             : existing.status === "draft"

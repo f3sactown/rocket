@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
 
-/** What Rocket is and does, which version is running, and who makes it. */
+/** What Rocket is and does, and which version is running. */
 export default function AboutPage() {
   const { user } = useAuth();
   const version = process.env.NEXT_PUBLIC_APP_VERSION;
@@ -14,7 +14,7 @@ export default function AboutPage() {
     <article className="card">
       <header className="flex flex-col gap-1">
         <h1 className="card-title">About Rocket</h1>
-        <p className="text-sm text-muted">The Rocket Q Planner</p>
+        <p className="text-sm text-muted">Q Planner</p>
       </header>
 
       <p className="text-ink-soft">
@@ -31,12 +31,12 @@ export default function AboutPage() {
           </li>
           <li>
             <strong className="text-ink">Run it</strong> with a timer on each
-            thang: countdown, stopwatch, AMRAP, Tabata, intervals or EMOM.
+            thang: countdown, stopwatch, AMRAP, Tabata or EMOM.
           </li>
           <li>
             <strong className="text-ink">Write the backblast</strong> from the
             workout, with your region&apos;s AOs and roster, and copy or share
-            it ready for Slack.
+            it ready for Band and Slack.
           </li>
           <li>
             <strong className="text-ink">Discover</strong> other Qs&apos; public
@@ -74,13 +74,6 @@ export default function AboutPage() {
         <p>
           Rocket is in alpha: new things arrive often, and Home tells you
           what&apos;s new after each update.
-        </p>
-      </Section>
-
-      <Section title="Who makes it">
-        <p>
-          Rocket is built by PAX of F3 SacTown and is open source under the GNU
-          General Public License v3.
         </p>
       </Section>
     </article>
