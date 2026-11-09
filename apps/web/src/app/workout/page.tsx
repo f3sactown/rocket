@@ -1,5 +1,7 @@
 "use client";
 
+import { BackblastNotYet } from "@/components/backblast-not-yet";
+
 import { formatBackblast, formatDate, type Workout } from "@rocket/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -16,6 +18,7 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { ShareButton } from "@/components/share-button";
+import { ShareLinkButton } from "@/components/share-link-button";
 import { VisibilitySwitch } from "@/components/visibility-switch";
 import { WorkoutStatsBar } from "@/components/workout-stats";
 import {
@@ -25,7 +28,12 @@ import {
   type WorkoutStats,
 } from "@/lib/workout-social";
 import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
-import { archive, deleteItem, unarchive } from "@/lib/backblast-list";
+import {
+  archive,
+  deleteItem,
+  unarchive,
+  isUpcoming,
+} from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 
 // A query parameter instead of /workouts/[id], because a static site can't serve dynamic paths.
@@ -231,7 +239,17 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
           Reuse
         </Link>
       </div>
-      <div className="-mt-1 flex justify-center gap-6">
+      <div className="-mt-1 flex flex-wrap justify-center gap-x-6 gap-y-2">
+        <ShareLinkButton
+          path={`/workout/?id=${id}`}
+          blocked={
+            result.status !== "published"
+              ? "Finish it to share a link"
+              : visibility === "private"
+                ? "Make it public to share a link"
+                : undefined
+          }
+        />
         {archived !== null && (
           <button
             type="button"
@@ -263,7 +281,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
             className="link inline-flex items-center gap-1.5 hover:text-accent"
           >
             <TrashIcon />
-            Delete workout
+            Delete
           </button>
         )}
       </div>
@@ -274,6 +292,8 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         (() => {
           // One backblast per workout: open yours if you've started it.
           const existing = backblasts[0];
+          if (!existing && isUpcoming(workout.date))
+            return <BackblastNotYet date={workout.date!} />;
           const href = !existing
             ? `/backblasts/new?workout=${id}`
             : existing.status === "draft"

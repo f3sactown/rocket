@@ -15,6 +15,8 @@ export interface Terms {
   thang: string;
   /** The backblast's coffee section: F3's Coffeeteria, FiA's CoFiA. */
   secondF: string;
+  /** The closing thoughts section: F3's Words of Wisdom, FiA's CoT. */
+  wordsOfWisdom: string;
 }
 
 const TERMS: Record<Language, Terms> = {
@@ -24,6 +26,7 @@ const TERMS: Record<Language, Terms> = {
     warmup: "Warm-o-rama",
     thang: "The Thang",
     secondF: "Coffeeteria",
+    wordsOfWisdom: "Words of Wisdom",
   },
   fia: {
     org: "FiA",
@@ -31,6 +34,7 @@ const TERMS: Record<Language, Terms> = {
     warmup: "Warm-up",
     thang: "The Workout",
     secondF: "CoFiA",
+    wordsOfWisdom: "CoT",
   },
 };
 

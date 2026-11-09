@@ -10,6 +10,7 @@ import {
 import { loadRegions, regionColors } from "@/lib/regions";
 import { useLoad } from "@/lib/use-region";
 import { BookIcon, CloseIcon } from "./icons";
+import { SourceChips } from "./source-chips";
 
 type Kind = "all" | "exercise" | "routine";
 
@@ -276,16 +277,27 @@ export function LibraryBrowser({
       })),
     ];
   }, [regions.value, colors]);
-  // Every tag but "Routine" (that's the Exercises / Routines switch), in alphabetical order.
+  // Every tag but "Routine" (that's the Exercises / Routines switch), in alphabetical order. Tags
+  // that differ only in case ("Warm-Up", "Warm-up") are one tag, shown as its most used spelling.
   const allTags = useMemo(() => {
-    const tags = new Set<string>();
+    const spellings = new Map<string, Map<string, number>>();
     for (const entry of entries)
-      for (const tag of entry.tags)
-        if (tag.toLowerCase() !== "routine") tags.add(tag);
-    return [...tags].sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base", numeric: true }),
-    );
+      for (const tag of entry.tags) {
+        const key = tag.toLowerCase();
+        if (key === "routine") continue;
+        const counts = spellings.get(key) ?? new Map<string, number>();
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+        spellings.set(key, counts);
+      }
+    return [...spellings.values()]
+      .map((counts) => [...counts].sort((a, b) => b[1] - a[1])[0]![0])
+      .sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base", numeric: true }),
+      );
   }, [entries]);
+  /** Whether a tag is chosen, ignoring case. */
+  const chosen = (tag: string) =>
+    tags.some((t) => t.toLowerCase() === tag.toLowerCase());
 
   const results = useMemo(() => {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
@@ -293,7 +305,9 @@ export function LibraryBrowser({
       if (off.includes(sourceKey(entry))) return false;
       if (kind === "routine" && !entry.isRoutine) return false;
       if (kind === "exercise" && entry.isRoutine) return false;
-      if (!tags.every((tag) => entry.tags.includes(tag))) return false;
+      const entryTags = entry.tags.map((t) => t.toLowerCase());
+      if (!tags.every((tag) => entryTags.includes(tag.toLowerCase())))
+        return false;
       if (!words.length) return true;
       const text = [entry.name, ...entry.aliases, entry.description]
         .join("\n")
@@ -302,23 +316,12 @@ export function LibraryBrowser({
     });
   }, [entries, kind, tags, query, off]);
 
-  function toggleSource(key: string) {
-    setShown(PAGE);
-    setOff((current) =>
-      current.includes(key)
-        ? current.filter((k) => k !== key)
-        : // At least one chip stays on.
-          chips.filter((c) => !current.includes(c.key)).length > 1
-          ? [...current, key]
-          : current,
-    );
-  }
-
   function toggleTag(tag: string) {
     setShown(PAGE);
+    const key = tag.toLowerCase();
     setTags((current) =>
-      current.includes(tag)
-        ? current.filter((t) => t !== tag)
+      current.some((t) => t.toLowerCase() === key)
+        ? current.filter((t) => t.toLowerCase() !== key)
         : [...current, tag],
     );
   }
@@ -341,37 +344,14 @@ export function LibraryBrowser({
         }}
         className="input text-base"
       />
-      <div
-        aria-label="Sources"
-        className="flex flex-wrap items-center gap-2 text-xs text-ink-soft"
-      >
-        <span>From</span>
-        {chips.map((option) => {
-          const on = !off.includes(option.key);
-          return (
-            <button
-              key={option.key}
-              type="button"
-              aria-pressed={on}
-              onClick={() => toggleSource(option.key)}
-              className={`rounded-full border px-3 py-1 font-bold transition-colors ${
-                on ? "" : "border-line text-muted"
-              }`}
-              style={
-                on
-                  ? {
-                      background: option.color,
-                      borderColor: option.color,
-                      color: "var(--badge-text)",
-                    }
-                  : undefined
-              }
-            >
-              {option.label}
-            </button>
-          );
-        })}
-      </div>
+      <SourceChips
+        chips={chips}
+        off={off}
+        onChange={(next) => {
+          setShown(PAGE);
+          setOff(next);
+        }}
+      />
       <div
         role="radiogroup"
         aria-label="Exercises or routines"
@@ -415,7 +395,7 @@ export function LibraryBrowser({
                     <TagChip
                       key={tag}
                       tag={tag}
-                      on={tags.includes(tag)}
+                      on={chosen(tag)}
                       onToggle={toggleTag}
                     />
                   ))}
@@ -432,7 +412,7 @@ export function LibraryBrowser({
               <TagChip
                 key={tag}
                 tag={tag}
-                on={tags.includes(tag)}
+                on={chosen(tag)}
                 onToggle={toggleTag}
               />
             ))}

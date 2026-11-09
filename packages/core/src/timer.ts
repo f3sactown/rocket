@@ -32,8 +32,9 @@ export const TIMER_TYPES: {
   },
   {
     type: "intervals",
-    label: "Intervals",
-    description: "Work and rest, repeated for a number of rounds (e.g. Tabata)",
+    label: "Tabata",
+    description:
+      "Work and rest, repeated for a number of rounds (20 seconds on, 10 off, 8 rounds to start)",
   },
   {
     type: "emom",
@@ -74,7 +75,7 @@ export function timerLabel(timer: Timer): string {
     case "amrap":
       return `AMRAP · ${formatTimer(timer.seconds)}`;
     case "intervals":
-      return `Intervals · ${timer.rounds} × ${formatTimer(timer.work)} on / ${formatTimer(timer.rest)} off`;
+      return `Tabata · ${timer.rounds} × ${formatTimer(timer.work)} on / ${formatTimer(timer.rest)} off`;
     case "emom":
       return `EMOM · ${timer.rounds} × ${formatTimer(timer.every)}`;
   }
@@ -135,6 +136,11 @@ export function parseTimer(value: unknown): Timer | undefined {
         : undefined;
     case "stopwatch":
       return { type: "stopwatch" };
+    // Saved while Tabata was a timer of its own: 20 seconds on and 10 off.
+    case "tabata":
+      return positive(t.rounds)
+        ? { type: "intervals", work: 20, rest: 10, rounds: t.rounds as number }
+        : undefined;
     case "intervals":
       return positive(t.work) && positive(t.rounds)
         ? {
@@ -150,4 +156,18 @@ export function parseTimer(value: unknown): Timer | undefined {
         : undefined;
   }
   return undefined;
+}
+
+/** How a beep sounds: a short one counting down, or the long, louder one as a stretch ends. */
+export type BeepKind = "tick" | "end";
+
+/**
+ * The beep for a moment in a stretch, like a Tabata timer's: short beeps with 3, 2 and 1 seconds
+ * left, then a long, louder one at 0 as it ends (4 in all), in every stretch, work or rest. None at
+ * other times.
+ */
+export function beepAt(secondsLeft: number): BeepKind | null {
+  if (secondsLeft === 0) return "end";
+  if (secondsLeft >= 1 && secondsLeft <= 3) return "tick";
+  return null;
 }

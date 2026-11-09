@@ -16,17 +16,18 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   workouts and backblasts. Which of
   these show is chosen in Settings → Home screen (all but trending, to start).
 - **Workouts** are written first: Basics (title, AO, date, time), Introduction, Warm-o-rama,
-  The Thang, Notes and Words of Wisdom. The Workouts page lists only your own;
+  The Thang, Notes and Words of Wisdom (CoT in FiA wording). The Workouts page lists only your own;
   others' public workouts are on Discover. Your finished workouts dated today or earlier show a
   **Needs backblast** badge (in lists and on Home, but never on Discover) until a backblast from them is
   finished; others' workouts never do.
   - The Thang can hold several thangs. Each can have a **timer** (Countdown, Stopwatch, AMRAP,
-    Intervals or EMOM) and **music** (a link to a song or playlist, shown in the output as 🎵 Title 🎵
+    Tabata (work and rest for a number of rounds; 20 seconds on, 10 off, 8 rounds to start) or EMOM) and **music** (a link to a song or playlist, shown in the output as 🎵 Title 🎵
     with the link on the next line).
   - A workout's **Notes** are private to its Q: stored in their own table only the author can read,
     and left out of anything copied or shared.
   - **Run workout** shows the whole workout to lead from (web addresses are clickable links), in Normal, Large or Extra large text, with
-    each timer's countdown (beeping through the last 10 seconds). The timer in use pins to the top
+    each timer's countdown. Like a Tabata timer, every stretch (each round's work and rest) ends with
+    short beeps at 3, 2 and 1 seconds left and a long, louder beep at 0. The timer in use pins to the top
     when scrolled away, and the screen stays awake.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
     choose again. Each workout shows how many times it's been reused by other Qs (counting archived copies; reusing your own doesn't count, just as you can't like your own).
@@ -44,7 +45,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   groups are Trending (likes and reuses on the
   last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
   Newest, each a row of tiles that scrolls sideways, naming each author and their region, with
-  like buttons. Trending on Home follows the From choice, and
+  like buttons. Trending on Home follows the From choice and leaves out your own workouts, and
   scrolls sideways the same way. The rows' scrollbars are thin and faint, with no arrows.
 - **PAX** (in the menu, under Search) lists everyone on your region's roster (or every region's,
   when you've chosen all regions) as tiles in alphabetical order (three across on a phone, four on larger screens), with a search box that matches
@@ -75,20 +76,30 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   its own copy of the workout's sections, which can be edited without changing the workout
   (**Update from workout** copies it again). Its pages are Workout, Notes, Name-o-rama (Qs and
   PAX, with roster suggestions and the AO's regulars), Announcements (the backblast's own, not
-  copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review.
-  - A backblast can't be finished before its workout's date.
-  - **Copy** and **Share** produce Slack-ready text (Event Data, Workout Details, COT), ending with a
+  copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
+  and Share are on the finished backblast's page).
+  - A backblast waits for its workout: until the workout's date, **Create backblast** is greyed
+    out with the reason, and New backblast shows that workout greyed out with the date it opens.
+  - **Copy** and **Share** produce Band- and Slack-ready text (Event Data, Workout Details, COT), ending with a
     plain comma-separated list of everyone who posted.
+  - On a finished backblast's page, **Copy**, **Share** and copying the text on screen all give
+    exactly the same text, including the link to its workout. Share sends only that text (no
+    separate title), and Copy and Share wait the moment it takes to check the workout is public.
 - **Library:** at the top right of a workout's Warm-o-rama, and with each thang on The Thang,
   **Library** opens the F3 and FiA Exicons together: search, choose the source (F3, FiA or both),
-  Exercises / Routines and tags (on a phone, two rows of tags that scroll sideways), read an entry, and add it by name or with its description. Each
+  Exercises / Routines and tags (tags that differ only in case, like "Warm-Up" and "Warm-up", are
+  one tag; on a phone, two rows of tags that scroll sideways), read an entry, and add it by name or with its description. Each
   entry carries a badge: F3 in F3 red, FiA in FiA teal, and a region's own entries in that region's
   color. Each region gets a color in the order regions were added (blue, then pink, violet, amber, lime and on), so it's the same for every user.
   On the light theme the badges and source chips use deeper shades with white text.
   The **Library** page (in the menu, under Discover) browses the same entries on their own, with
   Copy and Copy with description in place of Add.
 - **Templates:** each text section (all but Notes and the Name-o-rama) can be saved as a template,
-  and one per section can be starred as the default that fills new workouts or backblasts.
+  and one per section can be starred as the default that fills new workouts or backblasts. The
+  Introduction also offers a built-in template: **F3 standard** (welcome, the three Fs, mission,
+  five core principles, disclaimer and credo) in F3, or **FiA Disclaimer** in FiA.
+- **From pickers** (Library, PAX, Discover): on a phone, one line of chips that scrolls sideways.
+- **About** (last in the menu): what Rocket is and does, and the running version and build.
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. Archiving hides a
   workout or backblast only from your own Workouts and Backblasts lists (and Home's Recent lists);
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
@@ -118,6 +129,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 
 ## Stack
 
+- **Share link:** under a workout's or backblast's Copy and Share, the row of small actions is
+  Share link, Archive and Delete. **Share link** shares the page's address through the device's
+  share sheet, or copies it where sharing isn't available ("Link copied"). A draft or private one
+  can't be opened by anyone else, so tapping it then says "Finish it to share a link" or "Make it
+  public to share a link" instead.
 - **[Next.js](https://nextjs.org) + TypeScript + Tailwind** for the web app
 - **[Supabase](https://supabase.com)** for the Postgres database and login (Supabase Auth)
 - **GitHub Pages** for hosting: the app is a static site that talks to Supabase from the browser

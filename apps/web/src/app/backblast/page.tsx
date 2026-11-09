@@ -14,13 +14,14 @@ import { CopyButton } from "@/components/copy-button";
 import { CountPanel } from "@/components/count-panel";
 import { ProtectedText } from "@/components/protected-text";
 import { ShareButton } from "@/components/share-button";
+import { ShareLinkButton } from "@/components/share-link-button";
 import {
   VisibilitySwitch,
   type Visibility,
 } from "@/components/visibility-switch";
 import { ArchiveIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { fromRow } from "@/lib/backblast";
-import { useWorkoutLink } from "@/lib/workout-link";
+import { useWorkoutLinkState } from "@/lib/workout-link";
 import { archive, unarchive } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 import { setVisibility } from "@/lib/workout-social";
@@ -78,8 +79,11 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
       .then(({ data }) => setArchived((data ?? []).length > 0));
   }, [id]);
 
-  // The copied and shared text ends with a link to its workout, when it has a public one.
-  const workoutLink = useWorkoutLink(result?.backblast?.workoutId);
+  // Copy, Share and copying the text on screen all give the same thing: the backblast, then the
+  // link to its workout (when it has a public one) and the PAX list. They wait the moment it takes to check the workout.
+  const { link: workoutLink, ready } = useWorkoutLinkState(
+    result?.backblast?.workoutId,
+  );
 
   async function toggleArchive() {
     setDeleteError(null);
@@ -103,6 +107,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
   const { backblast } = result;
   const mine = result.authorId === user.id;
   const text = formatBackblast(backblast, user.language);
+  const shared = copyText(backblast, user.language, workoutLink);
   return (
     <article className="card">
       <header className="flex items-start justify-between gap-4">
@@ -150,18 +155,15 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
       )}
 
       <ProtectedText
-        copyText={copyText(backblast, user.language, workoutLink)}
+        copyText={shared}
         className="panel overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft"
       >
         {text}
       </ProtectedText>
 
       <div className="grid grid-cols-2 gap-3">
-        <CopyButton text={copyText(backblast, user.language, workoutLink)} />
-        <ShareButton
-          title={backblast.title}
-          text={copyText(backblast, user.language, workoutLink)}
-        />
+        <CopyButton text={shared} disabled={!ready} />
+        <ShareButton text={shared} disabled={!ready} />
       </div>
       {mine && (
         <Link href={`/backblasts/edit?id=${id}`} className="btn -mt-2 w-full">
@@ -169,7 +171,17 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
           Edit backblast
         </Link>
       )}
-      <div className="-mt-1 flex justify-center gap-6">
+      <div className="-mt-1 flex flex-wrap justify-center gap-x-6 gap-y-2">
+        <ShareLinkButton
+          path={`/backblast/?id=${id}`}
+          blocked={
+            result.status !== "published"
+              ? "Finish it to share a link"
+              : visibility === "private"
+                ? "Make it public to share a link"
+                : undefined
+          }
+        />
         {mine && archived !== null && (
           <button
             type="button"
@@ -197,7 +209,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
             className="link inline-flex items-center gap-1.5 hover:text-accent"
           >
             <TrashIcon />
-            Delete backblast
+            Delete
           </button>
         )}
       </div>

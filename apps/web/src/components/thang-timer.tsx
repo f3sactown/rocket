@@ -1,6 +1,13 @@
 "use client";
 
-import { formatTimer, timerLabel, timerPhases, type Timer } from "@rocket/core";
+import {
+  beepAt,
+  formatTimer,
+  timerLabel,
+  timerPhases,
+  type BeepKind,
+  type Timer,
+} from "@rocket/core";
 import {
   createContext,
   useContext,
@@ -11,8 +18,12 @@ import {
   useState,
 } from "react";
 
-/** A short beep, higher for the end, where the browser allows sound. */
-function beep(final: boolean, tick = false) {
+/**
+ * A beep where the browser allows sound, like a Tabata timer's: a short one counting down the last
+ * seconds, and a long, louder, higher one as a stretch ends.
+ */
+function beep(kind: BeepKind) {
+  const end = kind === "end";
   try {
     const AudioContext =
       window.AudioContext ??
@@ -21,9 +32,9 @@ function beep(final: boolean, tick = false) {
     const audio = new AudioContext();
     const tone = audio.createOscillator();
     const volume = audio.createGain();
-    tone.frequency.value = final ? 880 : tick ? 520 : 660;
-    const length = final ? 0.8 : tick ? 0.12 : 0.35;
-    volume.gain.setValueAtTime(0.3, audio.currentTime);
+    tone.frequency.value = end ? 880 : 660;
+    const length = end ? 0.9 : 0.15;
+    volume.gain.setValueAtTime(end ? 0.9 : 0.35, audio.currentTime);
     volume.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + length);
     tone.connect(volume).connect(audio.destination);
     tone.start();
@@ -31,7 +42,7 @@ function beep(final: boolean, tick = false) {
   } catch {
     // No sound; the screen still shows what's happening.
   }
-  if (!tick) navigator.vibrate?.(final ? [300, 150, 300] : 200);
+  if (end) navigator.vibrate?.([300, 150, 300]);
 }
 
 /**
@@ -70,8 +81,8 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
   const phases = useMemo(() => timerPhases(JSON.parse(key) as Timer), [key]);
   const [phase, setPhase] = useState(0);
   const phaseRef = useRef(0);
-  // The second of the final countdown last ticked, so each is beeped once.
-  const ticked = useRef<number | null>(null);
+  // The stretch and second last beeped, so each beep sounds once.
+  const ticked = useRef<string | null>(null);
   // Seconds left in the current stretch, or (for a stopwatch) seconds so far.
   const [count, setCount] = useState(phases[0]?.seconds ?? 0);
   const [running, setRunning] = useState(false);
@@ -89,21 +100,21 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
       }
       const left = Math.max(0, Math.ceil((mark.current - Date.now()) / 1000));
       setCount(left);
-      // A tick each second for the last 10 seconds before the timer ends.
-      const last = phaseRef.current === phases.length - 1;
-      if (last && left > 0 && left <= 10 && ticked.current !== left) {
-        ticked.current = left;
-        beep(false, true);
+      // Short beeps with 3, 2 and 1 seconds left in every stretch, then a long, louder one as it
+      // ends, like a Tabata timer.
+      const sound = beepAt(left);
+      const at = `${phaseRef.current}:${left}`;
+      if (sound && ticked.current !== at) {
+        ticked.current = at;
+        beep(sound);
       }
       if (left > 0) return;
       const next = phaseRef.current + 1;
       if (next >= phases.length) {
         setRunning(false);
         setDone(true);
-        beep(true);
         return;
       }
-      beep(false);
       phaseRef.current = next;
       mark.current = Date.now() + phases[next]!.seconds * 1000;
       setPhase(next);

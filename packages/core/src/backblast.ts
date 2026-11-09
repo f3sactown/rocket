@@ -109,18 +109,29 @@ export function copyWorkout(backblast: Backblast, workout: Workout): Backblast {
 }
 
 /** Starting text for the Introduction section; the Q can edit it. */
-export const DEFAULT_INTRODUCTION = `Mission: To plant, grow and serve small workout groups for men for the invigoration of male community leadership.
+export const DEFAULT_INTRODUCTION = `Welcome to F3!
 
-Core principles:
-1. Free of charge
-2. Open to all men
-3. Held outdoors, rain or shine, heat or cold
-4. Led by men in a rotating fashion, with no professionals
-5. Ends with a Circle of Trust
+F3 stands for
+Fitness
+Fellowship
+Faith
 
-Disclaimer: I am not a professional. You are here of your own free will and participate at your own risk. Modify as needed.
+Our mission is to plant, grow and serve small workout groups for men for the invigoration of male community leadership.
 
-Credo: Leave no man behind, but leave no man where you found him.`;
+5 Core principles
+Free of charge
+Open to all men
+Held outdoors rain or shine
+Peer led in a rotating fashion
+End in a circle of trust
+
+Disclaimer: I am not a professional so be mindful of your own situation and modify as necessary to prevent injury but not to prevent growth.
+
+Our credo is to leave no man behind but leave no man where you found him.`;
+
+/** The built-in Introduction template for FiA. */
+export const FIA_DISCLAIMER = `FiA Disclaimer:
+Workouts are peer led in a rotating fashion which means I am not a trained professional, so please modify to prevent injury but not to prevent growth.`;
 
 /**
  * Reads a name as a region's sheet may write it, with a note in parentheses: "McLovin (Seattle)"
@@ -390,7 +401,7 @@ export function backblastParts(
       title: "COT / Closing",
       text: blocks(
         labeled("Announcements", backblast.announcements),
-        labeled("Words of Wisdom", backblast.wordsOfWisdom),
+        labeled(terms.wordsOfWisdom, backblast.wordsOfWisdom),
         labeled(terms.secondF, backblast.secondF),
       ),
     },

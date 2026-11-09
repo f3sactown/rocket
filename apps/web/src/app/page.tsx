@@ -75,7 +75,14 @@ function HomePage({ user }: { user: CurrentUser }) {
     if (!wantsTrending) return;
     loadPublicWorkouts(sources.split(",") as Language[]).then(
       ({ workouts, stats }) =>
-        setHot({ workouts: trending(workouts, stats).slice(0, RECENT), stats }),
+        setHot({
+          // Others' workouts only; yours are on Discover when you include them there.
+          workouts: trending(
+            workouts.filter((w) => w.author_id !== user.id),
+            stats,
+          ).slice(0, RECENT),
+          stats,
+        }),
       () => setHot({ workouts: [], stats: new Map() }),
     );
   }, [wantsTrending, user.id, sources]);

@@ -116,6 +116,14 @@ export function localToday(): string {
 }
 
 /**
+ * Whether a workout's date is still to come. Its backblast can be written only on the day or
+ * after, once it has happened.
+ */
+export function isUpcoming(date: string | null | undefined): boolean {
+  return !!date && date > localToday();
+}
+
+/**
  * Your drafts of a kind, most recently edited first, and your finished ones, newest first. Others'
  * public workouts are on Discover, not here. What you've archived is left out.
  */
