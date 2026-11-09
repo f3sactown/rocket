@@ -16,18 +16,18 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   workouts and backblasts. Which of
   these show is chosen in Settings → Home screen (all but trending, to start).
 - **Workouts** are written first: Basics (title, AO, date, time), Introduction, Warm-o-rama,
-  The Thang, Notes and Words of Wisdom. The Workouts page lists only your own;
+  The Thang, Notes and Words of Wisdom (CoT in FiA wording). The Workouts page lists only your own;
   others' public workouts are on Discover. Your finished workouts dated today or earlier show a
   **Needs backblast** badge (in lists and on Home, but never on Discover) until a backblast from them is
   finished; others' workouts never do.
   - The Thang can hold several thangs. Each can have a **timer** (Countdown, Stopwatch, AMRAP,
-    Tabata (20 seconds on, 10 off, 8 rounds by default), Intervals or EMOM) and **music** (a link to a song or playlist, shown in the output as 🎵 Title 🎵
+    Tabata (work and rest for a number of rounds; 20 seconds on, 10 off, 8 rounds to start) or EMOM) and **music** (a link to a song or playlist, shown in the output as 🎵 Title 🎵
     with the link on the next line).
   - A workout's **Notes** are private to its Q: stored in their own table only the author can read,
     and left out of anything copied or shared.
   - **Run workout** shows the whole workout to lead from (web addresses are clickable links), in Normal, Large or Extra large text, with
     each timer's countdown. Like a Tabata timer, every stretch (each round's work and rest) ends with
-    short beeps at 3, 2 and 1 seconds left and a long, louder beep at 0. The timer in use pins to the top
+    short beeps at 4, 3, 2 and 1 seconds left and a long, louder beep at 0. The timer in use pins to the top
     when scrolled away, and the screen stays awake.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
     choose again. Each workout shows how many times it's been reused by other Qs (counting archived copies; reusing your own doesn't count, just as you can't like your own).
@@ -76,9 +76,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   its own copy of the workout's sections, which can be edited without changing the workout
   (**Update from workout** copies it again). Its pages are Workout, Notes, Name-o-rama (Qs and
   PAX, with roster suggestions and the AO's regulars), Announcements (the backblast's own, not
-  copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review.
-  - A backblast can't be finished before its workout's date.
-  - **Copy** and **Share** produce Slack-ready text (Event Data, Workout Details, COT), ending with a
+  copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
+  and Share are on the finished backblast's page).
+  - A backblast waits for its workout: until the workout's date, **Create backblast** is greyed
+    out with the reason, and New backblast shows that workout greyed out with the date it opens.
+  - **Copy** and **Share** produce Band- and Slack-ready text (Event Data, Workout Details, COT), ending with a
     plain comma-separated list of everyone who posted.
 - **Library:** at the top right of a workout's Warm-o-rama, and with each thang on The Thang,
   **Library** opens the F3 and FiA Exicons together: search, choose the source (F3, FiA or both),
@@ -94,8 +96,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   Introduction also offers a built-in template: **F3 standard** (welcome, the three Fs, mission,
   five core principles, disclaimer and credo) in F3, or **FiA Disclaimer** in FiA.
 - **From pickers** (Library, PAX, Discover): on a phone, one line of chips that scrolls sideways.
-- **About** (last in the menu): what Rocket is and does, the running version and build, and who
-  makes it.
+- **About** (last in the menu): what Rocket is and does, and the running version and build.
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. Archiving hides a
   workout or backblast only from your own Workouts and Backblasts lists (and Home's Recent lists);
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
