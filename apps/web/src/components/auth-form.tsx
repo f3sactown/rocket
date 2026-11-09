@@ -4,7 +4,7 @@ import { useState } from "react";
 import { loadRegions, type Region } from "@/lib/regions";
 import { createClient, createRecoveryClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/use-region";
-import { ArrowIcon } from "./icons";
+import { ArrowIcon, GoogleIcon } from "./icons";
 import { setAccent } from "./theme-switcher";
 import { Wordmark } from "./wordmark";
 
@@ -18,6 +18,23 @@ export function AuthForm() {
   const regions = useLoad(mode === "sign-up" ? () => loadRegions() : null, [
     mode,
   ]);
+
+  /** Signs in (or up) with Google, coming back to the app's home page. */
+  async function withGoogle() {
+    setPending(true);
+    setMessage(null);
+    const { error } = await createClient().auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH}/`,
+      },
+    });
+    // On success the browser is already leaving for Google.
+    if (error) {
+      setPending(false);
+      setMessage({ text: error.message, error: true });
+    }
+  }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,6 +70,8 @@ export function AuthForm() {
         options: {
           data: {
             name: String(form.get("name")).trim(),
+            // Kept apart from `name`, which signing in with Google overwrites.
+            f3_name: String(form.get("name")).trim(),
             region_id: region?.id ?? null,
             // A region sets the starting wording (F3 or FiA); it can be changed in Settings.
             ...(region && { language: region.language }),
@@ -167,6 +186,24 @@ export function AuthForm() {
               ? "Create account"
               : "Send reset link"}
       </button>
+      {mode !== "forgot" && (
+        <>
+          <div className="flex items-center gap-3 text-xs text-muted">
+            <span className="h-px flex-1 bg-line" />
+            or
+            <span className="h-px flex-1 bg-line" />
+          </div>
+          <button
+            type="button"
+            onClick={withGoogle}
+            disabled={pending}
+            className="btn w-full"
+          >
+            <GoogleIcon />
+            Continue with Google
+          </button>
+        </>
+      )}
       <button
         type="button"
         className="link -mt-2 self-center"
@@ -186,11 +223,22 @@ export function AuthForm() {
 }
 
 /** Region choice at sign-up; regions that aren't listed can be added in Settings afterwards. */
-function RegionSelect({ regions }: { regions?: Region[] }) {
+export function RegionSelect({
+  regions,
+  defaultValue = "",
+}: {
+  regions?: Region[];
+  defaultValue?: string;
+}) {
   return (
     <label className="label flex flex-col gap-1.5">
       Region
-      <select name="region" defaultValue="" className="input">
+      <select
+        name="region"
+        key={defaultValue}
+        defaultValue={defaultValue}
+        className="input"
+      >
         <option value="">
           {regions ? "Not listed / choose later" : "Loading regions…"}
         </option>

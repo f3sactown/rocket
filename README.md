@@ -107,6 +107,12 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
   still shows unless it's private. **Archive** lists what you've archived; **Search** finds workouts and backblasts by any word, with matches
   highlighted.
+- **Continue with Google:** sign in or sign up with a Google account instead of a password. The
+  first time, a **Welcome** step asks for your F3 name and region (Google gives your real name and
+  no region, and Rocket matches PAX to their roster by F3 name), then you're in. Signing in with
+  Google using the same email as an existing account opens that account. The F3 name is also kept
+  as `f3_name` in the account, since each Google sign-in overwrites `name` with the Google name.
+  Setup: see "Google sign-in" below.
 - **Forgot password:** Sign in → **Forgot password?** emails a reset link (Supabase's built-in
   mailer and standard template, no custom SMTP needed). The link opens `/reset-password` on any
   device, signed in for the reset, where you choose a new password. Supabase → Authentication →
@@ -214,6 +220,43 @@ One-time setup:
 4. **Supabase auth URLs:** in Supabase → Authentication → URL Configuration, set the **Site URL** to
    `https://<owner>.github.io/<repo>/` and add the same address under **Redirect URLs**.
 5. Re-run the **Deploy to GitHub Pages** workflow (Actions tab), or push to `main`.
+
+## Google sign-in
+
+**Continue with Google** uses Supabase Auth's Google provider; nothing in the app holds Google
+keys. It needs a Google OAuth client, then the Google provider turned on in each Supabase project
+(production and dev).
+
+1. **Google Cloud project.** At [console.cloud.google.com](https://console.cloud.google.com),
+   create a project (e.g. "Rocket") or pick an existing one.
+2. **Consent screen.** Google Auth Platform → **Branding** (older consoles: APIs & Services →
+   OAuth consent screen): app name **Rocket**, a support email, and the logo if you like. Under
+   **Audience**, choose **External**. Under **Data access**, the default scopes are enough
+   (`openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile`); these aren't sensitive, so
+   Google doesn't need to review the app. Under **Branding → Authorized domains**, add
+   `supabase.co` and `f3sactown.com`.
+3. **Publish it.** Under **Audience**, click **Publish app** so it's **In production**. Left in
+   "Testing", only the test users you list can sign in.
+4. **OAuth client.** Google Auth Platform → **Clients** → **Create client**, type **Web
+   application**, name "Rocket". Add both projects' callback addresses under **Authorized redirect
+   URIs**:
+   - `https://glladkuyofbrewktcqly.supabase.co/auth/v1/callback` (production)
+   - `https://funktsbvbcblniokpheu.supabase.co/auth/v1/callback` (dev)
+
+   **Authorized JavaScript origins** can stay empty. Create it, and copy the **Client ID** and
+   **Client secret**.
+
+5. **Supabase, in each project** (rocket, then rocket-dev): Authentication → **Sign In /
+   Providers** → **Google** → turn on **Enable Sign in with Google**, paste the client ID and
+   secret, and **Save**. Leave "Skip nonce checks" off.
+6. **Return addresses, in each project:** Authentication → **URL Configuration**. The **Site URL**
+   is the site (`https://rocket.f3sactown.com/` for production, `https://rocket-dev.f3sactown.com/`
+   for dev), and the same address is under **Redirect URLs** (it already is for email sign-up).
+7. **Try it on dev first:** open rocket-dev.f3sactown.com, choose **Continue with Google**, pick
+   an account, and you should land on the **Welcome** step, then Home.
+
+The client secret stays in Supabase only; don't commit it or put it in a GitHub secret. One Google
+client serves both projects, since each project's callback address is listed on it.
 
 ## Dev site
 
