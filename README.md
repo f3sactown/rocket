@@ -369,6 +369,9 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
   AOs, roster, regulars per AO (last 3 months), all-time totals per PAX and the newest post date
   into Supabase, and the app reads those. A region that hasn't synced yet is read from its sheet live. A failed sync keeps
   the previous copy and shows the error in Settings.
+- **Placeholders:** a name like "Site Closed (Archived)" that a sheet puts in the PAX column to mark a
+  closed AO isn't a PAX, so it's left out of rosters, regulars and PAX totals (`isPlaceholderPax`
+  in `@rocket/core`; the sync does the same).
 - The sync needs the repository **secret** `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project
   Settings → API Keys → secret key) alongside the `SUPABASE_URL` variable.
 - Sheets are read with Google's Visualization API (`apps/web/src/lib/sheets.ts` in the app,

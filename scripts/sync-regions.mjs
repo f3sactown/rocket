@@ -11,6 +11,14 @@
  */
 
 const REGULARS_MONTHS = 3;
+
+/**
+ * A placeholder in the PAX column rather than a PAX, e.g. "Site Closed (Archived)" marking when an
+ * AO stopped meeting (the same rule as isPlaceholderPax in @rocket/core).
+ */
+function isPlaceholderPax(name) {
+  return /\bsite\s*closed\b/i.test(name);
+}
 const SHEETS_BASE = process.env.SHEETS_BASE || "https://docs.google.com";
 const SUPABASE_URL = process.env.SUPABASE_URL
   ? new URL(process.env.SUPABASE_URL.trim()).origin
@@ -141,14 +149,14 @@ async function readRegion({ sheet_id: id, config }) {
     (s) => s.name.toLowerCase(),
   );
 
-  // Roster names.
+  // Roster names, leaving out placeholders such as "Site Closed (Archived)".
   const rosterCols = await columns(id, config.roster.sheet, {
     name: config.roster.name,
   });
   const roster = unique(
     (await query(id, config.roster.sheet, `select ${rosterCols.name}`)).rows
       .map((row) => ({ name: text(row[0]) }))
-      .filter((r) => r.name),
+      .filter((r) => r.name && !isPlaceholderPax(r.name)),
     (r) => r.name.toLowerCase(),
   );
 
@@ -176,7 +184,7 @@ async function readRegion({ sheet_id: id, config }) {
         pax: text(row[1]),
         posts: Number(row[2]) || 0,
       }))
-      .filter((r) => r.ao && r.pax),
+      .filter((r) => r.ao && r.pax && !isPlaceholderPax(r.pax)),
     (r) => `${r.ao}\u0000${r.pax}`,
   );
   const stats = unique(
@@ -192,7 +200,7 @@ async function readRegion({ sheet_id: id, config }) {
         posts: Math.round(Number(row[1]) || 0),
         qs: Math.round(Number(row[2]) || 0),
       }))
-      .filter((s) => s.pax),
+      .filter((s) => s.pax && !isPlaceholderPax(s.pax)),
     (s) => s.pax,
   );
 

@@ -1,4 +1,4 @@
-import type { Language } from "@rocket/core";
+import { isPlaceholderPax, type Language } from "@rocket/core";
 import { createClient } from "./supabase/client";
 import { cellText, quote, querySheet, type SheetTable } from "./sheets";
 
@@ -215,9 +215,9 @@ export function loadSites(region: Region): Promise<Site[]> {
 export function loadRoster(region: Region): Promise<string[]> {
   if (region.synced_at)
     return cached(`roster:${region.id}`, async () =>
-      (
-        await synced<{ name: string }>("region_roster", "name", region, "name")
-      ).map((r) => r.name),
+      (await synced<{ name: string }>("region_roster", "name", region, "name"))
+        .map((r) => r.name)
+        .filter((name) => !isPlaceholderPax(name)),
     );
   const { sheet, name } = region.config.roster;
   return cached(`roster:${region.id}`, async () => {
@@ -231,7 +231,7 @@ export function loadRoster(region: Region): Promise<string[]> {
       ...new Set(
         rows(table)
           .map((row) => row[0])
-          .filter(Boolean),
+          .filter((name) => name && !isPlaceholderPax(name)),
       ),
     ].sort((a, b) => a.localeCompare(b));
   });
@@ -249,7 +249,9 @@ export function loadRegulars(region: Region, ao: string): Promise<Regular[]> {
         .order("posts", { ascending: false })
         .order("pax");
       if (error) throw error;
-      return data.map((r) => ({ name: r.pax, posts: r.posts }));
+      return data
+        .filter((r) => !isPlaceholderPax(r.pax))
+        .map((r) => ({ name: r.pax, posts: r.posts }));
     });
   const { sheet, date, ao: aoName, pax } = region.config.attendance;
   return cached(`regulars:${region.id}:${ao.toLowerCase()}`, async () => {
@@ -266,7 +268,7 @@ export function loadRegulars(region: Region, ao: string): Promise<Regular[]> {
       `select ${cols.pax}, count(${cols.pax}) where ${cols.ao} = ${quote(ao)} and ${cols.date} >= date '${since.toISOString().slice(0, 10)}' group by ${cols.pax} order by count(${cols.pax}) desc`,
     );
     return rows(table)
-      .filter((row) => row[0])
+      .filter((row) => row[0] && !isPlaceholderPax(row[0]))
       .map((row) => ({ name: row[0], posts: Number(row[1]) || 0 }));
   });
 }
@@ -291,10 +293,11 @@ export function loadAllPaxStats(
           .range(from, from + size - 1);
         if (error) throw error;
         for (const row of data ?? [])
-          stats.set(row.pax.trim().toLowerCase(), {
-            posts: row.posts,
-            qs: row.qs,
-          });
+          if (!isPlaceholderPax(row.pax))
+            stats.set(row.pax.trim().toLowerCase(), {
+              posts: row.posts,
+              qs: row.qs,
+            });
         if (!data || data.length < size) break;
       }
       return stats;
@@ -307,7 +310,7 @@ export function loadAllPaxStats(
       `select ${cols.pax}, sum(${cols.post}), sum(${cols.q}) group by ${cols.pax}`,
     );
     for (const [name, posts, qs] of rows(table))
-      if (name?.trim())
+      if (name?.trim() && !isPlaceholderPax(name))
         stats.set(name.trim().toLowerCase(), {
           posts: Math.round(Number(posts) || 0),
           qs: Math.round(Number(qs) || 0),
