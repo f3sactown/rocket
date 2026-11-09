@@ -162,11 +162,12 @@ export function parseTimer(value: unknown): Timer | undefined {
 export type BeepKind = "tick" | "end";
 
 /**
- * The beep for a moment in a stretch, like a Tabata timer's: short beeps with 4, 3, 2 and 1
- * seconds left, then a long, louder one as it ends (5 in all). None at other times.
+ * The beep for a moment in a stretch, like a Tabata timer's: short beeps with 3, 2 and 1 seconds
+ * left, then a long, louder one at 0 as it ends (4 in all), in every stretch, work or rest. None at
+ * other times.
  */
 export function beepAt(secondsLeft: number): BeepKind | null {
   if (secondsLeft === 0) return "end";
-  if (secondsLeft >= 1 && secondsLeft <= 4) return "tick";
+  if (secondsLeft >= 1 && secondsLeft <= 3) return "tick";
   return null;
 }

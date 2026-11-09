@@ -52,10 +52,10 @@ describe("timers", () => {
     expect(parseTimer({ type: "tabata" })).toBeUndefined();
   });
 
-  it("beeps on the last 5 seconds, the last one long", () => {
+  it("beeps at 3, 2, 1 and a long one at 0", () => {
     expect([5, 4, 3, 2, 1, 0].map(beepAt)).toEqual([
       null,
-      "tick",
+      null,
       "tick",
       "tick",
       "tick",
