@@ -99,7 +99,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   Introduction also offers a built-in template: **F3 standard** (welcome, the three Fs, mission,
   five core principles, disclaimer and credo) in F3, or **FiA Disclaimer** in FiA.
 - **From pickers** (Library, PAX, Discover): on a phone, one line of chips that scrolls sideways.
-- **About** (last in the menu): what Rocket is and does, and the running version and build.
+- **About** (last in the menu): what Rocket is and does, the running version and build, and the
+  **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
+  open, the rest folded; commit links and repeated lines are left out.
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. Archiving hides a
   workout or backblast only from your own Workouts and Backblasts lists (and Home's Recent lists);
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it

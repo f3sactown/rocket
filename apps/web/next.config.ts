@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import type { NextConfig } from "next";
 import rootPackage from "../../package.json" with { type: "json" };
 
@@ -26,6 +27,15 @@ const commit = git("rev-parse --short HEAD");
 // the user-facing ones with `buildChanges` from @rocket/core.
 const buildChanges = git("log --no-merges --format=%s HEAD^1..HEAD");
 
+/** CHANGELOG.md, for the About page's list of every release (parsed with `parseChangelog`). */
+function changelog(): string {
+  try {
+    return readFileSync(new URL("../../CHANGELOG.md", import.meta.url), "utf8");
+  } catch {
+    return "";
+  }
+}
+
 const nextConfig: NextConfig = {
   output: "export",
   basePath,
@@ -36,6 +46,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_BUILD_NUMBER: buildNumber,
     NEXT_PUBLIC_COMMIT: commit,
     NEXT_PUBLIC_BUILD_CHANGES: buildChanges,
+    NEXT_PUBLIC_CHANGELOG: changelog(),
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
   turbopack: {

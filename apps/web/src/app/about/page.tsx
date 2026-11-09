@@ -1,9 +1,41 @@
 "use client";
 
+import { parseChangelog } from "@rocket/core";
 import Link from "next/link";
+import { Fragment } from "react";
 import { useAuth } from "@/components/auth-provider";
 
-/** What Rocket is and does, and which version is running. */
+/** Every release, newest first, from CHANGELOG.md (read when the site is built). */
+const RELEASES = parseChangelog(process.env.NEXT_PUBLIC_CHANGELOG ?? "");
+
+/** A changelog item with its first letter capitalized and its **bold** parts bold. */
+function Item({ text }: { text: string }) {
+  const sentence = text.charAt(0).toUpperCase() + text.slice(1);
+  return sentence
+    .replace(/`/g, "")
+    .split(/\*\*(.+?)\*\*/)
+    .map((part, i) =>
+      i % 2 ? (
+        <strong key={i} className="font-semibold text-ink">
+          {part}
+        </strong>
+      ) : (
+        <Fragment key={i}>{part}</Fragment>
+      ),
+    );
+}
+
+/** A release date (YYYY-MM-DD) as e.g. "Nov 8, 2026". */
+function releaseDate(date: string): string {
+  if (!date) return "";
+  return new Date(`${date}T12:00:00`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** What Rocket is and does, which version is running, and every release's changes. */
 export default function AboutPage() {
   const { user } = useAuth();
   const version = process.env.NEXT_PUBLIC_APP_VERSION;
@@ -76,6 +108,52 @@ export default function AboutPage() {
           what&apos;s new after each update.
         </p>
       </Section>
+
+      {RELEASES.length > 0 && (
+        <Section title="Changelog">
+          <p>What changed in each release, newest first. Tap one to see it.</p>
+          <div className="flex flex-col gap-2">
+            {RELEASES.map((release, index) => (
+              <details
+                key={release.version}
+                open={index === 0}
+                className="group rounded-xl border border-line"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                  <span className="font-mono text-sm text-ink">
+                    v{release.version}
+                  </span>
+                  <span className="flex items-center gap-2 text-xs text-muted">
+                    {releaseDate(release.date)}
+                    <span
+                      aria-hidden
+                      className="transition-transform group-open:rotate-90"
+                    >
+                      ›
+                    </span>
+                  </span>
+                </summary>
+                <div className="flex flex-col gap-3 border-t border-line px-4 py-3">
+                  {release.sections.map((section) => (
+                    <div key={section.title} className="flex flex-col gap-1">
+                      {section.title && (
+                        <span className="label">{section.title}</span>
+                      )}
+                      <ul className="flex list-disc flex-col gap-1 pl-5 marker:text-accent">
+                        {section.items.map((item) => (
+                          <li key={item}>
+                            <Item text={item} />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </Section>
+      )}
     </article>
   );
 }
