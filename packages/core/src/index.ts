@@ -4,3 +4,4 @@ export * from "./timer";
 export * from "./build-changes";
 export * from "./pax-names";
 export * from "./changelog";
+export * from "./placeholder-pax";
