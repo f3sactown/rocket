@@ -50,7 +50,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
   Newest, each a row of tiles that scrolls sideways, naming each author and their region, with
   like buttons. Trending on Home follows the From choice and leaves out your own workouts, and
-  scrolls sideways the same way. The rows' scrollbars are thin and faint, with no arrows.
+  scrolls sideways the same way. Rows that scroll sideways (here and throughout the app) show no scrollbar.
 - **PAX** (in the menu, under Search) lists everyone on your region's roster (or every region's,
   when you've chosen all regions) as tiles in alphabetical order (three across on a phone, four on larger screens), with a search box that matches
   names. Each tile shows the PAX's regions, posts and Qs (from the synced region stats, or read
