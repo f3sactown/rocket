@@ -19,7 +19,7 @@ describe("timers", () => {
     );
     expect(
       timerLabel({ type: "intervals", work: 20, rest: 10, rounds: 8 }),
-    ).toBe("Intervals · 8 × 0:20 on / 0:10 off");
+    ).toBe("Tabata · 8 × 0:20 on / 0:10 off");
     expect(timerLabel({ type: "emom", every: 60, rounds: 10 })).toBe(
       "EMOM · 10 × 1:00",
     );
@@ -39,27 +39,23 @@ describe("timers", () => {
     ]);
   });
 
-  it("runs Tabata as 20 seconds on and 10 off", () => {
-    expect(timerLabel({ type: "tabata", rounds: 8 })).toBe(
-      "Tabata · 8 × 0:20 on / 0:10 off",
-    );
-    const phases = timerPhases({ type: "tabata", rounds: 2 });
-    expect(phases.map((p) => [p.label, p.seconds])).toEqual([
-      ["Round 1 of 2 · Work", 20],
-      ["Round 1 of 2 · Rest", 10],
-      ["Round 2 of 2 · Work", 20],
-    ]);
-    expect(parseTimer({ type: "tabata", rounds: 8 })).toEqual({
-      type: "tabata",
-      rounds: 8,
+  it("calls intervals Tabata and reads the old Tabata timer as one", () => {
+    expect(
+      timerLabel({ type: "intervals", work: 20, rest: 10, rounds: 8 }),
+    ).toBe("Tabata · 8 × 0:20 on / 0:10 off");
+    expect(parseTimer({ type: "tabata", rounds: 6 })).toEqual({
+      type: "intervals",
+      work: 20,
+      rest: 10,
+      rounds: 6,
     });
     expect(parseTimer({ type: "tabata" })).toBeUndefined();
   });
 
-  it("beeps on the last 4 seconds, the last one long", () => {
+  it("beeps on the last 5 seconds, the last one long", () => {
     expect([5, 4, 3, 2, 1, 0].map(beepAt)).toEqual([
       null,
-      null,
+      "tick",
       "tick",
       "tick",
       "tick",
