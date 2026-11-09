@@ -15,6 +15,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   first; Recent workouts then keeps to today and earlier), trending workouts, and your most recent
   workouts and backblasts. Which of
   these show is chosen in Settings → Home screen (all but trending, to start).
+  At the top right, next to "Hey, …", a heart and a reuse icon show the likes and reuses your
+  finished workouts have had from others (private ones included).
 - **Workouts** are written first: Basics (title, AO, date, time), Introduction, Warm-o-rama,
   The Thang, Notes and Words of Wisdom (CoT in FiA wording). The Workouts page lists only your own;
   others' public workouts are on Discover. Your finished workouts dated today or earlier show a
@@ -41,7 +43,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
   F3's, FiA's or both (the default), going by each author's region (authors with no region always
   show), and **Include my workouts** (off by default) adds yours; both are saved to your account.
-  With yours included, a **My workouts** section ranks them by likes, then reuses. The
+  With yours included, a **My workouts** section ranks them by likes, then reuses. A **Liked by
+  you** row lists every workout you've liked, most recently liked first, whatever the From choice
+  (one made private since drops out). The
   groups are Trending (likes and reuses on the
   last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
   Newest, each a row of tiles that scrolls sideways, naming each author and their region, with

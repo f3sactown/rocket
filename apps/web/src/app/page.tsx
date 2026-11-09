@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
-import { PlayIcon, PlusIcon } from "@/components/icons";
+import { HeartIcon, PlayIcon, PlusIcon, ReuseIcon } from "@/components/icons";
 import { WhatsNew } from "@/components/whats-new";
 import { WorkoutCards } from "@/components/workout-card";
 import {
@@ -15,7 +15,7 @@ import {
   type ListItem,
 } from "@/lib/backblast-list";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
-import type { WorkoutStats } from "@/lib/workout-social";
+import { loadMyTotals, type WorkoutStats } from "@/lib/workout-social";
 import {
   endMinutes,
   loadLatestPostIn,
@@ -89,8 +89,9 @@ function HomePage({ user }: { user: CurrentUser }) {
 
   return (
     <section className="card">
-      <header className="flex flex-col gap-1">
+      <header className="flex items-start justify-between gap-3">
         <h1 className="card-title">Hey, {user.name}</h1>
+        <MyTotals userId={user.id} />
       </header>
       <WhatsNew user={user} />
       {show.has("totals") && <Totals user={user} />}
@@ -307,6 +308,41 @@ function Totals({ user }: { user: CurrentUser }) {
           <span className="block">Updated {formatDate(latest.value)}</span>
         )}
       </p>
+    </div>
+  );
+}
+
+/**
+ * Top right of Home: the likes and reuses your workouts have had from others, with the same heart
+ * and reuse icons as workout tiles.
+ */
+function MyTotals({ userId }: { userId: string }) {
+  const totals = useLoad(() => loadMyTotals(userId), [userId]);
+  if (!totals.value) return null;
+  const { likes, reuses } = totals.value;
+  return (
+    <div
+      className="mt-2 flex shrink-0 items-center gap-4 text-sm text-ink-soft"
+      title="Likes and reuses your workouts have had"
+    >
+      <span
+        className="inline-flex items-center gap-1.5"
+        aria-label={`${likes} ${likes === 1 ? "like" : "likes"}`}
+      >
+        <span className="text-accent">
+          <HeartIcon filled={likes > 0} />
+        </span>
+        {likes}
+      </span>
+      <span
+        className="inline-flex items-center gap-1.5"
+        aria-label={`${reuses} ${reuses === 1 ? "reuse" : "reuses"}`}
+      >
+        <span className="text-accent">
+          <ReuseIcon />
+        </span>
+        {reuses}
+      </span>
     </div>
   );
 }
