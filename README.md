@@ -129,6 +129,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 
 ## Stack
 
+- **Share link:** under a workout's or backblast's Copy and Share, the row of small actions is
+  Share link, Archive and Delete. **Share link** shares the page's address through the device's
+  share sheet, or copies it where sharing isn't available ("Link copied"). A draft or private one
+  can't be opened by anyone else, so tapping it then says "Finish it to share a link" or "Make it
+  public to share a link" instead.
 - **[Next.js](https://nextjs.org) + TypeScript + Tailwind** for the web app
 - **[Supabase](https://supabase.com)** for the Postgres database and login (Supabase Auth)
 - **GitHub Pages** for hosting: the app is a static site that talks to Supabase from the browser
