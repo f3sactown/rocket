@@ -11,7 +11,7 @@ import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { ArrowIcon } from "@/components/icons";
 import { ActiveTimer, ThangTimer } from "@/components/thang-timer";
-import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
+import { fromWorkoutRow, loadWorkoutNotes, workoutById } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/client";
 
 export default function RunWorkoutPage() {
@@ -63,23 +63,18 @@ function RunWorkout({ user }: { user: CurrentUser }) {
 
   useEffect(() => {
     if (!id) return;
-    createClient()
-      .from("workouts")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle()
-      .then(async ({ data, error }) =>
-        setResult({
-          workout:
-            data &&
-            fromWorkoutRow(
-              data,
-              data.author_id === user.id ? await loadWorkoutNotes(data.id) : "",
-            ),
-          mine: data?.author_id === user.id,
-          error: error?.message,
-        }),
-      );
+    workoutById(id).then(async ({ data, error }) =>
+      setResult({
+        workout:
+          data &&
+          fromWorkoutRow(
+            data,
+            data.author_id === user.id ? await loadWorkoutNotes(data.id) : "",
+          ),
+        mine: data?.author_id === user.id,
+        error: error?.message,
+      }),
+    );
   }, [id, user.id]);
 
   useEffect(() => {

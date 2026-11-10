@@ -40,6 +40,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     can make it **private** on its page: it disappears for everyone else (Discover, Trending, lists
     and search) but keeps its likes and reuse count, which only its Q sees until it's public again. **Likes:** one per person, on other people's public
     workouts.
+  - A public workout dated **after today** isn't listed for anyone else (Discover, Trending, PAX
+    profiles, likes) until its day, in Pacific time. Its Q sees it as usual, and its link (Share
+    link) opens it for anyone signed in, with Run workout and Reuse; likes open on the day.
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
   F3's, FiA's or both (the default), going by each author's region (authors with no region always
   show), and **Include my workouts** (off by default) adds yours; both are saved to your account.
@@ -50,7 +53,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
   Newest, each a row of tiles that scrolls sideways, naming each author and their region, with
   like buttons. Trending on Home follows the From choice and leaves out your own workouts, and
-  scrolls sideways the same way. The rows' scrollbars are thin and faint, with no arrows.
+  scrolls sideways the same way. Rows that scroll sideways (here and throughout the app) show no scrollbar.
 - **PAX** (in the menu, under Search) lists everyone on your region's roster (or every region's,
   when you've chosen all regions) as tiles in alphabetical order (three across on a phone, four on larger screens), with a search box that matches
   names. Each tile shows the PAX's regions, posts and Qs (from the synced region stats, or read
@@ -111,7 +114,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
   still shows unless it's private. **Archive** lists what you've archived; **Search** finds workouts and backblasts by any word, with matches
   highlighted.
-- **Continue with Google:** sign in or sign up with a Google account instead of a password. The
+- **Continue with Google:** the sign-in screen leads with Google: one **Continue with Google**
+  button, with a small **Sign in or sign up with email** link under it that opens the email and
+  password form (sign up and forgot password included), which has **Use Google instead** to go
+  back. Google signs in or signs up with no password. The
   first time, a **Welcome** step asks for your F3 name and region (Google gives your real name and
   no region, and Rocket matches PAX to their roster by F3 name), then you're in. Signing in with
   Google using the same email as an existing account opens that account. The F3 name is also kept
@@ -122,7 +128,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   device, signed in for the reset, where you choose a new password. Supabase → Authentication →
   URL Configuration must have the site as the Site URL and under Redirect URLs.
 - **Settings:** name, email, password, region, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
-  locked while you have one, and free to choose with no region or one you added), theme, accent color (F3 red, FiA teal, blue, green, orange or violet), the launch
+  locked while you have one, and free to choose with no region or one you added), theme, accent color (Red, Teal, Blue, Green, Orange or Violet; choosing a region sets Red for F3 or Teal for FiA), the launch
   animation, what Home shows,
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,
   and whether a copied or shared backblast from a public workout ends with
@@ -180,6 +186,9 @@ The app runs entirely in the browser, so access rules live in the database as ro
 - Signed-out visitors can't read anything.
 - Signed-in users can read every profile and every finished **public** workout and backblast
   (`visibility`, public by default). Private ones and drafts are visible only to their author.
+- Others' public workouts are readable from their date on (Pacific time). Before that, only
+  `shared_workout(id)` returns one, for its link: a finished public workout by its ID (random, so
+  only those given the link have it), or your own.
 - Likes (`workout_likes`): you can like someone else's public workout once, and see only your own
   likes; counts of likes and reuses come from `workout_stats()`, which returns totals only.
 - Only the author can edit or delete a workout or backblast.

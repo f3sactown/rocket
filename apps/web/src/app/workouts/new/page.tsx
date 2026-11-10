@@ -5,8 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastEditor } from "@/components/backblast-editor";
-import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
-import { createClient } from "@/lib/supabase/client";
+import { fromWorkoutRow, loadWorkoutNotes, workoutById } from "@/lib/backblast";
 
 export default function NewWorkoutPage() {
   return (
@@ -30,30 +29,25 @@ function NewWorkout({ user }: { user: CurrentUser }) {
 
   useEffect(() => {
     if (!fromId) return;
-    createClient()
-      .from("workouts")
-      .select("*")
-      .eq("id", fromId)
-      .maybeSingle()
-      .then(async ({ data, error }) => {
-        if (error || !data)
-          return setFrom(error?.message ?? "That workout is gone.");
-        // Your own notes come along; someone else's stay private.
-        const notes =
-          data.author_id === user.id ? await loadWorkoutNotes(data.id) : "";
-        // Where and when are chosen fresh for the new run: no AO, location, date or time.
-        setFrom({
-          ...fromWorkoutRow(data, notes),
-          ao: "",
-          address: undefined,
-          date: "",
-          time: undefined,
-          // Counted as a reuse of the original.
-          reusedFrom: data.id,
-          // A reuse of a reuse still credits whoever wrote the first one.
-          originalAuthorId: data.original_author_id ?? data.author_id,
-        });
+    workoutById(fromId).then(async ({ data, error }) => {
+      if (error || !data)
+        return setFrom(error?.message ?? "That workout is gone.");
+      // Your own notes come along; someone else's stay private.
+      const notes =
+        data.author_id === user.id ? await loadWorkoutNotes(data.id) : "";
+      // Where and when are chosen fresh for the new run: no AO, location, date or time.
+      setFrom({
+        ...fromWorkoutRow(data, notes),
+        ao: "",
+        address: undefined,
+        date: "",
+        time: undefined,
+        // Counted as a reuse of the original.
+        reusedFrom: data.id,
+        // A reuse of a reuse still credits whoever wrote the first one.
+        originalAuthorId: data.original_author_id ?? data.author_id,
       });
+    });
   }, [fromId, user.id]);
 
   if (!fromId)
