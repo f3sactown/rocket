@@ -247,7 +247,9 @@ One-time setup:
 **Continue with Google** is Google's own button on Rocket's page (Google Identity Services): Google
 hands back a signed token, and `supabase.auth.signInWithIdToken` checks it and signs in, so
 Google's prompt names Rocket's site, not the Supabase project, and there's no trip away. A random
-nonce guards each sign-in (Google gets its SHA-256, Supabase checks the original). If the build has
+nonce guards each sign-in (Google gets its SHA-256, Supabase checks the original). The page shows
+Rocket's own button; Google's real one is laid over it, invisible and stretched to the same size,
+so a tap lands on Google's while the sign-in screen keeps Rocket's look. If the build has
 no `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, the button falls back to Supabase's redirect sign-in. Nothing in
 the app holds Google secrets. It needs a Google OAuth client, then the Google provider turned on in each Supabase project
 (production and dev).

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { GoogleIcon } from "./icons";
 
 /** The Google OAuth client's ID; without it, sign-in goes through Supabase's redirect instead. */
 export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
@@ -23,6 +24,10 @@ interface GoogleAccounts {
 }
 
 let script: Promise<GoogleAccounts> | null = null;
+
+/** The size Google draws its button at (its largest), before it's stretched over Rocket's. */
+const GOOGLE_WIDTH = 400;
+const GOOGLE_HEIGHT = 44;
 
 /** Loads Google's sign-in script once. */
 function loadGoogle(): Promise<GoogleAccounts> {
@@ -71,6 +76,7 @@ export function GoogleSignIn({
   onError: (message: string) => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
+  const wrap = useRef<HTMLDivElement>(null);
   const report = useRef(onError);
   useEffect(() => {
     report.current = onError;
@@ -78,6 +84,13 @@ export function GoogleSignIn({
 
   useEffect(() => {
     let gone = false;
+    // Keep it covering Rocket's button as the page resizes.
+    const fit = () => {
+      const area = wrap.current;
+      const inner = box.current;
+      if (!area || !inner) return;
+      inner.style.transform = `scale(${area.offsetWidth / GOOGLE_WIDTH}, ${area.offsetHeight / GOOGLE_HEIGHT})`;
+    };
     (async () => {
       const [google, nonce] = await Promise.all([loadGoogle(), makeNonce()]);
       if (gone || !box.current) return;
@@ -94,24 +107,39 @@ export function GoogleSignIn({
           if (error) report.current(error.message);
         },
       });
-      const dark =
-        document.documentElement.dataset.theme === "dark" ||
-        (document.documentElement.dataset.theme !== "light" &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches);
+      // Google's button, drawn at its widest and stretched over Rocket's to cover it exactly.
       google.id.renderButton(box.current, {
         type: "standard",
-        theme: dark ? "filled_black" : "outline",
         size: "large",
         shape: "pill",
         text: "continue_with",
-        logo_alignment: "center",
-        width: Math.min(400, Math.max(200, box.current.offsetWidth)),
+        width: GOOGLE_WIDTH,
       });
+      fit();
     })().catch((error: Error) => report.current(error.message));
+    window.addEventListener("resize", fit);
     return () => {
       gone = true;
+      window.removeEventListener("resize", fit);
     };
   }, []);
 
-  return <div ref={box} className="flex min-h-11 w-full justify-center" />;
+  return (
+    // Rocket's own button is what shows; Google's real one sits over it, invisible, so a tap
+    // lands on Google's (as its sign-in needs) while the page keeps its look.
+    <div
+      ref={wrap}
+      className="relative w-full rounded-full has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/60"
+    >
+      <div aria-hidden className="btn pointer-events-none w-full">
+        <GoogleIcon />
+        Continue with Google
+      </div>
+      <div
+        ref={box}
+        className="absolute top-0 left-0 origin-top-left opacity-[0.01]"
+        style={{ width: GOOGLE_WIDTH, height: GOOGLE_HEIGHT }}
+      />
+    </div>
+  );
 }
