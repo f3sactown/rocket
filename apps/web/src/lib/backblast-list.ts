@@ -230,3 +230,55 @@ export async function loadWorkoutsNeedingBackblast(
   );
   return asItems("workout", workouts.data).filter((w) => !skip.has(w.id));
 }
+
+/**
+ * Your finished workout with this date and AO (ignoring case and spaces) that has no backblast
+ * yet, other than `backblastId`: the one a backblast written without a workout is for. Only an
+ * exact, single match counts, so two workouts at the same AO and date link to neither.
+ */
+export async function findMatchingWorkout(
+  userId: string,
+  date: string,
+  ao: string,
+  backblastId?: string | null,
+): Promise<ListItem | null> {
+  const name = ao.trim().toLowerCase();
+  if (!date || !name) return null;
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("workouts")
+    .select(listColumns("workout"))
+    .eq("author_id", userId)
+    .eq("status", "published")
+    .eq("date", date);
+  if (error) throw new Error(error.message);
+  const candidates = asItems("workout", data).filter(
+    (w) => w.ao.trim().toLowerCase() === name,
+  );
+  if (!candidates.length) return null;
+  const { data: taken, error: takenError } = await supabase
+    .from("backblasts")
+    .select("id, workout_id")
+    .eq("author_id", userId)
+    .in(
+      "workout_id",
+      candidates.map((w) => w.id),
+    );
+  if (takenError) throw new Error(takenError.message);
+  const used = new Set(
+    (taken ?? [])
+      .filter((b) => b.id !== backblastId)
+      .map((b) => b.workout_id as string),
+  );
+  const free = candidates.filter((w) => !used.has(w.id));
+  return free.length === 1 ? free[0]! : null;
+}
+
+/** Links one of your backblasts to one of your workouts. */
+export async function linkBackblast(backblastId: string, workoutId: string) {
+  const { error } = await createClient()
+    .from("backblasts")
+    .update({ workout_id: workoutId })
+    .eq("id", backblastId);
+  if (error) throw new Error(error.message);
+}

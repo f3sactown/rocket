@@ -9,6 +9,7 @@ import {
   toInsert,
   toWorkoutInsert,
 } from "@/lib/backblast";
+import { findMatchingWorkout } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 import type { CurrentUser } from "./auth-provider";
 import { BackblastForm, type FormMode } from "./backblast-form";
@@ -140,6 +141,10 @@ export function BackblastEditor({
   const status = published ? "published" : "draft";
   const id = useRef(draftId ?? null);
   const latest = useRef(initial);
+  // A workout found for a backblast written without one (same AO and date), and the AO and date
+  // last looked up, so each is checked once.
+  const linked = useRef<string | null>(null);
+  const checked = useRef<string | null>(null);
   // The starting content; later renders may pass a new object, but the form keeps its own state.
   const initialRef = useRef(initial);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
@@ -171,10 +176,31 @@ export function BackblastEditor({
     (status: "draft" | "published") => {
       const run = queue.current.then(async () => {
         const supabase = createClient();
+        // A backblast started without a workout links to yours with the same AO and date.
+        if (
+          mode === "backblast" &&
+          !latest.current.workoutId &&
+          !linked.current
+        ) {
+          const key = `${latest.current.date}|${latest.current.ao.trim().toLowerCase()}`;
+          if (key !== checked.current) {
+            checked.current = key;
+            const match = await findMatchingWorkout(
+              user.id,
+              latest.current.date,
+              latest.current.ao,
+              id.current,
+            ).catch(() => null);
+            if (match) linked.current = match.id;
+          }
+        }
+        // The form doesn't know about a link made here, so it's added to every save.
+        const content =
+          linked.current && !latest.current.workoutId
+            ? { ...latest.current, workoutId: linked.current }
+            : latest.current;
         const fields =
-          mode === "workout"
-            ? toWorkoutInsert(latest.current)
-            : toInsert(latest.current);
+          mode === "workout" ? toWorkoutInsert(content) : toInsert(content);
         const row = { ...fields, status };
         // Both tables take the same shape of update; the union of their types doesn't.
         const table = supabase.from(words.table as "backblasts");

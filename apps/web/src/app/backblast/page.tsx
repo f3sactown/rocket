@@ -14,6 +14,7 @@ import { CopyButton } from "@/components/copy-button";
 import { CountPanel } from "@/components/count-panel";
 import { ProtectedText } from "@/components/protected-text";
 import { ShareButton } from "@/components/share-button";
+import { LinkWorkout } from "@/components/link-workout";
 import { ShareLinkButton } from "@/components/share-link-button";
 import {
   VisibilitySwitch,
@@ -145,13 +146,34 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
           />
         </div>
       )}
-      {backblast.workoutId && (
+      {backblast.workoutId ? (
         <Link
           href={`/workout?id=${backblast.workoutId}`}
           className="link -mt-2 self-start text-sm"
         >
           From a workout →
         </Link>
+      ) : (
+        mine && (
+          <LinkWorkout
+            userId={user.id}
+            backblastId={id!}
+            ao={backblast.ao}
+            date={backblast.date}
+            onLinked={(workoutId) =>
+              setResult(
+                (current) =>
+                  current && {
+                    ...current,
+                    backblast: current.backblast && {
+                      ...current.backblast,
+                      workoutId,
+                    },
+                  },
+              )
+            }
+          />
+        )
       )}
 
       <ProtectedText
