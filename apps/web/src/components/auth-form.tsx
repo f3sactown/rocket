@@ -6,6 +6,7 @@ import { createClient, createRecoveryClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/use-region";
 import { ArrowIcon, GoogleIcon } from "./icons";
 import { setAccent } from "./theme-switcher";
+import { GOOGLE_CLIENT_ID, GoogleSignIn } from "./google-sign-in";
 import { Wordmark } from "./wordmark";
 
 export function AuthForm() {
@@ -21,7 +22,10 @@ export function AuthForm() {
     mode,
   ]);
 
-  /** Signs in (or up) with Google, coming back to the app's home page. */
+  /**
+   * Signs in (or up) with Google through Supabase's redirect, coming back to the app's home page.
+   * Used only when the site has no Google client ID for Google's own button.
+   */
   async function withGoogle() {
     setPending(true);
     setMessage(null);
@@ -115,15 +119,20 @@ export function AuthForm() {
           Sign in or create your account with Google. It&apos;s one tap, with no
           password to remember.
         </p>
-        <button
-          type="button"
-          onClick={withGoogle}
-          disabled={pending}
-          className="btn w-full"
-        >
-          <GoogleIcon />
-          {pending ? "…" : "Continue with Google"}
-        </button>
+        {GOOGLE_CLIENT_ID ? (
+          // Google's own button, on this page: Google's prompt names Rocket's site.
+          <GoogleSignIn onError={(text) => setMessage({ text, error: true })} />
+        ) : (
+          <button
+            type="button"
+            onClick={withGoogle}
+            disabled={pending}
+            className="btn w-full"
+          >
+            <GoogleIcon />
+            {pending ? "…" : "Continue with Google"}
+          </button>
+        )}
         {message && (
           <p
             className={`text-sm ${message.error ? "text-accent" : "text-ink-soft"}`}

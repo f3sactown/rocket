@@ -244,8 +244,12 @@ One-time setup:
 
 ## Google sign-in
 
-**Continue with Google** uses Supabase Auth's Google provider; nothing in the app holds Google
-keys. It needs a Google OAuth client, then the Google provider turned on in each Supabase project
+**Continue with Google** is Google's own button on Rocket's page (Google Identity Services): Google
+hands back a signed token, and `supabase.auth.signInWithIdToken` checks it and signs in, so
+Google's prompt names Rocket's site, not the Supabase project, and there's no trip away. A random
+nonce guards each sign-in (Google gets its SHA-256, Supabase checks the original). If the build has
+no `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, the button falls back to Supabase's redirect sign-in. Nothing in
+the app holds Google secrets. It needs a Google OAuth client, then the Google provider turned on in each Supabase project
 (production and dev).
 
 1. **Google Cloud project.** At [console.cloud.google.com](https://console.cloud.google.com),
@@ -264,8 +268,9 @@ keys. It needs a Google OAuth client, then the Google provider turned on in each
    - `https://glladkuyofbrewktcqly.supabase.co/auth/v1/callback` (production)
    - `https://funktsbvbcblniokpheu.supabase.co/auth/v1/callback` (dev)
 
-   **Authorized JavaScript origins** can stay empty. Create it, and copy the **Client ID** and
-   **Client secret**.
+   Under **Authorized JavaScript origins**, add the sites that show Google's button:
+   `https://rocket.f3sactown.com`, `https://rocket-dev.f3sactown.com`, and `http://localhost:3000`
+   for local work. Create it, and copy the **Client ID** and **Client secret**.
 
 5. **Supabase, in each project** (rocket, then rocket-dev): Authentication → **Sign In /
    Providers** → **Google** → turn on **Enable Sign in with Google**, paste the client ID and
@@ -273,7 +278,11 @@ keys. It needs a Google OAuth client, then the Google provider turned on in each
 6. **Return addresses, in each project:** Authentication → **URL Configuration**. The **Site URL**
    is the site (`https://rocket.f3sactown.com/` for production, `https://rocket-dev.f3sactown.com/`
    for dev), and the same address is under **Redirect URLs** (it already is for email sign-up).
-7. **Try it on dev first:** open rocket-dev.f3sactown.com, choose **Continue with Google**, pick
+7. **Client ID for the button:** in this repository, Settings → Secrets and variables → Actions →
+   **Variables**, add the repository variable `GOOGLE_CLIENT_ID` with the client ID (it isn't a
+   secret: it's in every page). The production and dev builds pass it to the app as
+   `NEXT_PUBLIC_GOOGLE_CLIENT_ID`; for local work, put it in `apps/web/.env.local`.
+8. **Try it on dev first:** open rocket-dev.f3sactown.com, choose **Continue with Google**, pick
    an account, and you should land on the **Welcome** step, then Home.
 
 The client secret stays in Supabase only; don't commit it or put it in a GitHub secret. One Google
