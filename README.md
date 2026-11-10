@@ -20,7 +20,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Workouts** are written first: Basics (title, AO, date, time), Introduction, Warm-o-rama,
   The Thang, Notes and Words of Wisdom (CoT in FiA wording). The Workouts page lists only your own;
   others' public workouts are on Discover. Your finished workouts dated today or earlier show a
-  **Needs backblast** badge (in lists and on Home, but never on Discover) until a backblast from them is
+  **Needs backblast** badge (in lists and on Home, but never on Discover, and not once archived) until a backblast from them is
   finished; others' workouts never do.
   - The Thang can hold several thangs. Each can have a **timer** (Countdown, Stopwatch, AMRAP,
     Tabata (work and rest for a number of rounds; 20 seconds on, 10 off, 8 rounds to start) or EMOM) and **music** (a link to a song or playlist, shown in the output as 🎵 Title 🎵
@@ -85,6 +85,14 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   PAX, with roster suggestions and the AO's regulars), Announcements (the backblast's own, not
   copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
   and Share are on the finished backblast's page).
+  - **Linking to a workout:** a backblast and its Q's workout stay linked while they're at the same
+    AO on the same date (ignoring case and spaces). The database keeps it so (triggers in
+    `20261110010000_backblast_workout_links.sql`): when either one's AO or date changes, or a
+    workout is finished, a pair that no longer matches is unlinked, and one with no partner links
+    to the single match that has none. With two matches it doesn't guess. A backblast started
+    from a workout keeps its link while its AO and date are blank. One without a workout shows
+    **Link to a workout** on its page (matches first); a link made there stays until its AO or
+    date is edited.
   - A backblast waits for its workout: until the workout's date, **Create backblast** is greyed
     out with the reason, and New backblast shows that workout greyed out with the date it opens.
   - **Copy** and **Share** produce Band- and Slack-ready text (Event Data, Workout Details, COT), ending with a
@@ -236,8 +244,14 @@ One-time setup:
 
 ## Google sign-in
 
-**Continue with Google** uses Supabase Auth's Google provider; nothing in the app holds Google
-keys. It needs a Google OAuth client, then the Google provider turned on in each Supabase project
+**Continue with Google** is Rocket's own button. It opens Google's sign-in page, which comes back
+to Rocket's own address (not the Supabase project's, so Google names Rocket's site) with a signed ID
+token in the address; `supabase.auth.signInWithIdToken` checks it and signs in, and the token is
+cleared from the address bar. It's a plain page-to-page step, so it works the same on phones. A
+random state and nonce guard each sign-in (the state must match the one the tab sent; Google gets
+the nonce's SHA-256, Supabase checks the original). If the build has no
+`NEXT_PUBLIC_GOOGLE_CLIENT_ID`, the button uses Supabase's redirect sign-in instead. Nothing in the
+app holds Google secrets. It needs a Google OAuth client, then the Google provider turned on in each Supabase project
 (production and dev).
 
 1. **Google Cloud project.** At [console.cloud.google.com](https://console.cloud.google.com),
@@ -256,8 +270,10 @@ keys. It needs a Google OAuth client, then the Google provider turned on in each
    - `https://glladkuyofbrewktcqly.supabase.co/auth/v1/callback` (production)
    - `https://funktsbvbcblniokpheu.supabase.co/auth/v1/callback` (dev)
 
-   **Authorized JavaScript origins** can stay empty. Create it, and copy the **Client ID** and
-   **Client secret**.
+   Add the sites Google returns to, also under **Authorized redirect URIs**, each with its
+   trailing slash: `https://rocket.f3sactown.com/`, `https://rocket-dev.f3sactown.com/`, and
+   `http://localhost:3000/` for local work. **Authorized JavaScript origins** can stay empty.
+   Create it, and copy the **Client ID** and **Client secret**.
 
 5. **Supabase, in each project** (rocket, then rocket-dev): Authentication → **Sign In /
    Providers** → **Google** → turn on **Enable Sign in with Google**, paste the client ID and
@@ -265,7 +281,11 @@ keys. It needs a Google OAuth client, then the Google provider turned on in each
 6. **Return addresses, in each project:** Authentication → **URL Configuration**. The **Site URL**
    is the site (`https://rocket.f3sactown.com/` for production, `https://rocket-dev.f3sactown.com/`
    for dev), and the same address is under **Redirect URLs** (it already is for email sign-up).
-7. **Try it on dev first:** open rocket-dev.f3sactown.com, choose **Continue with Google**, pick
+7. **Client ID for the button:** in this repository, Settings → Secrets and variables → Actions →
+   **Variables**, add the repository variable `GOOGLE_CLIENT_ID` with the client ID (it isn't a
+   secret: it's in every page). The production and dev builds pass it to the app as
+   `NEXT_PUBLIC_GOOGLE_CLIENT_ID`; for local work, put it in `apps/web/.env.local`.
+8. **Try it on dev first:** open rocket-dev.f3sactown.com, choose **Continue with Google**, pick
    an account, and you should land on the **Welcome** step, then Home.
 
 The client secret stays in Supabase only; don't commit it or put it in a GitHub secret. One Google

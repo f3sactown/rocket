@@ -179,8 +179,12 @@ export function BackblastEditor({
         // Both tables take the same shape of update; the union of their types doesn't.
         const table = supabase.from(words.table as "backblasts");
         if (id.current) {
+          // The database keeps a backblast linked to the workout at its AO and date, and a link
+          // made on its page stays; so edits leave the link alone rather than send the form's.
+          const changes: Record<string, unknown> = { ...row };
+          if (mode === "backblast") delete changes.workout_id;
           const { error } = await table
-            .update(row as never)
+            .update(changes as never)
             .eq("id", id.current);
           if (error) throw error;
         } else {

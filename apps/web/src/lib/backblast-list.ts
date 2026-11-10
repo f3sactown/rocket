@@ -230,3 +230,12 @@ export async function loadWorkoutsNeedingBackblast(
   );
   return asItems("workout", workouts.data).filter((w) => !skip.has(w.id));
 }
+
+/** Links one of your backblasts to one of your workouts. */
+export async function linkBackblast(backblastId: string, workoutId: string) {
+  const { error } = await createClient()
+    .from("backblasts")
+    .update({ workout_id: workoutId })
+    .eq("id", backblastId);
+  if (error) throw new Error(error.message);
+}
