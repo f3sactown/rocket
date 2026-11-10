@@ -1,19 +1,33 @@
 "use client";
 
-import { localToday as today, type ListItem } from "./backblast-list";
+import {
+  loadArchivedIds,
+  localToday as today,
+  type ListItem,
+} from "./backblast-list";
 import { createClient } from "./supabase/client";
 import { useLoad } from "./use-region";
 
-/** IDs of workouts you've finished a backblast for (backblasts are only ever your own). */
-async function loadBackblastedWorkoutIds(): Promise<Set<string>> {
-  const { data, error } = await createClient()
-    .from("backblasts")
-    .select("workout_id")
-    .eq("status", "published")
-    .not("workout_id", "is", null)
-    .limit(5000);
-  if (error) throw new Error(error.message);
-  return new Set((data ?? []).map((row) => row.workout_id as string));
+/**
+ * IDs of your workouts that don't need a backblast flagged: those you've finished a backblast for,
+ * and those you've archived.
+ */
+async function loadSettledWorkoutIds(userId: string): Promise<Set<string>> {
+  const [backblasts, archived] = await Promise.all([
+    createClient()
+      .from("backblasts")
+      .select("workout_id")
+      .eq("author_id", userId)
+      .eq("status", "published")
+      .not("workout_id", "is", null)
+      .limit(5000),
+    loadArchivedIds("workout"),
+  ]);
+  if (backblasts.error) throw new Error(backblasts.error.message);
+  return new Set([
+    ...(backblasts.data ?? []).map((row) => row.workout_id as string),
+    ...archived,
+  ]);
 }
 
 /**
@@ -31,14 +45,17 @@ function due(item: ListItem, userId: string): boolean {
 
 /**
  * Tells which of these workouts are yours and still waiting on a finished backblast. Others'
- * workouts never are. Loads only when the list holds one of yours that could need it.
+ * workouts never are, and nor are ones you've archived. Loads only when the list holds one of yours that could need it.
  */
 export function useNeedsBackblast(
   items: ListItem[],
   userId: string,
 ): (item: ListItem) => boolean {
   const any = items.some((item) => due(item, userId));
-  const done = useLoad(any ? loadBackblastedWorkoutIds : null, [userId, any]);
+  const done = useLoad(any ? () => loadSettledWorkoutIds(userId) : null, [
+    userId,
+    any,
+  ]);
   return (item) =>
     !!done.value && due(item, userId) && !done.value.has(item.id);
 }

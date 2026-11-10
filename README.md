@@ -20,7 +20,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Workouts** are written first: Basics (title, AO, date, time), Introduction, Warm-o-rama,
   The Thang, Notes and Words of Wisdom (CoT in FiA wording). The Workouts page lists only your own;
   others' public workouts are on Discover. Your finished workouts dated today or earlier show a
-  **Needs backblast** badge (in lists and on Home, but never on Discover) until a backblast from them is
+  **Needs backblast** badge (in lists and on Home, but never on Discover, and not once archived) until a backblast from them is
   finished; others' workouts never do.
   - The Thang can hold several thangs. Each can have a **timer** (Countdown, Stopwatch, AMRAP,
     Tabata (work and rest for a number of rounds; 20 seconds on, 10 off, 8 rounds to start) or EMOM) and **music** (a link to a song or playlist, shown in the output as 🎵 Title 🎵
@@ -85,6 +85,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   PAX, with roster suggestions and the AO's regulars), Announcements (the backblast's own, not
   copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
   and Share are on the finished backblast's page).
+  - **Linking to a workout:** a backblast written without a workout links itself to yours with the
+    same AO and date (ignoring case) when exactly one such workout has no backblast yet. One that
+    doesn't shows **Link to a workout** on its page, listing your workouts without a backblast,
+    any with the same AO and date first.
   - A backblast waits for its workout: until the workout's date, **Create backblast** is greyed
     out with the reason, and New backblast shows that workout greyed out with the date it opens.
   - **Copy** and **Share** produce Band- and Slack-ready text (Event Data, Workout Details, COT), ending with a
