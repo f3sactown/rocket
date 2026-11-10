@@ -85,10 +85,14 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   PAX, with roster suggestions and the AO's regulars), Announcements (the backblast's own, not
   copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
   and Share are on the finished backblast's page).
-  - **Linking to a workout:** a backblast written without a workout links itself to yours with the
-    same AO and date (ignoring case) when exactly one such workout has no backblast yet. One that
-    doesn't shows **Link to a workout** on its page, listing your workouts without a backblast,
-    any with the same AO and date first.
+  - **Linking to a workout:** a backblast and its Q's workout stay linked while they're at the same
+    AO on the same date (ignoring case and spaces). The database keeps it so (triggers in
+    `20261110010000_backblast_workout_links.sql`): when either one's AO or date changes, or a
+    workout is finished, a pair that no longer matches is unlinked, and one with no partner links
+    to the single match that has none. With two matches it doesn't guess. A backblast started
+    from a workout keeps its link while its AO and date are blank. One without a workout shows
+    **Link to a workout** on its page (matches first); a link made there stays until its AO or
+    date is edited.
   - A backblast waits for its workout: until the workout's date, **Create backblast** is greyed
     out with the reason, and New backblast shows that workout greyed out with the date it opens.
   - **Copy** and **Share** produce Band- and Slack-ready text (Event Data, Workout Details, COT), ending with a
