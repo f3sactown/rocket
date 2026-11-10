@@ -244,14 +244,14 @@ One-time setup:
 
 ## Google sign-in
 
-**Continue with Google** is Google's own button on Rocket's page (Google Identity Services): Google
-hands back a signed token, and `supabase.auth.signInWithIdToken` checks it and signs in, so
-Google's prompt names Rocket's site, not the Supabase project, and there's no trip away. A random
-nonce guards each sign-in (Google gets its SHA-256, Supabase checks the original). The page shows
-Rocket's own button; Google's real one is laid over it, invisible and stretched to the same size,
-so a tap lands on Google's while the sign-in screen keeps Rocket's look. If the build has
-no `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, the button falls back to Supabase's redirect sign-in. Nothing in
-the app holds Google secrets. It needs a Google OAuth client, then the Google provider turned on in each Supabase project
+**Continue with Google** is Rocket's own button. It opens Google's sign-in page, which comes back
+to Rocket's own address (not the Supabase project's, so Google names Rocket's site) with a signed ID
+token in the address; `supabase.auth.signInWithIdToken` checks it and signs in, and the token is
+cleared from the address bar. It's a plain page-to-page step, so it works the same on phones. A
+random state and nonce guard each sign-in (the state must match the one the tab sent; Google gets
+the nonce's SHA-256, Supabase checks the original). If the build has no
+`NEXT_PUBLIC_GOOGLE_CLIENT_ID`, the button uses Supabase's redirect sign-in instead. Nothing in the
+app holds Google secrets. It needs a Google OAuth client, then the Google provider turned on in each Supabase project
 (production and dev).
 
 1. **Google Cloud project.** At [console.cloud.google.com](https://console.cloud.google.com),
@@ -270,9 +270,10 @@ the app holds Google secrets. It needs a Google OAuth client, then the Google pr
    - `https://glladkuyofbrewktcqly.supabase.co/auth/v1/callback` (production)
    - `https://funktsbvbcblniokpheu.supabase.co/auth/v1/callback` (dev)
 
-   Under **Authorized JavaScript origins**, add the sites that show Google's button:
-   `https://rocket.f3sactown.com`, `https://rocket-dev.f3sactown.com`, and `http://localhost:3000`
-   for local work. Create it, and copy the **Client ID** and **Client secret**.
+   Add the sites Google returns to, also under **Authorized redirect URIs**, each with its
+   trailing slash: `https://rocket.f3sactown.com/`, `https://rocket-dev.f3sactown.com/`, and
+   `http://localhost:3000/` for local work. **Authorized JavaScript origins** can stay empty.
+   Create it, and copy the **Client ID** and **Client secret**.
 
 5. **Supabase, in each project** (rocket, then rocket-dev): Authentication → **Sign In /
    Providers** → **Google** → turn on **Enable Sign in with Google**, paste the client ID and

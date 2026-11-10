@@ -1,145 +1,143 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { GoogleIcon } from "./icons";
 
 /** The Google OAuth client's ID; without it, sign-in goes through Supabase's redirect instead. */
 export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
-/** The parts of Google Identity Services used here. */
-interface GoogleAccounts {
-  id: {
-    initialize(options: {
-      client_id: string;
-      nonce: string;
-      callback: (response: { credential: string }) => void;
-      use_fedcm_for_button?: boolean;
-    }): void;
-    renderButton(
-      parent: HTMLElement,
-      options: Record<string, string | number>,
-    ): void;
-  };
+/** Where the nonce and state wait in this tab while Google's sign-in page is open. */
+const PENDING_KEY = "rocket.google-sign-in";
+
+/** Where Google sends you back to: the app's home page, which must be listed on the Google client. */
+function returnAddress(): string {
+  return `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/`;
 }
 
-let script: Promise<GoogleAccounts> | null = null;
-
-/** The size Google draws its button at (its largest), before it's stretched over Rocket's. */
-const GOOGLE_WIDTH = 400;
-const GOOGLE_HEIGHT = 44;
-
-/** Loads Google's sign-in script once. */
-function loadGoogle(): Promise<GoogleAccounts> {
-  script ??= new Promise((resolve, reject) => {
-    const tag = document.createElement("script");
-    tag.src = "https://accounts.google.com/gsi/client";
-    tag.async = true;
-    tag.onload = () => {
-      const google = (
-        window as unknown as { google?: { accounts: GoogleAccounts } }
-      ).google;
-      if (google) resolve(google.accounts);
-      else reject(new Error("Google sign-in didn't load."));
-    };
-    tag.onerror = () => {
-      script = null;
-      reject(new Error("Google sign-in couldn't load. Check your connection."));
-    };
-    document.head.appendChild(tag);
-  });
-  return script;
-}
-
-/** A random one-time value, and its SHA-256 for Google (Supabase checks the original). */
-async function makeNonce(): Promise<{ raw: string; hashed: string }> {
+/** A random value, URL-safe. */
+function random(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
-  const raw = btoa(String.fromCharCode(...bytes));
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+/** Hex SHA-256: Google gets the nonce's hash and Supabase checks the original against it. */
+async function sha256(text: string): Promise<string> {
   const digest = await crypto.subtle.digest(
     "SHA-256",
-    new TextEncoder().encode(raw),
+    new TextEncoder().encode(text),
   );
-  const hashed = [...new Uint8Array(digest)]
+  return [...new Uint8Array(digest)]
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  return { raw, hashed };
+}
+
+/** Whether the address holds a sign-in Google has just sent back. */
+function returning(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    /(^#|&)(id_token|error)=/.test(window.location.hash)
+  );
+}
+
+/** Goes to Google's sign-in page, which comes back to Rocket with a signed ID token. */
+async function startGoogleSignIn() {
+  const nonce = random();
+  const state = random();
+  sessionStorage.setItem(PENDING_KEY, JSON.stringify({ nonce, state }));
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: returnAddress(),
+    response_type: "id_token",
+    scope: "openid email profile",
+    nonce: await sha256(nonce),
+    state,
+    prompt: "select_account",
+  });
+  window.location.assign(
+    `https://accounts.google.com/o/oauth2/v2/auth?${params}`,
+  );
 }
 
 /**
- * Google's own "Continue with Google" button, on Rocket's page. Google's prompt names this site
- * rather than the Supabase project, and there's no trip away: Google hands back a signed token,
- * which Supabase checks and signs in with (a new account is made the first time).
+ * Back from Google's sign-in page: the address ends with #id_token=…&state=…. If the state is the
+ * one this tab sent, Supabase checks the token (with the nonce) and signs in; a new account is
+ * made the first time. Returns an error message, or null when there was nothing to finish.
+ */
+async function finishGoogleSignIn(): Promise<string | null> {
+  const hash = new URLSearchParams(window.location.hash.slice(1));
+  const token = hash.get("id_token");
+  const failed = hash.get("error");
+  if (!token && !failed) return null;
+  const pending = JSON.parse(sessionStorage.getItem(PENDING_KEY) ?? "null") as {
+    nonce: string;
+    state: string;
+  } | null;
+  sessionStorage.removeItem(PENDING_KEY);
+  // Clear the token from the address bar and history.
+  window.history.replaceState(
+    null,
+    "",
+    window.location.pathname + window.location.search,
+  );
+  if (failed)
+    return failed === "access_denied"
+      ? null
+      : `Google sign-in didn't finish (${failed}).`;
+  if (!pending || hash.get("state") !== pending.state)
+    return "That sign-in link has expired. Try Continue with Google again.";
+  const { error } = await createClient().auth.signInWithIdToken({
+    provider: "google",
+    token: token!,
+    nonce: pending.nonce,
+  });
+  return error?.message ?? null;
+}
+
+/**
+ * Rocket's "Continue with Google" button. It opens Google's sign-in page, which returns here (to
+ * Rocket's own address, so Google names Rocket's site rather than the Supabase project) with a
+ * signed ID token that Supabase checks. A plain page-to-page step, so it works the same on phones.
  */
 export function GoogleSignIn({
   onError,
 }: {
   onError: (message: string) => void;
 }) {
-  const box = useRef<HTMLDivElement>(null);
-  const wrap = useRef<HTMLDivElement>(null);
+  // Busy from the start when Google has just sent a sign-in back to finish.
+  const [busy, setBusy] = useState(() => returning());
   const report = useRef(onError);
   useEffect(() => {
     report.current = onError;
   }, [onError]);
 
+  // Finish a sign-in Google has just sent back.
   useEffect(() => {
-    let gone = false;
-    // Keep it covering Rocket's button as the page resizes.
-    const fit = () => {
-      const area = wrap.current;
-      const inner = box.current;
-      if (!area || !inner) return;
-      inner.style.transform = `scale(${area.offsetWidth / GOOGLE_WIDTH}, ${area.offsetHeight / GOOGLE_HEIGHT})`;
-    };
-    (async () => {
-      const [google, nonce] = await Promise.all([loadGoogle(), makeNonce()]);
-      if (gone || !box.current) return;
-      google.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        nonce: nonce.hashed,
-        use_fedcm_for_button: true,
-        callback: async ({ credential }) => {
-          const { error } = await createClient().auth.signInWithIdToken({
-            provider: "google",
-            token: credential,
-            nonce: nonce.raw,
-          });
-          if (error) report.current(error.message);
-        },
-      });
-      // Google's button, drawn at its widest and stretched over Rocket's to cover it exactly.
-      google.id.renderButton(box.current, {
-        type: "standard",
-        size: "large",
-        shape: "pill",
-        text: "continue_with",
-        width: GOOGLE_WIDTH,
-      });
-      fit();
-    })().catch((error: Error) => report.current(error.message));
-    window.addEventListener("resize", fit);
-    return () => {
-      gone = true;
-      window.removeEventListener("resize", fit);
-    };
+    if (!returning()) return;
+    finishGoogleSignIn().then((message) => {
+      setBusy(false);
+      if (message) report.current(message);
+    });
   }, []);
 
   return (
-    // Rocket's own button is what shows; Google's real one sits over it, invisible, so a tap
-    // lands on Google's (as its sign-in needs) while the page keeps its look.
-    <div
-      ref={wrap}
-      className="relative w-full rounded-full has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/60"
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => {
+        setBusy(true);
+        startGoogleSignIn().catch((error: Error) => {
+          setBusy(false);
+          report.current(error.message);
+        });
+      }}
+      className="btn w-full"
     >
-      <div aria-hidden className="btn pointer-events-none w-full">
-        <GoogleIcon />
-        Continue with Google
-      </div>
-      <div
-        ref={box}
-        className="absolute top-0 left-0 origin-top-left opacity-[0.01]"
-        style={{ width: GOOGLE_WIDTH, height: GOOGLE_HEIGHT }}
-      />
-    </div>
+      <GoogleIcon />
+      {busy ? "…" : "Continue with Google"}
+    </button>
   );
 }
