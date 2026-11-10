@@ -11,7 +11,7 @@ import { createClient } from "./supabase/client";
 import type { Database, Json } from "./supabase/database.types";
 
 type BackblastRow = Database["public"]["Tables"]["backblasts"]["Row"];
-type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
+export type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
 
 const KINDS: AttendeeKind[] = ["pax", "visitor", "fng", "2.0"];
 
@@ -140,6 +140,36 @@ export function toWorkoutInsert(
 }
 
 /**
+ * One workout by its ID, with `columns` selected, as its link opens it. Others' public workouts
+ * dated after today aren't listed until their day, so when the plain read finds nothing this asks
+ * `shared_workout`, which returns a finished public workout whatever its date (or your own).
+ */
+export async function workoutById<T = WorkoutRow>(
+  id: string,
+  columns = "*",
+): Promise<{ data: T | null; error: { message: string } | null }> {
+  const supabase = createClient();
+  const listed = await supabase
+    .from("workouts")
+    .select(columns)
+    .eq("id", id)
+    .maybeSingle();
+  if (listed.error || listed.data)
+    return listed as unknown as {
+      data: T | null;
+      error: { message: string } | null;
+    };
+  const linked = await supabase
+    .rpc("shared_workout", { p_id: id })
+    .select(columns)
+    .maybeSingle();
+  return linked as unknown as {
+    data: T | null;
+    error: { message: string } | null;
+  };
+}
+
+/**
  * A workout's sections, for copying into a backblast; an error message if it can't be read, or
  * (with `authorId`) if it isn't that person's workout.
  */
@@ -147,11 +177,7 @@ export async function loadWorkout(
   id: string,
   authorId?: string,
 ): Promise<Workout | string> {
-  const { data, error } = await createClient()
-    .from("workouts")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+  const { data, error } = await workoutById(id);
   if (error) return error.message;
   if (!data) return "That workout is gone or isn't shared.";
   if (authorId && data.author_id !== authorId)

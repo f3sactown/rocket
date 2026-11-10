@@ -420,6 +420,16 @@ export type Database = {
         Args: { p_old: string; p_new: string };
         Returns: undefined;
       };
+      shared_workout: {
+        Args: { p_id: string };
+        Returns: Database["public"]["Tables"]["workouts"]["Row"][];
+        SetofOptions: {
+          from: "*";
+          to: "workouts";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

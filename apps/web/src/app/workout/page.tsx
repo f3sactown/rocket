@@ -27,7 +27,12 @@ import {
   setVisibility,
   type WorkoutStats,
 } from "@/lib/workout-social";
-import { fromWorkoutRow, loadWorkoutNotes } from "@/lib/backblast";
+import {
+  fromWorkoutRow,
+  loadWorkoutNotes,
+  workoutById,
+  type WorkoutRow,
+} from "@/lib/backblast";
 import {
   archive,
   deleteItem,
@@ -85,40 +90,35 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
   useEffect(() => {
     if (!id) return;
     const supabase = createClient();
-    supabase
-      .from("workouts")
-      .select(
-        "*, author:profiles!workouts_author_id_fkey(name), original_author:profiles!workouts_original_author_id_fkey(name, region:regions!profiles_region_id_fkey(name))",
-      )
-      .eq("id", id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (data?.author_id === user.id)
-          loadWorkoutNotes(data.id).then(setNotes);
-        if (data) setVisibilityState(data.visibility ?? "public");
-        setResult({
-          workout: data && fromWorkoutRow(data),
-          authorId: data?.author_id,
-          authorName: (data as { author?: { name: string } } | null)?.author
-            ?.name,
-          originalAuthorName:
-            data?.original_author_id &&
-            data.original_author_id !== data.author_id
-              ? originalAuthor(
-                  (
-                    data as {
-                      original_author?: {
-                        name: string;
-                        region?: { name: string } | null;
-                      } | null;
-                    }
-                  ).original_author,
-                )
-              : undefined,
-          status: data?.status,
-          error: error?.message,
-        });
+    // By its link: a public workout dated after today opens here though it isn't listed yet.
+    workoutById<WorkoutRow & { author?: { name: string } | null }>(
+      id,
+      "*, author:profiles!workouts_author_id_fkey(name), original_author:profiles!workouts_original_author_id_fkey(name, region:regions!profiles_region_id_fkey(name))",
+    ).then(({ data, error }) => {
+      if (data?.author_id === user.id) loadWorkoutNotes(data.id).then(setNotes);
+      if (data) setVisibilityState(data.visibility ?? "public");
+      setResult({
+        workout: data && fromWorkoutRow(data),
+        authorId: data?.author_id,
+        authorName: (data as { author?: { name: string } } | null)?.author
+          ?.name,
+        originalAuthorName:
+          data?.original_author_id && data.original_author_id !== data.author_id
+            ? originalAuthor(
+                (
+                  data as {
+                    original_author?: {
+                      name: string;
+                      region?: { name: string } | null;
+                    } | null;
+                  }
+                ).original_author,
+              )
+            : undefined,
+        status: data?.status,
+        error: error?.message,
       });
+    });
     supabase
       .from("backblasts")
       .select("id, title, status, date")
@@ -188,7 +188,10 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
           workoutId={id!}
           stats={stats}
           // You can like someone else's public workout, not your own.
-          canLike={!mine && result.status === "published"}
+          // Likes open on the workout's day, when it's listed for everyone.
+          canLike={
+            !mine && result.status === "published" && !isUpcoming(workout.date)
+          }
           onChange={setStats}
         />
         {mine && result.status === "published" && (

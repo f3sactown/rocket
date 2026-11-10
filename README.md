@@ -40,6 +40,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     can make it **private** on its page: it disappears for everyone else (Discover, Trending, lists
     and search) but keeps its likes and reuse count, which only its Q sees until it's public again. **Likes:** one per person, on other people's public
     workouts.
+  - A public workout dated **after today** isn't listed for anyone else (Discover, Trending, PAX
+    profiles, likes) until its day, in Pacific time. Its Q sees it as usual, and its link (Share
+    link) opens it for anyone signed in, with Run workout and Reuse; likes open on the day.
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
   F3's, FiA's or both (the default), going by each author's region (authors with no region always
   show), and **Include my workouts** (off by default) adds yours; both are saved to your account.
@@ -183,6 +186,9 @@ The app runs entirely in the browser, so access rules live in the database as ro
 - Signed-out visitors can't read anything.
 - Signed-in users can read every profile and every finished **public** workout and backblast
   (`visibility`, public by default). Private ones and drafts are visible only to their author.
+- Others' public workouts are readable from their date on (Pacific time). Before that, only
+  `shared_workout(id)` returns one, for its link: a finished public workout by its ID (random, so
+  only those given the link have it), or your own.
 - Likes (`workout_likes`): you can like someone else's public workout once, and see only your own
   likes; counts of likes and reuses come from `workout_stats()`, which returns totals only.
 - Only the author can edit or delete a workout or backblast.
