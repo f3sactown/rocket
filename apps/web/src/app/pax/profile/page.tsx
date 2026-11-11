@@ -60,13 +60,32 @@ function PaxProfile({ user }: { user: CurrentUser }) {
       <Link href="/pax" className="link -mb-2 self-start text-sm">
         ← PAX
       </Link>
-      <header className="flex flex-col gap-1">
-        <h1 className="card-title break-words">{name || "PAX"}</h1>
-        {name && (
-          <p className="text-sm text-muted">
-            {LANGUAGES.find((l) => l.value === org)?.label}
-          </p>
-        )}
+      <header className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="card-title break-words">{name || "PAX"}</h1>
+          {name && (
+            <p className="text-sm text-muted">
+              {LANGUAGES.find((l) => l.value === org)?.label}
+            </p>
+          )}
+        </div>
+        {/* Whether this PAX has a Rocket account (one of that name in their organization). */}
+        {workouts.value &&
+          (workouts.value.hasAccount ? (
+            <span
+              className="status mt-2 shrink-0"
+              title={`${name} has a Rocket account`}
+            >
+              On Rocket
+            </span>
+          ) : (
+            <span
+              className="mt-2 inline-flex shrink-0 items-center gap-2 text-sm text-muted before:size-2 before:rounded-full before:border before:border-line-strong before:content-['']"
+              title={`No Rocket account named ${name} yet`}
+            >
+              Not on Rocket yet
+            </span>
+          ))}
       </header>
 
       {all.value && !entry && (

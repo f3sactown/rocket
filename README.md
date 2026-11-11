@@ -61,7 +61,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   total likes and reuses on their public Rocket workouts, with the same heart and reuse icons as
   workout tiles. A **From** picker of regions, in each
   region's color, narrows the list and the totals; the choice is saved to your account. A tile
-  opens the PAX's profile: posts, Qs, likes and reuses in one row on top, their stats per region and their Trending workouts, then **All workouts** and **All backblasts** (every public one, newest first;
+  opens the PAX's profile, marked **On Rocket** at the top right when they have a Rocket account (or a dimmer **Not on Rocket yet**): posts, Qs, likes and reuses in one row on top, their stats per region and their Trending workouts, then **All workouts** and **All backblasts** (every public one, newest first;
   archived ones included, private ones left out).
   At the top, a **New on Rocket** note names whoever has signed up for a Rocket account since you
   last dismissed it (the last two weeks, the first time), with their region, each linking to their
