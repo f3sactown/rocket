@@ -218,9 +218,11 @@ function RunWorkout({ user }: { user: CurrentUser }) {
                       href={thang.music.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="btn self-start px-4 py-2 text-base"
+                      className="btn gap-2 self-start px-4 py-2 text-base"
                     >
-                      ♫ {thang.music.title || "Play music"}
+                      <span aria-hidden>♫</span>
+                      {thang.music.title || "Play music"}
+                      <span aria-hidden>♫</span>
                     </a>
                   )}
                   {thang.timer && (

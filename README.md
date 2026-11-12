@@ -28,7 +28,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - A workout's **Notes** are private to its Q: stored in their own table only the author can read,
     and left out of anything copied or shared.
   - **Run workout** shows the whole workout to lead from (web addresses are clickable links), in Normal, Large or Extra large text, with
-    each timer's countdown. Like a Tabata timer, every stretch (each round's work and rest) ends with
+    each timer's countdown and each song as a button (♫ Title ♫) that opens its link. Like a Tabata timer, every stretch (each round's work and rest) ends with
     short beeps at 3, 2 and 1 seconds left and a long, louder beep at 0. The timer in use pins to the top
     when scrolled away, and the screen stays awake.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
@@ -42,7 +42,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     workouts.
   - A public workout dated **after today** isn't listed for anyone else (Discover, Trending, PAX
     profiles, likes) until its day, in Pacific time. Its Q sees it as usual, and its link (Share
-    link) opens it for anyone signed in, with Run workout and Reuse; likes open on the day.
+    link) opens it for anyone signed in, with Run workout and Reuse; likes open on the day. Saving
+    one (the **Save workout** button on the review step, or Done when editing) says so in a notice
+    that can show every time or be silenced (Settings → Notifications brings it back).
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
   F3's, FiA's or both (the default), going by each author's region (authors with no region always
   show), and **Include my workouts** (off by default) adds yours; both are saved to your account.
@@ -53,7 +55,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
   Newest, each a row of tiles that scrolls sideways, naming each author and their region, with
   like buttons. Trending on Home follows the From choice and leaves out your own workouts, and
-  scrolls sideways the same way. Rows that scroll sideways (here and throughout the app) show no scrollbar.
+  scrolls sideways the same way. Rows that scroll sideways (here and throughout the app) show no scrollbar; with a mouse, arrow
+  buttons at either end page through a row of tiles, and it can be dragged.
 - **PAX** (in the menu, under Search) lists everyone on your region's roster (or every region's,
   when you've chosen all regions) as tiles in alphabetical order (three across on a phone, four on larger screens), with a search box that matches
   names. Each tile shows the PAX's regions, posts and Qs (from the synced region stats, or read
@@ -141,7 +144,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,
   and whether a copied or shared backblast from a public workout ends with
   a link to that workout asking PAX to like and reuse it (right above the hidden PAX list; on by
-  default, never shown on screen).
+  default, never shown on screen). **Notifications** lists the notices you chose not to show again
+  (`notices_off` in the account's metadata, included in exports), with **Reset notifications** to
+  show them all again.
 - **Copying:** the backblast and workout text on their pages and on the review step can't be
   selected, so it's copied with Copy or Share. If a copy takes it in anyway (Select All), it gets
   exactly what Copy gives, link and PAX list included. **Your data** exports everything you have
