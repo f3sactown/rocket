@@ -9,9 +9,11 @@ import {
   toInsert,
   toWorkoutInsert,
 } from "@/lib/backblast";
+import { isUpcoming } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 import type { CurrentUser } from "./auth-provider";
 import { BackblastForm, type FormMode } from "./backblast-form";
+import { HIDDEN_UNTIL_THE_DAY, NoticeDialog } from "./notice-dialog";
 import { TEMPLATE_COLUMNS, type SectionTemplate } from "./section-templates";
 
 /** The workout's sections, which a workout's defaults fill in. */
@@ -50,6 +52,16 @@ function withDefaults(
   return filled;
 }
 
+/** Whether the saved workout is public, so its date keeps it from others until the day. */
+async function isPublic(id: string): Promise<boolean> {
+  const { data } = await createClient()
+    .from("workouts")
+    .select("visibility")
+    .eq("id", id)
+    .maybeSingle();
+  return data?.visibility !== "private";
+}
+
 /** How long to wait after the last edit before saving the draft. */
 const AUTOSAVE_DELAY_MS = 800;
 
@@ -58,7 +70,7 @@ type SaveState = "new" | "saving" | "saved" | "error" | "incomplete";
 function statusLabel(state: SaveState, published: boolean): string {
   switch (state) {
     case "new":
-      return published ? "Published" : "Draft";
+      return published ? "Saved" : "Draft";
     case "saving":
       return "Saving…";
     case "saved":
@@ -92,7 +104,7 @@ const WORDS = {
     new: "New workout",
     draft: "Edit workout draft",
     published: "Edit workout",
-    finish: "Publish workout",
+    finish: "Save workout",
     failed: "Couldn't save the workout.",
   },
   backblast: {
@@ -138,6 +150,8 @@ export function BackblastEditor({
     draftId && !published ? "saved" : "new",
   );
   const status = published ? "published" : "draft";
+  // Where to go once the saved notice is closed.
+  const [notice, setNotice] = useState<string | null>(null);
   const id = useRef(draftId ?? null);
   const latest = useRef(initial);
   // The starting content; later renders may pass a new object, but the form keeps its own state.
@@ -272,32 +286,55 @@ export function BackblastEditor({
   if (!loaded) return <div className="card h-96 animate-pulse" />;
 
   return (
-    <BackblastForm
-      mode={mode}
-      onCopyWorkout={
-        mode === "backblast" && loaded.start.workoutId
-          ? () => loadWorkout(loaded.start.workoutId!)
-          : undefined
-      }
-      heading={published ? words.published : draftId ? words.draft : words.new}
-      status={statusLabel(saveState, published)}
-      saveLabel={published ? "Done" : words.finish}
-      initial={loaded.start}
-      userId={user.id}
-      initialTemplates={loaded.templates}
-      onChange={onChange}
-      onSave={async (backblast) => {
-        if (timer.current) clearTimeout(timer.current);
-        timer.current = null;
-        latest.current = backblast;
-        try {
-          await persist("published");
-        } catch (error) {
-          return (error as { message?: string }).message ?? words.failed;
+    <>
+      <BackblastForm
+        mode={mode}
+        onCopyWorkout={
+          mode === "backblast" && loaded.start.workoutId
+            ? () => loadWorkout(loaded.start.workoutId!)
+            : undefined
         }
-        router.push(`${words.view}?id=${id.current}`);
-      }}
-      onDiscard={published ? undefined : discard}
-    />
+        heading={
+          published ? words.published : draftId ? words.draft : words.new
+        }
+        status={statusLabel(saveState, published)}
+        saveLabel={published ? "Done" : words.finish}
+        initial={loaded.start}
+        userId={user.id}
+        initialTemplates={loaded.templates}
+        onChange={onChange}
+        onSave={async (backblast) => {
+          if (timer.current) clearTimeout(timer.current);
+          timer.current = null;
+          latest.current = backblast;
+          try {
+            await persist("published");
+          } catch (error) {
+            return (error as { message?: string }).message ?? words.failed;
+          }
+          const view = `${words.view}?id=${id.current}`;
+          // A public workout before its day is hidden from others: say so, unless that's silenced.
+          if (
+            mode === "workout" &&
+            !user.noticesOff.includes(HIDDEN_UNTIL_THE_DAY) &&
+            isUpcoming(backblast.date) &&
+            (await isPublic(id.current!))
+          )
+            setNotice(view);
+          else router.push(view);
+        }}
+        onDiscard={published ? undefined : discard}
+      />
+      {notice && (
+        <NoticeDialog
+          id={HIDDEN_UNTIL_THE_DAY}
+          title="Hidden until the day"
+          onClose={() => router.push(notice)}
+        >
+          Other PAX won&apos;t see this workout until the day of the workout.
+          Before then, only people you send its link to can open it.
+        </NoticeDialog>
+      )}
+    </>
   );
 }

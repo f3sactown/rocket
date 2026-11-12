@@ -11,6 +11,7 @@ import {
   type SwipeAction,
 } from "@/components/auth-provider";
 import { AccountData } from "@/components/account-data";
+import { NOTICES } from "@/components/notice-dialog";
 import { PasswordInput } from "@/components/password-input";
 import { RegionSettings } from "@/components/region-settings";
 import {
@@ -300,6 +301,13 @@ function Settings({ user }: { user: CurrentUser }) {
       </Section>
 
       <Section
+        title="Notifications"
+        description="Notices you chose not to show again. Saved to your account."
+      >
+        <NoticeReset off={user.noticesOff} />
+      </Section>
+
+      <Section
         title="Swipe actions"
         description="Swipe a backblast in a list to act on it. You can only delete your own. Saved to your account."
       >
@@ -332,6 +340,58 @@ function Settings({ user }: { user: CurrentUser }) {
         </button>
       </Section>
     </section>
+  );
+}
+
+/** The silenced notices, with a button to show them again. */
+function NoticeReset({ off }: { off: string[] }) {
+  const [silenced, setSilenced] = useState(
+    off.filter((id) => NOTICES[id] !== undefined),
+  );
+  const [pending, setPending] = useState(false);
+  const [result, setResult] = useState<Result>(null);
+
+  async function reset() {
+    setPending(true);
+    setResult(null);
+    const { error } = await createClient().auth.updateUser({
+      data: { notices_off: [] },
+    });
+    setPending(false);
+    if (error) return setResult({ text: error.message, error: true });
+    setSilenced([]);
+    setResult({ text: "Notices will show again.", error: false });
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {silenced.length ? (
+        <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-ink-soft marker:text-accent">
+          {silenced.map((id) => (
+            <li key={id}>{NOTICES[id]}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted">Every notice is showing.</p>
+      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={reset}
+          disabled={pending || !silenced.length}
+          className="rounded-full border border-line-strong px-4 py-2 text-sm font-medium text-ink transition hover:border-accent/60 disabled:opacity-50"
+        >
+          {pending ? "Resetting…" : "Reset notifications"}
+        </button>
+        {result && (
+          <p
+            className={`text-sm ${result.error ? "text-accent" : "text-ink-soft"}`}
+          >
+            {result.text}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 

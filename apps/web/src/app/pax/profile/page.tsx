@@ -11,6 +11,7 @@ import { regionColors } from "@/lib/regions";
 import { useLoad } from "@/lib/use-region";
 import type { ListItem } from "@/lib/backblast-list";
 import type { WorkoutStats } from "@/lib/workout-social";
+import { ScrollRow } from "@/components/scroll-row";
 
 export default function PaxProfilePage() {
   return (
@@ -207,7 +208,7 @@ function PaxProfile({ user }: { user: CurrentUser }) {
 /** Public backblasts as a row of tiles that scrolls sideways, like the workout tiles. */
 function BackblastTiles({ backblasts }: { backblasts: ListItem[] }) {
   return (
-    <ul className="scroll-row -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:-mx-8 sm:scroll-px-8 sm:px-8">
+    <ScrollRow className="scroll-row -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:-mx-8 sm:scroll-px-8 sm:px-8">
       {backblasts.map((b) => (
         <li key={b.id} className="w-40 shrink-0 snap-start sm:w-48">
           <Link
@@ -224,7 +225,7 @@ function BackblastTiles({ backblasts }: { backblasts: ListItem[] }) {
           </Link>
         </li>
       ))}
-    </ul>
+    </ScrollRow>
   );
 }
 
