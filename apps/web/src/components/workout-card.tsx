@@ -5,6 +5,7 @@ import type { ListItem } from "@/lib/backblast-list";
 import { useNeedsBackblast } from "@/lib/needs-backblast";
 import type { WorkoutStats } from "@/lib/workout-social";
 import { NeedsBackblastBadge } from "./backblast-list";
+import { ScrollRow } from "./scroll-row";
 import { WorkoutStatsBar } from "./workout-stats";
 
 /** "Tinman · F3 SacTown", or just the name when the author has no region (or it isn't loaded). */
@@ -48,7 +49,7 @@ export function WorkoutCards({
     return (
       // One row per section that scrolls sideways, reaching the card's edges so tiles slide under
       // them; each stops with a tile lined up at the start.
-      <ul className="scroll-row -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:-mx-8 sm:scroll-px-8 sm:px-8">
+      <ScrollRow className="scroll-row -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:-mx-8 sm:scroll-px-8 sm:px-8">
         {workouts.map((workout) => (
           <li key={workout.id} className="w-40 shrink-0 snap-start sm:w-48">
             <Link
@@ -67,7 +68,7 @@ export function WorkoutCards({
             </Link>
           </li>
         ))}
-      </ul>
+      </ScrollRow>
     );
 
   return (
