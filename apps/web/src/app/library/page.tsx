@@ -9,7 +9,7 @@ export default function LibraryPage() {
       {() => (
         <section className="card">
           <header className="flex flex-col gap-1">
-            <h1 className="card-title">Library</h1>
+            <h1 className="card-title">Exicon</h1>
             <p className="text-sm text-muted">
               Exercises and routines from the{" "}
               <a
