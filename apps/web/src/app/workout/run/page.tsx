@@ -6,13 +6,14 @@ import { isUpcoming } from "@/lib/backblast-list";
 import { backblastParts, termsFor, type Workout } from "@rocket/core";
 import Link from "next/link";
 import { Linkify } from "@/components/linkify";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { ArrowIcon } from "@/components/icons";
 import { ActiveTimer, ThangTimer } from "@/components/thang-timer";
 import { fromWorkoutRow, loadWorkoutNotes, workoutById } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/client";
+import { setVisibility } from "@/lib/workout-social";
 
 export default function RunWorkoutPage() {
   return (
@@ -52,6 +53,9 @@ function RunWorkout({ user }: { user: CurrentUser }) {
   const [activeTimer, setActiveTimer] = useState<string | null>(null);
   // The timer last started and how to pause it, so starting another pauses it.
   const runningTimer = useRef<{ id: string; pause: () => void } | null>(null);
+  // Where to go once the "make it public?" question is answered.
+  const [leaving, setLeaving] = useState<string | null>(null);
+  const router = useRouter();
   // Your backblasts from this workout, to open the one for this run if it's started.
   const [backblasts, setBackblasts] = useState<
     { id: string; status: string; date: string | null }[]
@@ -60,6 +64,8 @@ function RunWorkout({ user }: { user: CurrentUser }) {
     workout: Workout | null;
     /** Whether it's your workout; only its Q writes the backblast. */
     mine?: boolean;
+    /** Your finished workout, kept private: on leaving, you're asked to make it public. */
+    privateFinished?: boolean;
     error?: string;
   } | null>(null);
 
@@ -74,6 +80,10 @@ function RunWorkout({ user }: { user: CurrentUser }) {
             data.author_id === user.id ? await loadWorkoutNotes(data.id) : "",
           ),
         mine: data?.author_id === user.id,
+        privateFinished:
+          data?.author_id === user.id &&
+          data.status === "published" &&
+          data.visibility === "private",
         error: error?.message,
       }),
     );
@@ -130,6 +140,12 @@ function RunWorkout({ user }: { user: CurrentUser }) {
     );
 
   const { workout } = result;
+  /** Leaving the run: a private workout of yours first asks to be made public. */
+  const leave = (href: string) => (event: React.MouseEvent) => {
+    if (!result.privateFinished) return;
+    event.preventDefault();
+    setLeaving(href);
+  };
   const terms = termsFor(user.language);
   // Where and when, as at the top of the copied workout.
   const where = backblastParts(
@@ -250,6 +266,14 @@ function RunWorkout({ user }: { user: CurrentUser }) {
           {section(terms.wordsOfWisdom, workout.wordsOfWisdom)}
         </div>
         <div className="flex items-start gap-2">
+          {/* Back to the workout's page, done running it. */}
+          <Link
+            href={`/workout?id=${id}`}
+            onClick={leave(`/workout?id=${id}`)}
+            className="btn shrink-0 px-5"
+          >
+            Close
+          </Link>
           {result.mine &&
             (() => {
               const existing = backblasts[0];
@@ -265,7 +289,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
                   : `/backblast?id=${existing.id}`
                 : `/backblasts/new?workout=${id}`;
               return (
-                <Link href={href} className="btn flex-1">
+                <Link href={href} onClick={leave(href)} className="btn flex-1">
                   <ArrowIcon />
                   {existing
                     ? existing.status === "draft"
@@ -275,15 +299,79 @@ function RunWorkout({ user }: { user: CurrentUser }) {
                 </Link>
               );
             })()}
-          {/* Back to the workout's page, done running it. */}
-          <Link
-            href={`/workout?id=${id}`}
-            className={`btn shrink-0 px-5 ${result.mine ? "" : "ml-auto"}`}
-          >
-            Close
-          </Link>
         </div>
       </article>
+      {leaving && (
+        <MakePublic
+          workoutId={id!}
+          onDone={() => {
+            const href = leaving;
+            setLeaving(null);
+            router.push(href);
+          }}
+        />
+      )}
     </ActiveTimer.Provider>
+  );
+}
+
+/** After running a private workout: make it public so other PAX can see, like and reuse it? */
+function MakePublic({
+  workoutId,
+  onDone,
+}: {
+  workoutId: string;
+  onDone: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const chip =
+    "rounded-full border border-line-strong px-3 py-1.5 text-sm font-medium text-ink transition hover:border-accent/60 disabled:opacity-50";
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="make-public-title"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
+    >
+      <div className="flex w-full max-w-md flex-col gap-4 rounded-3xl border border-line-strong bg-surface-raised p-5 shadow-2xl">
+        <h2 id="make-public-title" className="text-lg font-semibold text-ink">
+          Make this workout public?
+        </h2>
+        <p className="text-sm text-ink-soft">
+          It&apos;s private, so only you can see it. Public, other PAX can see
+          it on Discover and your PAX profile, and like and reuse it.
+        </p>
+        {error && <p className="text-sm text-accent">{error}</p>}
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            autoFocus
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await setVisibility(workoutId, "public");
+                onDone();
+              } catch (e) {
+                setError((e as Error).message);
+                setBusy(false);
+              }
+            }}
+            className={chip}
+          >
+            Make public
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onDone}
+            className={chip}
+          >
+            Keep private
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
