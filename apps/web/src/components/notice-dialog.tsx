@@ -1,21 +1,63 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /** The notice after saving a public workout dated after today. */
 export const HIDDEN_UNTIL_THE_DAY = "hidden_until_the_day";
+/** The note by the Public / Private switch after saving a workout or backblast. */
+export const VISIBILITY_SWITCH = "visibility_switch";
 
 /** Every notice that can be silenced, by ID, with how Settings names it. */
 export const NOTICES: Record<string, string> = {
   [HIDDEN_UNTIL_THE_DAY]: "Upcoming workouts are hidden until the day",
+  [VISIBILITY_SWITCH]: "What the Public / Private switch does",
 };
 
+/** Adds a notice to the account's silenced ones (`notices_off`). */
+async function silence(id: string) {
+  const supabase = createClient();
+  const { data } = await supabase.auth.getUser();
+  const off = data.user?.user_metadata?.notices_off;
+  const before = Array.isArray(off)
+    ? off.filter((v): v is string => typeof v === "string")
+    : [];
+  await supabase.auth.updateUser({
+    data: { notices_off: [...new Set([...before, id])] },
+  });
+}
+
 /**
- * A notice that pops up after something happens, with OK and a choice to keep showing it every
- * time or silence it. Silenced notices are saved to the account (`notices_off`) and come back from
- * Settings → Notifications.
+ * The two choices that close a notice: "Show every time" just dismisses it for now, and "Don't
+ * show again" silences it too (Settings → Notifications brings it back).
  */
+function NoticeChoices({ id, onClose }: { id: string; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const chip =
+    "rounded-full border border-line-strong px-3 py-1.5 text-sm font-medium text-ink transition hover:border-accent/60 disabled:opacity-50";
+  return (
+    <div className="flex flex-wrap gap-2">
+      <button type="button" autoFocus onClick={onClose} className={chip}>
+        Show every time
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          await silence(id);
+          onClose();
+        }}
+        className={chip}
+      >
+        Don&apos;t show again
+      </button>
+    </div>
+  );
+}
+
+/** A notice that pops up after something happens; choosing whether to show it again closes it. */
 export function NoticeDialog({
   id,
   title,
@@ -27,25 +69,6 @@ export function NoticeDialog({
   onClose: () => void;
   children: React.ReactNode;
 }) {
-  const [silence, setSilence] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  async function close() {
-    if (silence) {
-      setBusy(true);
-      const supabase = createClient();
-      const { data } = await supabase.auth.getUser();
-      const off = data.user?.user_metadata?.notices_off;
-      const before = Array.isArray(off)
-        ? off.filter((v): v is string => typeof v === "string")
-        : [];
-      await supabase.auth.updateUser({
-        data: { notices_off: [...new Set([...before, id])] },
-      });
-    }
-    onClose();
-  }
-
   useEffect(() => {
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -66,41 +89,55 @@ export function NoticeDialog({
           {title}
         </h2>
         <p className="text-sm text-ink-soft">{children}</p>
-        <fieldset className="flex flex-wrap gap-2">
-          <legend className="sr-only">Show this notice</legend>
-          {[
-            { label: "Show every time", value: false },
-            { label: "Don't show again", value: true },
-          ].map((option) => (
-            <label
-              key={option.label}
-              className={`flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                silence === option.value
-                  ? "border-accent/60 bg-accent-soft text-ink"
-                  : "border-line text-ink-soft hover:border-line-strong"
-              }`}
-            >
-              <input
-                type="radio"
-                name={`${id}-show`}
-                checked={silence === option.value}
-                onChange={() => setSilence(option.value)}
-                className="sr-only"
-              />
-              {option.label}
-            </label>
-          ))}
-        </fieldset>
-        <button
-          type="button"
-          autoFocus
-          disabled={busy}
-          onClick={close}
-          className="btn self-end"
-        >
-          OK
-        </button>
+        <NoticeChoices id={id} onClose={onClose} />
       </div>
     </div>
+  );
+}
+
+/** The same kind of notice, shown in place on the page (e.g. by the control it explains). */
+export function InlineNotice({
+  id,
+  onClose,
+  children,
+}: {
+  id: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <aside
+      aria-label="Notice"
+      className="panel flex flex-col gap-3 border-accent/50 p-4"
+    >
+      <p className="text-sm text-ink-soft">{children}</p>
+      <NoticeChoices id={id} onClose={onClose} />
+    </aside>
+  );
+}
+
+/**
+ * Under the Public / Private switch once a workout or backblast is saved (the editor adds
+ * `saved=1` to the page's address): what the switch is for, until dismissed or silenced.
+ */
+export function VisibilityNotice({
+  kind,
+  noticesOff,
+}: {
+  kind: "workout" | "backblast";
+  noticesOff: string[];
+}) {
+  const saved = useSearchParams().get("saved") === "1";
+  const [open, setOpen] = useState(true);
+  if (!saved || !open || noticesOff.includes(VISIBILITY_SWITCH)) return null;
+  return (
+    <InlineNotice id={VISIBILITY_SWITCH} onClose={() => setOpen(false)}>
+      The <strong className="text-ink">Public / Private</strong> switch sets who
+      can see this {kind}.{" "}
+      {kind === "workout"
+        ? "Public: anyone signed in can see it on Discover and your PAX profile, and like and reuse it."
+        : "Public: anyone signed in can see it on your PAX profile."}{" "}
+      Private: only you. New {kind}s start as chosen in Settings → Sharing.
+    </InlineNotice>
   );
 }

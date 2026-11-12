@@ -103,7 +103,7 @@ function TagChip({
 /** How many results show before "Show more". */
 const PAGE = 40;
 
-/** A "Library" button that opens the exercise and routine library. */
+/** An "Exicon" button that opens the exercise and routine library. */
 export function LibraryButton({
   onAdd,
   tags,
@@ -126,7 +126,7 @@ export function LibraryButton({
         <span className="text-accent">
           <BookIcon />
         </span>
-        Library
+        Exicon
       </button>
       {open && (
         <LibraryPicker
@@ -171,7 +171,7 @@ function LibraryPicker({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Library"
+      aria-label="Exicon"
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4"
       onClick={onClose}
     >
@@ -181,7 +181,7 @@ function LibraryPicker({
       >
         <header className="flex items-start justify-between gap-3">
           <div className="flex flex-col">
-            <h2 className="text-xl font-semibold text-ink">Library</h2>
+            <h2 className="text-xl font-semibold text-ink">Exicon</h2>
             <p className="text-xs text-muted">
               Exercises and routines from the{" "}
               <a

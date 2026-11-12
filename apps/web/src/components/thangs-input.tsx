@@ -358,7 +358,10 @@ function TimeField({
   );
 }
 
-/** A whole number of rounds, 1 to 99. */
+/**
+ * A whole number of rounds, 1 to 99. What's typed is kept as typed (so the box can be cleared to
+ * type a new number) and saved once it's a number in range.
+ */
 function CountField({
   label,
   value,
@@ -368,20 +371,23 @@ function CountField({
   value: number;
   onChange: (value: number) => void;
 }) {
+  const [text, setText] = useState(String(value));
+  const valid = (t: string) => /^\d{1,2}$/.test(t.trim()) && Number(t) >= 1;
   return (
     <label className="flex flex-col gap-1 text-xs text-ink-soft">
       {label}
       <input
-        type="number"
-        min={1}
-        max={99}
-        value={value}
+        inputMode="numeric"
+        value={text}
         onChange={(e) => {
-          const next = Math.round(Number(e.target.value));
-          if (next >= 1 && next <= 99) onChange(next);
+          setText(e.target.value);
+          if (valid(e.target.value)) onChange(Number(e.target.value));
         }}
+        onBlur={() => setText(String(value))}
+        aria-invalid={!valid(text)}
         className="input w-20 py-1.5 text-base"
       />
+      {!valid(text) && <span className="text-accent">1 to 99</span>}
     </label>
   );
 }

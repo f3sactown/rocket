@@ -36,6 +36,8 @@ const ACCOUNT_KEYS = [
   "default_workout_visibility",
   "default_backblast_visibility",
   "notices_off",
+  "accent",
+  "builtin_defaults",
 ] as const;
 
 /** Everything a user owns, as written to an export file. */

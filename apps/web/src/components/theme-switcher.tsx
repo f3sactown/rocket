@@ -9,6 +9,7 @@ import {
   type Accent,
   type ThemePreference,
 } from "@/lib/theme";
+import { createClient } from "@/lib/supabase/client";
 
 const CHANGE_EVENT = "rocket-appearance-change";
 const lightQuery = () => window.matchMedia("(prefers-color-scheme: light)");
@@ -169,7 +170,7 @@ export function ThemeSwitcher() {
   );
 }
 
-/** Sets the accent color on this device, e.g. to match a newly chosen region. */
+/** Sets the accent color on this device (the account's copy is in `accent` metadata). */
 export function setAccent(accent: Accent) {
   accentPreference.write(accent);
   // Apply now too; the accent picker that normally does this may not be on screen.
@@ -177,7 +178,37 @@ export function setAccent(accent: Accent) {
   else document.documentElement.dataset.accent = accent;
 }
 
-/** Accent color swatches, remembered per device. */
+const isAccent = (value: unknown): value is Accent =>
+  ACCENTS.some((a) => a.value === value);
+
+/** Sets the accent color here and saves it to the account, so every device follows. */
+function saveAccent(accent: Accent) {
+  setAccent(accent);
+  createClient()
+    .auth.updateUser({ data: { accent } })
+    .then(() => {});
+}
+
+/**
+ * Brings this device in line with the account's accent color when the user signs in or changes.
+ * An account that has none yet takes this device's choice, if one was made.
+ */
+export function syncAccent(saved: unknown) {
+  if (isAccent(saved)) {
+    if (saved !== accentPreference.read()) setAccent(saved);
+    return;
+  }
+  let chosen: string | null = null;
+  try {
+    chosen = localStorage.getItem(ACCENT_STORAGE_KEY);
+  } catch {
+    // Nothing chosen that can be read.
+  }
+  // Later, not inside the sign-in callback that calls this, which mustn't make auth calls itself.
+  if (isAccent(chosen)) setTimeout(() => saveAccent(chosen), 0);
+}
+
+/** Accent color swatches, saved to the account so every device follows. */
 export function AccentPicker() {
   const accent = useSyncExternalStore(
     subscribe,
@@ -204,7 +235,7 @@ export function AccentPicker() {
             type="button"
             role="radio"
             aria-checked={selected}
-            onClick={() => accentPreference.write(option.value)}
+            onClick={() => saveAccent(option.value)}
             className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
               selected
                 ? "border-accent bg-accent-soft text-ink"

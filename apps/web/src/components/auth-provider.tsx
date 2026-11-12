@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AuthForm } from "./auth-form";
 import { FinishProfile } from "./finish-profile";
+import { syncAccent } from "./theme-switcher";
 
 export interface CurrentUser {
   /** Permanent unique account ID; all of a user's data is tied to this, never to their name. */
@@ -44,6 +45,17 @@ export interface CurrentUser {
   whatsNewSeen: string | null;
   /** Notices (by ID) the user chose not to show again; Settings → Notifications brings them back. */
   noticesOff: string[];
+  /** Built-in templates (by name) chosen as a section's default, by section. */
+  builtInDefaults: Record<string, string>;
+}
+
+function builtInDefaultsFrom(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
+  );
 }
 
 /** Both F3 and FiA, which public workouts show until the user narrows it in Settings. */
@@ -173,6 +185,7 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
           (v): v is string => typeof v === "string",
         )
       : [],
+    builtInDefaults: builtInDefaultsFrom(user.user_metadata?.builtin_defaults),
     regionId:
       typeof user.user_metadata?.region_id === "string"
         ? user.user_metadata.region_id
@@ -194,9 +207,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data }) => {
       setState({ user: toCurrentUser(data.session?.user), loading: false });
+      if (data.session) syncAccent(data.session.user.user_metadata?.accent);
     });
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       setState({ user: toCurrentUser(session?.user), loading: false });
+      // The accent color follows the account to every device.
+      if (session) syncAccent(session.user.user_metadata?.accent);
     });
     return () => data.subscription.unsubscribe();
   }, []);

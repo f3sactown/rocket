@@ -56,7 +56,8 @@ function beep(kind: BeepKind) {
  */
 export const ActiveTimer = createContext<{
   active: string | null;
-  setActive: (id: string) => void;
+  /** Marks a timer as the one in use, pausing whichever was running before it. */
+  setActive: (id: string, pause: () => void) => void;
 }>({ active: null, setActive: () => {} });
 
 export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
@@ -124,7 +125,7 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
   }, [running, timer.type, phases]);
 
   function start() {
-    setActive(id);
+    setActive(id, () => setRunning(false));
     if (done) return reset(true);
     mark.current =
       timer.type === "stopwatch"

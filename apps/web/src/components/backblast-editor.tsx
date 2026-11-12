@@ -1,6 +1,6 @@
 "use client";
 
-import { qNames, type Backblast } from "@rocket/core";
+import type { Backblast } from "@rocket/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -14,7 +14,11 @@ import { createClient } from "@/lib/supabase/client";
 import type { CurrentUser } from "./auth-provider";
 import { BackblastForm, type FormMode } from "./backblast-form";
 import { HIDDEN_UNTIL_THE_DAY, NoticeDialog } from "./notice-dialog";
-import { TEMPLATE_COLUMNS, type SectionTemplate } from "./section-templates";
+import {
+  builtInTemplates,
+  TEMPLATE_COLUMNS,
+  type SectionTemplate,
+} from "./section-templates";
 
 /** The workout's sections, which a workout's defaults fill in. */
 const WORKOUT_DEFAULTS = ["introduction", "warmup", "thang", "wordsOfWisdom"];
@@ -29,14 +33,25 @@ function defaultSections(mode: FormMode, backblast: Backblast): string[] {
   return backblast.workoutId ? own : [...own, ...WORKOUT_DEFAULTS];
 }
 
-/** Fills in each of the form's sections that has a default template and is still empty. */
+/**
+ * Fills in each of the form's sections that has a default template and is still empty: a saved
+ * template starred as the default, or a built-in one chosen as the default.
+ */
 function withDefaults(
   backblast: Backblast,
   templates: SectionTemplate[],
   mode: FormMode,
+  user: Pick<CurrentUser, "language" | "builtInDefaults">,
 ): Backblast {
   const filled = { ...backblast };
-  for (const template of templates) {
+  const builtIns = builtInTemplates(user.language);
+  const chosen = Object.entries(user.builtInDefaults).flatMap(
+    ([section, name]) =>
+      (builtIns[section] ?? [])
+        .filter((t) => t.name === name)
+        .map((t) => ({ ...t, section, is_default: true })),
+  );
+  for (const template of [...templates, ...chosen]) {
     if (!template.is_default) continue;
     if (!defaultSections(mode, backblast).includes(template.section)) continue;
     const section = template.section as
@@ -65,7 +80,7 @@ async function isPublic(id: string): Promise<boolean> {
 /** How long to wait after the last edit before saving the draft. */
 const AUTOSAVE_DELAY_MS = 800;
 
-type SaveState = "new" | "saving" | "saved" | "error" | "incomplete";
+type SaveState = "new" | "saving" | "saved" | "error";
 
 function statusLabel(state: SaveState, published: boolean): string {
   switch (state) {
@@ -77,22 +92,7 @@ function statusLabel(state: SaveState, published: boolean): string {
       return published ? "Saved" : "Draft saved";
     case "error":
       return "Not saved";
-    case "incomplete":
-      return "Not saved: add a title, date and AO (and the Q on a backblast)";
   }
-}
-
-/**
- * A finished workout keeps its title, date and AO, and a published backblast those and its Q, so
- * edits missing one wait to save.
- */
-function hasBasics(backblast: Backblast, mode: FormMode): boolean {
-  return (
-    [backblast.title, backblast.date, backblast.ao].every((value) =>
-      value?.trim(),
-    ) &&
-    (mode === "workout" || qNames(backblast).length > 0)
-  );
 }
 
 const WORDS = {
@@ -149,13 +149,19 @@ export function BackblastEditor({
   const [saveState, setSaveState] = useState<SaveState>(
     draftId && !published ? "saved" : "new",
   );
-  const status = published ? "published" : "draft";
+  // Once changed, a finished one goes back to being a draft until it's saved again.
+  const [edited, setEdited] = useState(false);
   // Where to go once the saved notice is closed.
   const [notice, setNotice] = useState<string | null>(null);
   const id = useRef(draftId ?? null);
   const latest = useRef(initial);
   // The starting content; later renders may pass a new object, but the form keeps its own state.
   const initialRef = useRef(initial);
+  // The defaults as the editor opened; starring a template while editing doesn't refill it.
+  const startUser = useRef({
+    language: user.language,
+    builtInDefaults: user.builtInDefaults,
+  });
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -169,7 +175,12 @@ export function BackblastEditor({
         // A new one starts with the user's default templates filled in.
         const loaded = draftId
           ? initialRef.current
-          : withDefaults(initialRef.current, templates, mode);
+          : withDefaults(
+              initialRef.current,
+              templates,
+              mode,
+              startUser.current,
+            );
         // The person writing a backblast is the Q unless they say otherwise.
         const start =
           mode === "workout" || loaded.q.trim()
@@ -239,19 +250,19 @@ export function BackblastEditor({
     ],
   );
 
+  // Edits save as a draft (a finished one goes back to a draft) until the last page's button.
   const saveNow = useCallback(() => {
     timer.current = null;
-    if (status === "published" && !hasBasics(latest.current, mode))
-      return setSaveState("incomplete");
-    persist(status).then(
+    persist("draft").then(
       () => setSaveState((state) => (timer.current ? state : "saved")),
       () => setSaveState("error"),
     );
-  }, [persist, status, mode]);
+  }, [persist]);
 
   const onChange = useCallback(
     (backblast: Backblast) => {
       latest.current = backblast;
+      setEdited(true);
       setSaveState("saving");
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(saveNow, AUTOSAVE_DELAY_MS);
@@ -264,11 +275,10 @@ export function BackblastEditor({
     () => () => {
       if (timer.current) {
         clearTimeout(timer.current);
-        if (status === "draft" || hasBasics(latest.current, mode))
-          persist(status);
+        persist("draft");
       }
     },
-    [persist, status, mode],
+    [persist],
   );
 
   async function discard() {
@@ -297,8 +307,10 @@ export function BackblastEditor({
         heading={
           published ? words.published : draftId ? words.draft : words.new
         }
-        status={statusLabel(saveState, published)}
-        saveLabel={published ? "Done" : words.finish}
+        status={statusLabel(saveState, published && !edited)}
+        saveLabel={
+          published && mode === "backblast" ? "Save backblast" : words.finish
+        }
         initial={loaded.start}
         userId={user.id}
         initialTemplates={loaded.templates}
@@ -312,7 +324,8 @@ export function BackblastEditor({
           } catch (error) {
             return (error as { message?: string }).message ?? words.failed;
           }
-          const view = `${words.view}?id=${id.current}`;
+          // The page says what its Public / Private switch is for, just after a save.
+          const view = `${words.view}?id=${id.current}&saved=1`;
           // A public workout before its day is hidden from others: say so, unless that's silenced.
           if (
             mode === "workout" &&

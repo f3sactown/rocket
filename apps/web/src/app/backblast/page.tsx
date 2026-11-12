@@ -8,6 +8,7 @@ import {
 } from "@rocket/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { VisibilityNotice } from "@/components/notice-dialog";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { CopyButton } from "@/components/copy-button";
@@ -145,6 +146,9 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
             }}
           />
         </div>
+      )}
+      {mine && result.status === "published" && (
+        <VisibilityNotice kind="backblast" noticesOff={user.noticesOff} />
       )}
       {backblast.workoutId ? (
         <Link

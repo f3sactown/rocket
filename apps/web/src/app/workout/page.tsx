@@ -20,6 +20,7 @@ import {
 import { ShareButton } from "@/components/share-button";
 import { ShareLinkButton } from "@/components/share-link-button";
 import { VisibilitySwitch } from "@/components/visibility-switch";
+import { VisibilityNotice } from "@/components/notice-dialog";
 import { WorkoutStatsBar } from "@/components/workout-stats";
 import {
   loadWorkoutStats,
@@ -211,6 +212,9 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
           />
         )}
       </div>
+      {mine && result.status === "published" && (
+        <VisibilityNotice kind="workout" noticesOff={user.noticesOff} />
+      )}
 
       <ProtectedText
         copyText={text}

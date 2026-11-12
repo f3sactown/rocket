@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  DEFAULT_INTRODUCTION,
-  FIA_DISCLAIMER,
   attendeeFromName,
   joinQs,
   qNames,
@@ -39,6 +37,7 @@ import { ArrowIcon, PencilIcon, SkipIcon, TrashIcon } from "./icons";
 import { ProtectedText } from "./protected-text";
 import {
   SectionTemplates,
+  builtInTemplates,
   type BuiltInTemplate,
   type SectionTemplate,
 } from "./section-templates";
@@ -96,10 +95,7 @@ function allSteps(language: Language): Step[] {
       hint: "The preamble to include the mission statement, core principles, disclaimer, and credo",
       // A built-in template for each organization: F3's welcome, mission, principles and credo, or
       // FiA's disclaimer.
-      builtIns:
-        language === "f3"
-          ? [{ name: "F3 standard", body: DEFAULT_INTRODUCTION }]
-          : [{ name: "FiA Disclaimer", body: FIA_DISCLAIMER }],
+      builtIns: builtInTemplates(language).introduction,
     },
     {
       kind: "text",

@@ -59,7 +59,7 @@ export default function AboutPage() {
           <li>
             <strong className="text-ink">Plan a workout</strong> section by
             section, with saved templates and exercises from the F3, FiA and
-            region Exicons in the Library.
+            region Exicons, all in Rocket&apos;s Exicon.
           </li>
           <li>
             <strong className="text-ink">Run it</strong> with a timer on each
