@@ -42,6 +42,8 @@ export interface CurrentUser {
   paxNewSeen: string | null;
   /** The build number whose "What's new" note on Home was last dismissed. */
   whatsNewSeen: string | null;
+  /** Notices (by ID) the user chose not to show again; Settings → Notifications brings them back. */
+  noticesOff: string[];
 }
 
 /** Both F3 and FiA, which public workouts show until the user narrows it in Settings. */
@@ -166,6 +168,11 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
       typeof user.user_metadata?.whats_new_seen === "string"
         ? user.user_metadata.whats_new_seen
         : null,
+    noticesOff: Array.isArray(user.user_metadata?.notices_off)
+      ? (user.user_metadata.notices_off as unknown[]).filter(
+          (v): v is string => typeof v === "string",
+        )
+      : [],
     regionId:
       typeof user.user_metadata?.region_id === "string"
         ? user.user_metadata.region_id

@@ -35,6 +35,7 @@ const ACCOUNT_KEYS = [
   "pax_sources_off",
   "default_workout_visibility",
   "default_backblast_visibility",
+  "notices_off",
 ] as const;
 
 /** Everything a user owns, as written to an export file. */
