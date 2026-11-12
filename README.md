@@ -165,6 +165,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   share sheet, or copies it where sharing isn't available ("Link copied"). A draft or private one
   can't be opened by anyone else, so tapping it then says "Finish it to share a link" or "Make it
   public to share a link" instead.
+- **Link previews:** a Rocket link texted or posted in a chat shows Rocket's icon, a title
+  ("Workout on Rocket", "Backblast on Rocket", or "Rocket") and a short description, from the
+  pages' Open Graph tags. The image needs the site's full address, which the deploy workflows pass
+  as `NEXT_PUBLIC_SITE_URL` (production: the Pages address; dev: rocket-dev.f3sactown.com).
 - **[Next.js](https://nextjs.org) + TypeScript + Tailwind** for the web app
 - **[Supabase](https://supabase.com)** for the Postgres database and login (Supabase Auth)
 - **GitHub Pages** for hosting: the app is a static site that talks to Supabase from the browser

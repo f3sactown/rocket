@@ -64,6 +64,8 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           # Google's own sign-in button; without it, sign-in uses Supabase's redirect.
           NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          # Full links in link previews (the icon shown when a link is texted).
+          NEXT_PUBLIC_SITE_URL: https://rocket-dev.f3sactown.com
           NEXT_PUBLIC_BASE_PATH: ""
       - name: Keep search engines out
         run: |

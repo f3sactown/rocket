@@ -5,6 +5,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { FaviconSync } from "@/components/favicon-sync";
 import { LaunchSplash } from "@/components/launch-splash";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { DESCRIPTION, shareMetadata } from "@/lib/share-metadata";
 import { themeScript } from "@/lib/theme";
 import "./globals.css";
 
@@ -20,7 +21,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Rocket",
-  description: "Tools for F3 PAX, starting with backblasts.",
+  description: DESCRIPTION,
+  ...shareMetadata("Rocket"),
 };
 
 export const viewport: Viewport = {
