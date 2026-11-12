@@ -259,7 +259,10 @@ function Settings({ user }: { user: CurrentUser }) {
         <OrganizationPicker user={user} />
       </Section>
 
-      <Section title="Appearance" description="Saved on this device.">
+      <Section
+        title="Appearance"
+        description="The accent color is saved to your account, so it follows you to every device; the theme and launch animation are saved on this device."
+      >
         <div className="flex flex-col gap-2">
           <span className="label">Theme</span>
           <ThemeSwitcher />
