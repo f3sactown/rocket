@@ -30,8 +30,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - **Run workout** shows the whole workout to lead from (web addresses are clickable links), in Normal, Large or Extra large text, with
     each timer's countdown and each song as a button (♫ Title ♫) that opens its link. Like a Tabata timer, every stretch (each round's work and rest) ends with
     short beeps at 3, 2 and 1 seconds left and a long, louder beep at 0. Starting one timer pauses any other that's running. The timer in use pins to the top
-    when scrolled away, and the screen stays awake. At the bottom, Create backblast (or Continue or Open
-    backblast) sits beside a **Close** button back to the workout's page. Tabata and EMOM timers take 1 to 99 rounds.
+    when scrolled away, and the screen stays awake. At the bottom, a **Close** button back to the workout's page sits to the left of
+    Create backblast (or Continue or Open backblast). Leaving a private workout of yours that way
+    first asks whether to make it public (Make public / Keep private). Tabata and EMOM timers take 1 to 99 rounds.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
     choose again. Each workout shows how many times it's been reused by other Qs (counting archived copies; reusing your own doesn't count, just as you can't like your own).
     A reused workout credits the Q who wrote the first one (`workouts.original_author_id`), even
@@ -44,8 +45,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - A public workout dated **after today** isn't listed for anyone else (Discover, Trending, PAX
     profiles, likes) until its day, in Pacific time. Its Q sees it as usual, and its link (Share
     link) opens it for anyone signed in, with Run workout and Reuse; likes open on the day. Saving
-    one (the **Save workout** button on the review step, or Done when editing) says so in a notice
-    that can show every time or be silenced (Settings → Notifications brings it back).
+    one (the **Save workout** button on the review step) says so in a notice, and the workout's page
+    then explains its Public / Private switch in another. Each notice closes by choosing **Show
+    every time** (dismissed for now) or **Don't show again** (Settings → Notifications brings it back).
+  - **Editing** a finished workout or backblast puts it back to a draft as soon as something
+    changes (others stop seeing it), until it's saved again with Save workout or Save backblast.
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
   F3's, FiA's or both (the default), going by each author's region (authors with no region always
   show), and **Include my workouts** (off by default) adds yours; both are saved to your account.
@@ -104,20 +108,22 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - On a finished backblast's page, **Copy**, **Share** and copying the text on screen all give
     exactly the same text, including the link to its workout. Share sends only that text (no
     separate title), and Copy and Share wait the moment it takes to check the workout is public.
-- **Library:** at the top right of a workout's Warm-o-rama, and with each thang on The Thang,
-  **Library** opens the F3 and FiA Exicons together: search, choose the source (F3, FiA or both),
+- **Exicon:** at the top right of a workout's Warm-o-rama, and with each thang on The Thang,
+  **Exicon** opens the F3 and FiA Exicons together: search, choose the source (F3, FiA or both),
   Exercises / Routines and tags (tags that differ only in case, like "Warm-Up" and "Warm-up", are
   one tag; on a phone, two rows of tags that scroll sideways), read an entry, and add it by name or with its description. Each
   entry carries a badge: F3 in F3 red, FiA in FiA teal, and a region's own entries in that region's
   color. Each region gets a color in the order regions were added (blue, then pink, violet, amber, lime and on), so it's the same for every user.
   On the light theme the badges and source chips use deeper shades with white text.
-  The **Library** page (in the menu, under Discover) browses the same entries on their own, with
+  The **Exicon** page (in the menu, under Discover, at `/library`) browses the same entries on their own, with
   Copy and Copy with description in place of Add.
 - **Templates:** each text section (all but Notes and the Name-o-rama) can be saved as a template,
   and one per section can be starred as the default that fills new workouts or backblasts. The
   Introduction also offers a built-in template: **F3 standard** (welcome, the three Fs, mission,
-  five core principles, disclaimer and credo) in F3, or **FiA Disclaimer** in FiA.
-- **From pickers** (Library, PAX, Discover): on a phone, one line of chips that scrolls sideways.
+  five core principles, disclaimer and credo) in F3, or **FiA Disclaimer** in FiA. A built-in
+  template can be starred as the default too (saved as `builtin_defaults` in the account's
+  metadata); starring one clears the section's other default.
+- **From pickers** (Exicon, PAX, Discover): on a phone, one line of chips that scrolls sideways.
 - **About** (last in the menu): what Rocket is and does, the running version and build, and the
   **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
   open, the rest folded; commit links and repeated lines are left out.
@@ -140,7 +146,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   device, signed in for the reset, where you choose a new password. Supabase → Authentication →
   URL Configuration must have the site as the Site URL and under Redirect URLs.
 - **Settings:** name, email, password, region, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
-  locked while you have one, and free to choose with no region or one you added), theme, accent color (Red, Teal, Blue, Green, Orange or Violet; choosing a region sets Red for F3 or Teal for FiA), the launch
+  locked while you have one, and free to choose with no region or one you added), theme, accent color (Red, Teal, Blue, Green, Orange or Violet; saved to the account as `accent`, so it follows you to every device; the first region you choose sets Red for F3 or Teal for FiA, and later region changes leave it alone), the launch
   animation, what Home shows,
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,
   and whether a copied or shared backblast from a public workout ends with
@@ -184,7 +190,7 @@ packages/
   core/           Shared F3 domain types and logic (backblast formatting, timers, thangs)
 scripts/
   sync-regions.mjs  Nightly copy of each region's Google Sheet into Supabase
-  sync-exicon.mjs   Weekly copy of the F3 and FiA Exicons into Supabase for the Library
+  sync-exicon.mjs   Weekly copy of the F3 and FiA Exicons into Supabase for the Exicon
 supabase/
   config.toml     Local Supabase settings
   migrations/     SQL migrations: tables and row-level security policies
@@ -422,7 +428,7 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
 
 ## Exicon library
 
-The Library is a weekly copy of two Exicons:
+Rocket's Exicon is a weekly copy of two Exicons:
 
 - **F3:** F3 Nation's Exicon from the [F3 Codex](https://codex.f3nation.com/exicon), read from the
   list its Exicon page loads (`https://codex.f3nation.com/api/exicon`). An entry tagged "Routine" is
