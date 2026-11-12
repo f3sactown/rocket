@@ -7,7 +7,7 @@ import { backblastParts, termsFor, type Workout } from "@rocket/core";
 import Link from "next/link";
 import { Linkify } from "@/components/linkify";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { ArrowIcon } from "@/components/icons";
 import { ActiveTimer, ThangTimer } from "@/components/thang-timer";
@@ -50,6 +50,8 @@ function RunWorkout({ user }: { user: CurrentUser }) {
   const id = useSearchParams().get("id");
   const [size, setSize] = useState<Size>(savedSize);
   const [activeTimer, setActiveTimer] = useState<string | null>(null);
+  // The timer last started and how to pause it, so starting another pauses it.
+  const runningTimer = useRef<{ id: string; pause: () => void } | null>(null);
   // Your backblasts from this workout, to open the one for this run if it's started.
   const [backblasts, setBackblasts] = useState<
     { id: string; status: string; date: string | null }[]
@@ -160,7 +162,15 @@ function RunWorkout({ user }: { user: CurrentUser }) {
 
   return (
     <ActiveTimer.Provider
-      value={{ active: activeTimer, setActive: setActiveTimer }}
+      value={{
+        active: activeTimer,
+        setActive: (timerId, pause) => {
+          const before = runningTimer.current;
+          if (before && before.id !== timerId) before.pause();
+          runningTimer.current = { id: timerId, pause };
+          setActiveTimer(timerId);
+        },
+      }}
     >
       <article className="card">
         <div className="flex flex-col gap-3">
@@ -239,27 +249,40 @@ function RunWorkout({ user }: { user: CurrentUser }) {
           {section("Notes", workout.notes)}
           {section(terms.wordsOfWisdom, workout.wordsOfWisdom)}
         </div>
-        {result.mine &&
-          (() => {
-            const existing = backblasts[0];
-            if (!existing && isUpcoming(workout.date))
-              return <BackblastNotYet date={workout.date!} />;
-            const href = existing
-              ? existing.status === "draft"
-                ? `/backblasts/edit?id=${existing.id}`
-                : `/backblast?id=${existing.id}`
-              : `/backblasts/new?workout=${id}`;
-            return (
-              <Link href={href} className="btn w-full">
-                <ArrowIcon />
-                {existing
-                  ? existing.status === "draft"
-                    ? "Continue backblast"
-                    : "Open backblast"
-                  : "Create backblast"}
-              </Link>
-            );
-          })()}
+        <div className="flex items-start gap-2">
+          {result.mine &&
+            (() => {
+              const existing = backblasts[0];
+              if (!existing && isUpcoming(workout.date))
+                return (
+                  <div className="flex-1">
+                    <BackblastNotYet date={workout.date!} />
+                  </div>
+                );
+              const href = existing
+                ? existing.status === "draft"
+                  ? `/backblasts/edit?id=${existing.id}`
+                  : `/backblast?id=${existing.id}`
+                : `/backblasts/new?workout=${id}`;
+              return (
+                <Link href={href} className="btn flex-1">
+                  <ArrowIcon />
+                  {existing
+                    ? existing.status === "draft"
+                      ? "Continue backblast"
+                      : "Open backblast"
+                    : "Create backblast"}
+                </Link>
+              );
+            })()}
+          {/* Back to the workout's page, done running it. */}
+          <Link
+            href={`/workout?id=${id}`}
+            className={`btn shrink-0 px-5 ${result.mine ? "" : "ml-auto"}`}
+          >
+            Close
+          </Link>
+        </div>
       </article>
     </ActiveTimer.Provider>
   );

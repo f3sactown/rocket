@@ -29,8 +29,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     and left out of anything copied or shared.
   - **Run workout** shows the whole workout to lead from (web addresses are clickable links), in Normal, Large or Extra large text, with
     each timer's countdown and each song as a button (♫ Title ♫) that opens its link. Like a Tabata timer, every stretch (each round's work and rest) ends with
-    short beeps at 3, 2 and 1 seconds left and a long, louder beep at 0. The timer in use pins to the top
-    when scrolled away, and the screen stays awake.
+    short beeps at 3, 2 and 1 seconds left and a long, louder beep at 0. Starting one timer pauses any other that's running. The timer in use pins to the top
+    when scrolled away, and the screen stays awake. At the bottom, Create backblast (or Continue or Open
+    backblast) sits beside a **Close** button back to the workout's page. Tabata and EMOM timers take 1 to 99 rounds.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
     choose again. Each workout shows how many times it's been reused by other Qs (counting archived copies; reusing your own doesn't count, just as you can't like your own).
     A reused workout credits the Q who wrote the first one (`workouts.original_author_id`), even
