@@ -37,16 +37,21 @@ export async function chooseRegion(
     .eq("id", userId);
   if (error) return error.message;
   const language = single?.language ?? all;
+  // Only the first region chosen sets the accent color (Red for F3, Teal for FiA); after that,
+  // the accent stays as the user has it.
+  const { data: current } = await supabase.auth.getUser();
+  const firstAccent = language && !current.user?.user_metadata?.accent;
   // The account copy is what the app reads; updating it refreshes every screen.
   const { error: authError } = await supabase.auth.updateUser({
     data: language
       ? {
           region_id: single?.id ?? ALL_REGIONS[all!],
           language,
+          ...(firstAccent && { accent: language }),
         }
       : { region_id: null },
   });
-  if (!authError && language) setAccent(language);
+  if (!authError && firstAccent) setAccent(language);
   return authError?.message;
 }
 

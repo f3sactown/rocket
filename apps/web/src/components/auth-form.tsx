@@ -81,6 +81,8 @@ export function AuthForm() {
             region_id: region?.id ?? null,
             // A region sets the starting wording (F3 or FiA); it can be changed in Settings.
             ...(region && { language: region.language }),
+            // The region's accent color (Red for F3, Teal for FiA), on every device.
+            ...(region && { accent: region.language }),
             // A new account starts on this build, so Home's "What's new" waits for the next.
             whats_new_seen: process.env.NEXT_PUBLIC_BUILD_NUMBER,
             // Likewise the PAX page's "New on Rocket" note starts with whoever joins after them.

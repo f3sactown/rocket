@@ -1,7 +1,13 @@
 "use client";
 
+import {
+  DEFAULT_INTRODUCTION,
+  FIA_DISCLAIMER,
+  type Language,
+} from "@rocket/core";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "./auth-provider";
 import { SaveIcon, StarIcon, TemplatesIcon } from "./icons";
 
 export interface SectionTemplate {
@@ -28,6 +34,33 @@ export const DEFAULTABLE_SECTIONS = [
 
 /** Templates that ship with the app, offered alongside the user's own. */
 export type BuiltInTemplate = Pick<SectionTemplate, "name" | "body">;
+
+/**
+ * The built-in templates for each section, by organization: F3's welcome, mission, principles and
+ * credo, or FiA's disclaimer, for the Introduction.
+ */
+export function builtInTemplates(
+  language: Language,
+): Partial<Record<string, BuiltInTemplate[]>> {
+  return {
+    introduction:
+      language === "f3"
+        ? [{ name: "F3 standard", body: DEFAULT_INTRODUCTION }]
+        : [{ name: "FiA Disclaimer", body: FIA_DISCLAIMER }],
+  };
+}
+
+/** Saves which built-in template (by name) is each section's default, in the account's metadata. */
+async function saveBuiltInDefault(
+  current: Record<string, string>,
+  section: string,
+  name: string | null,
+) {
+  const next = { ...current };
+  if (name) next[section] = name;
+  else delete next[section];
+  return createClient().auth.updateUser({ data: { builtin_defaults: next } });
+}
 
 /** Save and load buttons for one workout or backblast section, with their inline panels. */
 export function SectionTemplates({
@@ -60,6 +93,9 @@ export function SectionTemplates({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const isEmpty = !body.trim() || body === "[]";
+  // Which built-in template is each section's default, if one is (instead of a saved one).
+  const builtInDefaults = useAuth().user?.builtInDefaults ?? {};
+  const builtInDefault = builtInDefaults[section] ?? null;
   const mine = templates.filter((t) => t.section === section);
   const summarize = preview ?? ((text: string) => text.trim().split("\n")[0]);
 
@@ -116,6 +152,15 @@ export function SectionTemplates({
         .update({ is_default: true })
         .eq("id", template.id);
       if (error) return setError(error.message);
+      // A saved template as the default replaces a built-in one.
+      if (builtInDefault) {
+        const { error } = await saveBuiltInDefault(
+          builtInDefaults,
+          section,
+          null,
+        );
+        if (error) return setError(error.message);
+      }
     }
     onTemplatesChange((all) =>
       all.map((t) =>
@@ -124,6 +169,31 @@ export function SectionTemplates({
           : t,
       ),
     );
+  }
+
+  /** Makes a built-in template this section's default (clearing a saved one), or stops it. */
+  async function toggleBuiltInDefault(template: BuiltInTemplate) {
+    const makeDefault = builtInDefault !== template.name;
+    if (makeDefault) {
+      const { error } = await createClient()
+        .from("section_templates")
+        .update({ is_default: false })
+        .eq("owner_id", userId)
+        .eq("section", section)
+        .eq("is_default", true);
+      if (error) return setError(error.message);
+      onTemplatesChange((all) =>
+        all.map((t) =>
+          t.section === section ? { ...t, is_default: false } : t,
+        ),
+      );
+    }
+    const { error } = await saveBuiltInDefault(
+      builtInDefaults,
+      section,
+      makeDefault ? template.name : null,
+    );
+    if (error) setError(error.message);
   }
 
   async function remove(template: SectionTemplate) {
@@ -198,11 +268,13 @@ export function SectionTemplates({
             </p>
           ) : (
             <ul className="flex flex-col gap-1">
-              {DEFAULTABLE_SECTIONS.includes(section) && mine.length > 0 && (
-                <li className="px-2 pb-1 text-xs text-muted">
-                  Star a template to fill it in every time you start a new one.
-                </li>
-              )}
+              {DEFAULTABLE_SECTIONS.includes(section) &&
+                mine.length + builtIns.length > 0 && (
+                  <li className="px-2 pb-1 text-xs text-muted">
+                    Star a template to fill it in every time you start a new
+                    one.
+                  </li>
+                )}
               {builtIns.map((t) => (
                 <TemplateRow
                   key={t.name}
@@ -210,6 +282,12 @@ export function SectionTemplates({
                   tag="Built-in"
                   preview={summarize(t.body)}
                   onLoad={() => load(t)}
+                  isDefault={builtInDefault === t.name}
+                  onToggleDefault={
+                    DEFAULTABLE_SECTIONS.includes(section)
+                      ? () => toggleBuiltInDefault(t)
+                      : undefined
+                  }
                 />
               ))}
               {mine.map((t) => (

@@ -77,7 +77,7 @@ const LINKS: {
   },
   {
     href: "/library",
-    label: "Library",
+    label: "Exicon",
     icon: <BookIcon />,
     match: (path) => path.startsWith("/library"),
   },
