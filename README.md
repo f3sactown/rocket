@@ -191,6 +191,7 @@ packages/
 scripts/
   sync-regions.mjs  Nightly copy of each region's Google Sheet into Supabase
   sync-exicon.mjs   Weekly copy of the F3 and FiA Exicons into Supabase for the Exicon
+  users-report.mjs  Daily email summarizing production's accounts
 supabase/
   config.toml     Local Supabase settings
   migrations/     SQL migrations: tables and row-level security policies
@@ -461,6 +462,32 @@ Each change to the database is a file in `supabase/migrations`. The dev site app
 the dev database when it deploys. On the production project, apply them with `pnpm db:push`, or
 paste them into the Supabase SQL Editor in filename order. A pull request that adds one says so,
 and should be merged only after the migration has run on production.
+
+## Daily users email
+
+`.github/workflows/users-report.yml` runs `scripts/users-report.mjs` every morning (13:37 UTC:
+about 5:37am Pacific in winter, 6:37am in summer; or on demand from the Actions tab). It reads
+**production** only (the repository's `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, never the
+`development` environment's) and emails one message:
+
+- the subject has the date and how many accounts are new (joined in the last 24 hours) and in all;
+- a line of totals, then **New in the last 24 hours** and **All users**, newest first, each with
+  name, region (or "All F3/FiA regions"), email masked to its first and last 6 characters
+  (`jonath…il.com`; the full address never leaves the script), date joined, finished workouts and
+  backblasts, and the likes and reuses other PAX gave their finished workouts (as Home counts
+  them).
+
+It sends through Gmail's SMTP server with an app password. Add these repository **secrets**
+(Settings → Secrets and variables → Actions):
+
+| Secret                 | What                                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `REPORT_SMTP_USER`     | The Gmail address it sends from                                                                                                            |
+| `REPORT_SMTP_PASSWORD` | A Google **app password** for that account (Google Account → Security → 2-Step Verification → App passwords; needs 2-Step Verification on) |
+| `REPORT_EMAIL_TO`      | Where it goes (commas for several)                                                                                                         |
+
+Another provider works too: set `REPORT_SMTP_HOST` and `REPORT_SMTP_PORT` (TLS, e.g. 465) in the
+workflow. To see the email without sending it, run the script with `REPORT_OUT=email.txt`.
 
 ## Backups
 
