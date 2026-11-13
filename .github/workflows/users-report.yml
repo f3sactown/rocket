@@ -1,0 +1,30 @@
+name: Daily users email
+
+# Every morning, email a summary of Rocket's accounts on production (not the dev site): who joined
+# in the last 24 hours, then everyone, with each one's name, region, masked email, workouts,
+# backblasts, likes and reuses. See "Daily users email" in the README for the secrets it needs.
+on:
+  schedule:
+    # 13:37 UTC is 5:37am Pacific in winter (6:37am in summer). GitHub can start it a little late.
+    - cron: "37 13 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  email:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/users-report.mjs
+        env:
+          # The repository's (production) settings; no environment, so never the dev project's.
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          REPORT_SMTP_USER: ${{ secrets.REPORT_SMTP_USER }}
+          REPORT_SMTP_PASSWORD: ${{ secrets.REPORT_SMTP_PASSWORD }}
+          REPORT_EMAIL_TO: ${{ secrets.REPORT_EMAIL_TO }}
