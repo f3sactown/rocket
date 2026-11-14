@@ -128,12 +128,6 @@ function allSteps(language: Language): Step[] {
     },
     {
       kind: "text",
-      name: "announcements",
-      title: "Announcements",
-      hint: "The site Q will have the normal announcements, this is a place for any other announcements that need to be said",
-    },
-    {
-      kind: "text",
       name: "wordsOfWisdom",
       title: terms.wordsOfWisdom,
       hint: "The wisdom you'd like to bestow onto the PAX this day",
@@ -175,7 +169,6 @@ function stepsFor(language: Language, mode: FormMode): Step[] {
         kind("workout"),
         text("notes"),
         kind("attendance"),
-        text("announcements"),
         text("secondF"),
         kind("review"),
       ];

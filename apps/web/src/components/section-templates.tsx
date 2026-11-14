@@ -27,7 +27,6 @@ export const DEFAULTABLE_SECTIONS = [
   "introduction",
   "warmup",
   "thang",
-  "announcements",
   "wordsOfWisdom",
   "secondF",
 ];
