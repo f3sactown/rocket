@@ -635,6 +635,7 @@ export async function resetAccount(): Promise<void> {
     // A workout's notes go with it.
     () => supabase.from("workouts").delete().eq("author_id", id),
     () => supabase.from("section_templates").delete().eq("owner_id", id),
+    () => supabase.from("notification_settings").delete().eq("user_id", id),
     () =>
       supabase
         .from("profiles")

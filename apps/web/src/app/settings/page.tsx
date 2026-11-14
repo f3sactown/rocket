@@ -12,6 +12,7 @@ import {
 } from "@/components/auth-provider";
 import { AccountData } from "@/components/account-data";
 import { NOTICES } from "@/components/notice-dialog";
+import { PushSettings } from "@/components/push-settings";
 import { PasswordInput } from "@/components/password-input";
 import { RegionSettings } from "@/components/region-settings";
 import {
@@ -305,9 +306,13 @@ function Settings({ user }: { user: CurrentUser }) {
 
       <Section
         title="Notifications"
-        description="Notices you chose not to show again. Saved to your account."
+        description="Reminders and news on your phone or computer. Which ones come, and when, is saved to your account; turn them on for each device."
       >
-        <NoticeReset off={user.noticesOff} />
+        <PushSettings userId={user.id} />
+        <div className="flex flex-col gap-2 border-t border-line pt-4">
+          <span className="label">Notices you chose not to show again</span>
+          <NoticeReset off={user.noticesOff} />
+        </div>
       </Section>
 
       <Section

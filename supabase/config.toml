@@ -387,6 +387,12 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Push notifications: called by the database every 5 minutes (pg_cron, with no user's token) and
+# by the app. Sending is idempotent (each notification is logged once), so it takes no JWT; the
+# test action checks the user's token itself.
+[functions.push-reminders]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
