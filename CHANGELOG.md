@@ -4,6 +4,80 @@ All notable changes to Rocket are recorded here. This file is maintained automat
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commit](https://www.conventionalcommits.org) messages; see [RELEASING.md](RELEASING.md).
 
+## [0.1.0-alpha.7](https://github.com/f3sactown/rocket/compare/v0.1.0-alpha.6...v0.1.0-alpha.7) (2026-11-13)
+
+
+### Features
+
+* a backblast waits for its workout's date, saying why ([d80c61d](https://github.com/f3sactown/rocket/commit/d80c61dc11226fda994264a98142b4ca17fc1346))
+* About page ([d5df4c8](https://github.com/f3sactown/rocket/commit/d5df4c86025435adf8ec3c57e2b4f800c7d6a787))
+* About page says Q Planner and Band and Slack ([783e9a3](https://github.com/f3sactown/rocket/commit/783e9a37f57ea6137e0b2b686ed43e978f0e2209))
+* backblasts and workouts link and unlink as their AO or date changes ([0da9d75](https://github.com/f3sactown/rocket/commit/0da9d75284d7431c656f0349d4f59d671b63e2e6))
+* backblasts and workouts link and unlink as their AO or date changes ([96dcf6e](https://github.com/f3sactown/rocket/commit/96dcf6eb9ef7f4420aa79e80d8053b1d30821f9f))
+* built-in templates like F3 standard can be starred as the default ([69a695e](https://github.com/f3sactown/rocket/commit/69a695edb6a4edc51c07bd13e93b68d0bed55eda))
+* changelog of every release on the About page ([0203290](https://github.com/f3sactown/rocket/commit/02032905bc3bbc427c53126e106697c42a827f9d))
+* changelog of every release on the About page ([2de6ffa](https://github.com/f3sactown/rocket/commit/2de6ffacdadf78f4a0df350a7a72af116bd1671a))
+* Continue with Google, with a Welcome step for the F3 name and region ([7feba43](https://github.com/f3sactown/rocket/commit/7feba4385b36ac11abfa57e7751946007e6efe0d))
+* Continue with Google, with a Welcome step for the F3 name and region ([676d94c](https://github.com/f3sactown/rocket/commit/676d94c87093b5ec56f1765c1ca7f13d38f11559))
+* editing a finished workout or backblast makes it a draft until it's saved again ([a8aec0e](https://github.com/f3sactown/rocket/commit/a8aec0e9873d17ef59abecb76436c92c0851a2ad))
+* FiA calls Words of Wisdom CoT; no Share on the review step ([b935e3a](https://github.com/f3sactown/rocket/commit/b935e3ac84e0864ecda1e7f2c1aa167e5cbecf53))
+* future workouts stay unlisted until their day; their link still opens them ([66c31a1](https://github.com/f3sactown/rocket/commit/66c31a14e0b777d1f1c95eccb56aebded57005bf))
+* future workouts stay unlisted until their day; their link still opens them ([d696ffc](https://github.com/f3sactown/rocket/commit/d696ffc28375753980e4a712362980e8b20c912a))
+* Google's own sign-in button on Rocket's page, so Google names Rocket's site ([a733a70](https://github.com/f3sactown/rocket/commit/a733a7061b301277c5511d2d073c3d7f4b5e8da8))
+* Google's own sign-in button on Rocket's page, so Google names Rocket's site ([e3c6afd](https://github.com/f3sactown/rocket/commit/e3c6afd048a198626eede7dc12267414d48c0906))
+* hide horizontal scrollbars throughout the app ([7e42b3f](https://github.com/f3sactown/rocket/commit/7e42b3f0b52e5e54e48cef3dc76b39e864016a1f))
+* hide horizontal scrollbars; sign-in screen leads with Google ([8c2ca1e](https://github.com/f3sactown/rocket/commit/8c2ca1e48440abb40b6d2f1d671300b8b0d28834))
+* Intervals is now Tabata; timers beep from 4 seconds left ([da05d43](https://github.com/f3sactown/rocket/commit/da05d43dd8afc38884c5b66cf661b441f878102c))
+* Library tags ignore case; From chips are one sideways-scrolling line on phones ([2472307](https://github.com/f3sactown/rocket/commit/247230709cde2218a22deb6708bbf99528f71cc0))
+* link a backblast to a workout, automatically by AO and date; no Needs backblast once archived ([090bb39](https://github.com/f3sactown/rocket/commit/090bb399de2ee48de72111998f4104f59d7fc7e0))
+* link a backblast to a workout, automatically by AO and date; no Needs backblast once archived ([a2b51b5](https://github.com/f3sactown/rocket/commit/a2b51b51ae58ed790a706173301b57da14abcabe))
+* links texted or shared from Rocket show the app's icon in the preview ([97ea8fd](https://github.com/f3sactown/rocket/commit/97ea8fd11c3e0d1e5e9f26ac745838585add4227))
+* new F3 standard introduction and a FiA Disclaimer template ([cfb87d5](https://github.com/f3sactown/rocket/commit/cfb87d57869ec361977c9d0ff06018fd636a99a7))
+* new intro templates, Tabata timer and beeps, case-insensitive tags, one-line From rows, About page ([80523e6](https://github.com/f3sactown/rocket/commit/80523e6237ab930104998b9c5db96b0f7c038723))
+* notices close by choosing Show every time or Don't show again, and a saved workout or backblast explains its Public / Private switch ([eb43ce7](https://github.com/f3sactown/rocket/commit/eb43ce733285a52578ae956912ee617622121885))
+* PAX profiles show whether the PAX is on Rocket ([6317bea](https://github.com/f3sactown/rocket/commit/6317bea6d91297168a5223327236287b495a753e))
+* PAX profiles show whether the PAX is on Rocket ([8bb49fe](https://github.com/f3sactown/rocket/commit/8bb49fe05ef975bd111906b6216729153711f379))
+* Run workout has a Close button beside Create backblast ([a53e718](https://github.com/f3sactown/rocket/commit/a53e7185352e0f468c72cfd677575f220a10cd19))
+* Run workout puts Close on the left and asks to make a private workout public when you leave ([a675f5e](https://github.com/f3sactown/rocket/commit/a675f5ed56762d63c0753cca20995393a6b99cce))
+* Save workout replaces Publish, with a notice that upcoming workouts stay hidden until their day ([551d6b7](https://github.com/f3sactown/rocket/commit/551d6b7c9044cc52943159afd1f5bc9f06e0d180))
+* Share link in the actions row of workouts and backblasts ([b365ea5](https://github.com/f3sactown/rocket/commit/b365ea5a0814565ebcfdfa67372f6f9d548beeac))
+* Share link in the actions row of workouts and backblasts; Delete without the noun ([be2011f](https://github.com/f3sactown/rocket/commit/be2011f57359932fd4e0318ab02a98183008c7f5))
+* sign-in screen leads with Google, with email behind a link ([f1fa8d5](https://github.com/f3sactown/rocket/commit/f1fa8d5e83af715992d20e3d8c7ded9643f13069))
+* sign-in screen leads with Google, with email behind a link ([689c525](https://github.com/f3sactown/rocket/commit/689c525bdf3c9cd17354df3ad9078e74cf758427))
+* song buttons in Run workout have a note on each side ([a1ef219](https://github.com/f3sactown/rocket/commit/a1ef219b0467de769099b8c60fe8d2698378ee6d))
+* starting a timer in Run workout pauses the one already running ([f9de243](https://github.com/f3sactown/rocket/commit/f9de243be3508278dae3dedf17e45b1948e403d9))
+* Tabata naming and 5 beeps, backblasts wait for the workout date, FiA CoT, About tweaks ([115d999](https://github.com/f3sactown/rocket/commit/115d9999a4524c7b0f1a3a2975572568b5a244ed))
+* Tabata timer; timers beep at 3, 2 and 1 seconds left and long at 0 ([12c0a58](https://github.com/f3sactown/rocket/commit/12c0a587f64400a037baa08587d09398fbe5656e))
+* the exercise screen is called Exicon instead of Library ([99878c8](https://github.com/f3sactown/rocket/commit/99878c8eeb36bb78e6b847f98f866b0620f3ce75))
+* the F3 and FiA accent colors are named Red and Teal ([48d790c](https://github.com/f3sactown/rocket/commit/48d790cd2b2fa2c4de7aeacb66004f9e6080b659))
+* the F3 and FiA accent colors are named Red and Teal ([e464181](https://github.com/f3sactown/rocket/commit/e46418143d7f18d8adf4a8061692e9924759d8b2))
+* the Google sign-in button looks like Rocket's own buttons ([34d5bd7](https://github.com/f3sactown/rocket/commit/34d5bd706bb45d2b14e397cf1eed11767dbf93ed))
+* the Google sign-in button looks like Rocket's own buttons ([8042425](https://github.com/f3sactown/rocket/commit/8042425be2e3d2e54cb5c3ddf82f8dc8e89a984f))
+* write database backups to Apps/Rocket/Backup in Google Drive ([44f6295](https://github.com/f3sactown/rocket/commit/44f62953cb0924a893c7d8b7fb60c928504ccf52))
+* write database backups to Apps/Rocket/Backup in Google Drive ([bfc4d79](https://github.com/f3sactown/rocket/commit/bfc4d790cba5f146526468b84359e2ed114f6066))
+* your accent color follows you to every device, and only your first region choice sets it ([2a5fe47](https://github.com/f3sactown/rocket/commit/2a5fe478aa939f1d0902385af71df6bde95836c8))
+* your likes and reuses at the top of Home; Liked by you on Discover ([d83cfe0](https://github.com/f3sactown/rocket/commit/d83cfe0ac420d693127d94e96eebb8d3d9c7abda))
+* your likes and reuses at the top of Home; Liked by you on Discover ([07bf1d0](https://github.com/f3sactown/rocket/commit/07bf1d0497678701edaffc348142e991e2abf0ec))
+
+
+### Bug Fixes
+
+* a backblast's Copy, Share and screen copy give the same text, share message included ([a248540](https://github.com/f3sactown/rocket/commit/a2485404980bd0a3242d66cc10cd9061e74220fb))
+* backblast Copy/Share/screen copy match; timers beep 3, 2, 1 and long at 0 ([91bf8aa](https://github.com/f3sactown/rocket/commit/91bf8aa87f1fc60942d61a9afb3639b8f2893c21))
+* Continue with Google goes to Google's page and back to Rocket, so it works on phones ([1b1746b](https://github.com/f3sactown/rocket/commit/1b1746b819e7f73f9c5b2c403c508f88bd666c3d))
+* Continue with Google goes to Google's page and back to Rocket, so it works on phones ([98c003a](https://github.com/f3sactown/rocket/commit/98c003a92491f812c0e5c0b0e3856e2dc00a731b))
+* leave "Site Closed (Archived)" out of rosters, regulars and PAX totals ([b417c89](https://github.com/f3sactown/rocket/commit/b417c89996103a55881c3a7fadf4b70a5f3095c5))
+* leave "Site Closed (Archived)" out of rosters, regulars and PAX totals ([cc13e39](https://github.com/f3sactown/rocket/commit/cc13e39f2f29484ae050f9559f5f68fa4bfea77d))
+* leave your own workouts out of Trending on Home ([dc9c9af](https://github.com/f3sactown/rocket/commit/dc9c9afa22e5c7a71ee164ecadfaff2578217741))
+* Rounds can be cleared and retyped, so Tabata and EMOM take any count up to 99 ([646ac2d](https://github.com/f3sactown/rocket/commit/646ac2d8b3c55c342a1f48f4abe42b953f1ef81d))
+* rows of tiles scroll on desktop, with arrow buttons and mouse dragging ([0c6033d](https://github.com/f3sactown/rocket/commit/0c6033dbc8df01205007e23b40efc114e8d1425f))
+* timers beep at 3, 2 and 1 seconds left and long at 0, work and rest alike ([d1ae665](https://github.com/f3sactown/rocket/commit/d1ae665f5a834604ce7cd6c12f825708fbc8fe68))
+
+
+### Reverts
+
+* hold the Google-first sign-in screen until it's approved ([eec99cf](https://github.com/f3sactown/rocket/commit/eec99cf70387c8639459f8071cf8ef059cec90a0))
+
 ## [0.1.0-alpha.6](https://github.com/f3sactown/rocket/compare/v0.1.0-alpha.5...v0.1.0-alpha.6) (2026-11-08)
 
 
