@@ -29,35 +29,43 @@ async function silence(id: string) {
 }
 
 /**
- * The two choices that close a notice: "Show every time" just dismisses it for now, and "Don't
- * show again" silences it too (Settings → Notifications brings it back).
+ * How a notice closes: a "Don't show again" checkbox, and OK to dismiss it. With the box ticked,
+ * OK silences it too (Settings → Notifications brings it back).
  */
 function NoticeChoices({ id, onClose }: { id: string; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
-  const chip =
-    "rounded-full border border-line-strong px-3 py-1.5 text-sm font-medium text-ink transition hover:border-accent/60 disabled:opacity-50";
+  const [never, setNever] = useState(false);
   return (
-    <div className="flex flex-wrap gap-2">
-      <button type="button" autoFocus onClick={onClose} className={chip}>
-        Show every time
-      </button>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <label className="flex items-center gap-2 text-sm text-ink">
+        <input
+          type="checkbox"
+          checked={never}
+          onChange={(e) => setNever(e.target.checked)}
+          className="size-4 accent-[var(--color-accent)]"
+        />
+        Don&apos;t show again
+      </label>
       <button
         type="button"
+        autoFocus
         disabled={busy}
         onClick={async () => {
-          setBusy(true);
-          await silence(id);
+          if (never) {
+            setBusy(true);
+            await silence(id);
+          }
           onClose();
         }}
-        className={chip}
+        className="rounded-full border border-line-strong px-5 py-1.5 text-sm font-medium text-ink transition hover:border-accent/60 disabled:opacity-50"
       >
-        Don&apos;t show again
+        OK
       </button>
     </div>
   );
 }
 
-/** A notice that pops up after something happens; choosing whether to show it again closes it. */
+/** A notice that pops up after something happens, closed with OK. */
 export function NoticeDialog({
   id,
   title,
