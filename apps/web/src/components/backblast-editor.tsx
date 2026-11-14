@@ -29,7 +29,7 @@ const WORKOUT_DEFAULTS = ["introduction", "warmup", "thang", "wordsOfWisdom"];
  */
 function defaultSections(mode: FormMode, backblast: Backblast): string[] {
   if (mode === "workout") return WORKOUT_DEFAULTS;
-  const own = ["secondF"];
+  const own = ["announcements", "secondF"];
   return backblast.workoutId ? own : [...own, ...WORKOUT_DEFAULTS];
 }
 
