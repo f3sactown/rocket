@@ -29,7 +29,6 @@ const BACKBLAST_COLUMNS = [
   "warmup",
   "thang",
   "notes",
-  "announcements",
   "words_of_wisdom",
   "second_f",
 ] as const;
