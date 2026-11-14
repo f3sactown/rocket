@@ -46,8 +46,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     profiles, likes) until its day, in Pacific time. Its Q sees it as usual, and its link (Share
     link) opens it for anyone signed in, with Run workout and Reuse; likes open on the day. Saving
     one (the **Save workout** button on the review step) says so in a notice, and the workout's page
-    then explains its Public / Private switch in another. Each notice closes by choosing **Show
-    every time** (dismissed for now) or **Don't show again** (Settings → Notifications brings it back).
+    then explains its Public / Private switch in another. Each notice closes with **OK**; ticking
+    its **Don't show again** box first silences it (Settings → Notifications brings it back).
   - **Editing** a finished workout or backblast puts it back to a draft as soon as something
     changes (others stop seeing it), until it's saved again with Save workout or Save backblast.
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
