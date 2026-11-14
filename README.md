@@ -64,7 +64,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   buttons at either end page through a row of tiles, and it can be dragged.
 - **PAX** (in the menu, under Search) lists everyone on your region's roster (or every region's,
   when you've chosen all regions) as tiles in alphabetical order (three across on a phone, four on larger screens), with a search box that matches
-  names. Each tile shows the PAX's regions, posts and Qs (from the synced region stats, or read
+  names and an **Only PAX on Rocket** checkbox (saved to the account as `pax_rocket_only`) that
+  leaves just the roster names with a Rocket account, matched as on their profile. Each tile shows the PAX's regions, posts and Qs (from the synced region stats, or read
   straight from the sheet for a region added since the last sync) and the
   total likes and reuses on their public Rocket workouts, with the same heart and reuse icons as
   workout tiles. A **From** picker of regions, in each
