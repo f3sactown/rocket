@@ -152,9 +152,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,
   and whether a copied or shared public workout, or backblast from one, ends with
   a link to that workout asking PAX to like and reuse it (a few lines below the text, and on a
-  backblast right above the hidden PAX list; on by default, never shown on screen). **Notifications** lists the notices you chose not to show again
-  (`notices_off` in the account's metadata, included in exports), with **Reset notifications** to
-  show them all again.
+  backblast right above the hidden PAX list; on by default, never shown on screen). **Notifications** turns on push notifications for the device and
+  chooses which come and when (see [Push notifications](#push-notifications)), and lists the
+  notices you chose not to show again (`notices_off` in the account's metadata, included in
+  exports), with **Reset notifications** to show them all again.
 - **Copying:** the backblast and workout text on their pages and on the review step can't be
   selected, so it's copied with Copy or Share. If a copy takes it in anyway (Select All), it gets
   exactly what Copy gives, link and PAX list included. **Your data** exports everything you have
@@ -196,6 +197,7 @@ scripts/
 supabase/
   config.toml     Local Supabase settings
   migrations/     SQL migrations: tables and row-level security policies
+  functions/      Edge Functions: push-reminders sends push notifications
 ```
 
 New tools go in `apps/` (or as routes inside `apps/web`); code shared between them goes in `packages/`.
@@ -463,6 +465,46 @@ Each change to the database is a file in `supabase/migrations`. The dev site app
 the dev database when it deploys. On the production project, apply them with `pnpm db:push`, or
 paste them into the Supabase SQL Editor in filename order. A pull request that adds one says so,
 and should be merged only after the migration has run on production.
+
+## Push notifications
+
+Rocket sends notifications to phones and computers with **Web Push**: a service worker
+(`apps/web/public/sw.js`) shows them, and the `push-reminders` Edge Function
+(`supabase/functions/push-reminders`) sends them. Each PAX turns them on per device in **Settings →
+Notifications** (`push_subscriptions`) and chooses, for all their devices
+(`notification_settings`, with the device's time zone):
+
+| Notification                      | Default                                                                |
+| --------------------------------- | ---------------------------------------------------------------------- |
+| The day before your workout       | On, at 6:00am                                                          |
+| Before your workout starts        | On, 40 minutes before its start time                                   |
+| Write the backblast               | On, 30 minutes after it ends, if its backblast isn't finished          |
+| Finish a draft                    | On, 2 days after it's started; a 2nd (4 days) and 3rd (6 days) are off |
+| Likes and reuses of your workouts | On                                                                     |
+| A new PAX in your region joins    | On                                                                     |
+
+Workout reminders are for the Q's own finished workouts; times are read from the workout's time
+(like `5:15am-6:00am`; one with only a start counts as 45 minutes). Every 5 minutes the database
+(pg_cron) calls the function, which sends what's due and logs each one (`notification_log`) so
+nothing goes out twice. The schedule is in `supabase/functions/_shared/reminders.ts` (tested in
+`packages/core`).
+
+**iPhone and iPad** only offer notifications to Rocket added to the Home Screen (Share → Add to
+Home Screen) and opened from there; Settings says so.
+
+### Setting it up (once per Supabase project: dev and production)
+
+1. **Keys:** run `npx web-push generate-vapid-keys`. In Supabase → Edge Functions → Secrets, add
+   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (`mailto:` and an address people
+   can reach). The same pair can serve both projects. Changing the keys means each device turns
+   notifications on again.
+2. **The function:** with a GitHub secret `SUPABASE_ACCESS_TOKEN` (Supabase → Account → Access
+   Tokens), the dev and Pages workflows deploy it to their project. Without it, deploy it by hand:
+   `supabase functions deploy push-reminders --project-ref <ref> --no-verify-jwt`.
+3. **The schedule:** the migration schedules the call, which needs the project's address in the
+   Vault. In the SQL Editor:
+   `select vault.create_secret('https://<ref>.supabase.co', 'project_url');`
+   Until it's there, nothing is sent.
 
 ## Daily users email
 

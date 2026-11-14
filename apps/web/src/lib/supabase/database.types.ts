@@ -299,6 +299,66 @@ export type Database = {
           },
         ];
       };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["push_subscriptions"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      notification_settings: {
+        Row: {
+          user_id: string;
+          settings: Json;
+          time_zone: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          settings?: Json;
+          time_zone?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["notification_settings"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      notification_log: {
+        Row: {
+          user_id: string;
+          kind: string;
+          ref: string;
+          sent_at: string;
+        };
+        Insert: {
+          user_id: string;
+          kind: string;
+          ref: string;
+          sent_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["notification_log"]["Insert"]
+        >;
+        Relationships: [];
+      };
       workout_archives: {
         Row: {
           user_id: string;
@@ -415,6 +475,19 @@ export type Database = {
           reuses: number;
           liked: boolean;
         }[];
+      };
+      save_push_subscription: {
+        Args: {
+          p_endpoint: string;
+          p_p256dh: string;
+          p_auth: string;
+          p_user_agent?: string | null;
+        };
+        Returns: undefined;
+      };
+      run_push_reminders: {
+        Args: Record<string, never>;
+        Returns: undefined;
       };
       restore_workout_links: {
         Args: { p_old: string; p_new: string };
