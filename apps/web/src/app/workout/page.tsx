@@ -2,7 +2,12 @@
 
 import { BackblastNotYet } from "@/components/backblast-not-yet";
 
-import { formatBackblast, formatDate, type Workout } from "@rocket/core";
+import {
+  formatBackblast,
+  formatDate,
+  workoutLinkText,
+  type Workout,
+} from "@rocket/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -159,7 +164,18 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
   const { workout } = result;
   const mine = result.authorId === user.id;
   // What's copied and shared leaves out the Q's notes; the page shows them in place for the Q.
-  const text = formatBackblast(workout, user.language);
+  // Like a shared backblast, it ends (a few lines down, not shown on screen) with this workout's
+  // link asking PAX to like and reuse it: when that's on in Settings and the workout is public.
+  const shareable = result.status === "published" && visibility === "public";
+  const closing =
+    user.shareWorkoutLink && shareable
+      ? workoutLinkText(
+          `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/workout/?id=${id}`,
+        )
+      : null;
+  const text = [formatBackblast(workout, user.language), closing]
+    .filter(Boolean)
+    .join("\n\n\n\n");
   const shown = formatBackblast({ ...workout, notes }, user.language);
   return (
     <article className="card">

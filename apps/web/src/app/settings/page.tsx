@@ -297,8 +297,8 @@ function Settings({ user }: { user: CurrentUser }) {
         <AccountSwitch
           divided
           on={user.shareWorkoutLink}
-          label="Link to the workout in shared backblasts"
-          hint="When a backblast from a public workout is copied or shared, it ends with a link to that workout, asking PAX to like it and reuse it. Not shown on screen."
+          label="Link to the workout in shared workouts and backblasts"
+          hint="When a public workout, or a backblast from one, is copied or shared, it ends with a link to that workout, asking PAX to like it and reuse it. Not shown on screen."
           save={(on) => ({ share_workout_link: on })}
         />
       </Section>
