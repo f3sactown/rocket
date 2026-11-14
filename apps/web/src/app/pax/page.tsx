@@ -28,6 +28,8 @@ function Pax({ user }: { user: CurrentUser }) {
   const data = useLoad(loadAllPax, []);
   const [query, setQuery] = useState("");
   const [off, setOff] = useState(user.paxSourcesOff);
+  // Only PAX who've signed up for Rocket; saved to the account like the From picker.
+  const [onlyRocket, setOnlyRocket] = useState(user.paxRocketOnly);
   const [shown, setShown] = useState(PAGE);
   const colors = useMemo(
     () => regionColors(data.value?.regions ?? []),
@@ -63,9 +65,10 @@ function Pax({ user }: { user: CurrentUser }) {
         .filter(
           (p) =>
             p.regions.length > 0 &&
+            (!onlyRocket || p.onRocket) &&
             words.every((w) => p.name.toLowerCase().includes(w)),
         ),
-    [data.value, off, words],
+    [data.value, off, onlyRocket, words],
   );
 
   return (
@@ -101,6 +104,22 @@ function Pax({ user }: { user: CurrentUser }) {
             onChange={choose}
           />
         )}
+        <label className="flex items-center gap-2 self-start text-sm text-ink">
+          <input
+            type="checkbox"
+            checked={onlyRocket}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setOnlyRocket(next);
+              setShown(PAGE);
+              createClient()
+                .auth.updateUser({ data: { pax_rocket_only: next } })
+                .then(() => {});
+            }}
+            className="size-4 accent-[var(--color-accent)]"
+          />
+          Only PAX on Rocket
+        </label>
       </div>
 
       {data.error ? (
@@ -109,7 +128,11 @@ function Pax({ user }: { user: CurrentUser }) {
         <p className="panel px-3 py-8 text-center text-muted">Loading…</p>
       ) : results.length === 0 ? (
         <p className="panel px-3 py-8 text-center text-muted">
-          {query ? `No PAX match “${query}”.` : "No PAX on these rosters yet."}
+          {query
+            ? `No PAX match “${query}”.`
+            : onlyRocket
+              ? "No PAX on these rosters have signed up for Rocket yet."
+              : "No PAX on these rosters yet."}
         </p>
       ) : (
         <div className="flex flex-col gap-3">

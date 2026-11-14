@@ -33,6 +33,7 @@ const ACCOUNT_KEYS = [
   "discover_own_asked",
   "share_workout_link",
   "pax_sources_off",
+  "pax_rocket_only",
   "default_workout_visibility",
   "default_backblast_visibility",
   "notices_off",
