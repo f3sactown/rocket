@@ -492,6 +492,20 @@ nothing goes out twice. The schedule is in `supabase/functions/_shared/reminders
 **iPhone and iPad** only offer notifications to Rocket added to the Home Screen (Share → Add to
 Home Screen) and opened from there; Settings says so.
 
+**Setting up a device:** the first time someone is signed in on a device, a short setup walks
+them through it, one step at a time:
+
+1. **Install Rocket**, unless it's already running as an app: an **Install Rocket** button where
+   the browser offers one (Chrome and Edge), or the steps for the device (Share → Add to Home
+   Screen on iPhone and iPad; the browser menu on Android; the address bar or File → Add to Dock on
+   a computer).
+2. **Turn on notifications**, with **Send a test** once they're on.
+
+Each step can be skipped. Finished or skipped, it doesn't come back on that device
+(`rocket-device-setup` in local storage); **Set up this device again** in Settings →
+Notifications runs it again. On iPhone, the Home Screen app keeps its own storage, so opening it
+from there picks up at the notifications step.
+
 ### Setting it up (once per Supabase project: dev and production)
 
 1. **Keys:** run `npx web-push generate-vapid-keys`. In Supabase → Edge Functions → Secrets, add

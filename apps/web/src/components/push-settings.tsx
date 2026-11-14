@@ -13,6 +13,7 @@ import {
   sendTestPush,
 } from "@/lib/push";
 import { createClient } from "@/lib/supabase/client";
+import { openDeviceSetup } from "./device-setup";
 
 const noSubscribe = () => () => {};
 
@@ -114,7 +115,16 @@ export function PushSettings({ userId }: { userId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <span className="label">This device</span>
+        <span className="flex items-center justify-between gap-3">
+          <span className="label">This device</span>
+          <button
+            type="button"
+            onClick={openDeviceSetup}
+            className="link text-xs"
+          >
+            Set up this device again
+          </button>
+        </span>
         {support === "needs-home-screen" ? (
           <p className="text-sm text-ink-soft">
             On iPhone and iPad, add Rocket to your Home Screen first: tap Share,
