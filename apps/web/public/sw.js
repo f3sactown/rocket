@@ -18,7 +18,8 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(data.title || "Rocket", {
       body: data.body || "",
       icon: new URL("icons/icon-192.png", scope).href,
-      badge: new URL("icons/icon-192.png", scope).href,
+      // Android draws the small status-bar icon from its shape alone: a white rocket on clear.
+      badge: new URL("icons/badge-96.png", scope).href,
       tag: data.tag,
       data: { url: new URL(data.url || "", scope).href },
     }),

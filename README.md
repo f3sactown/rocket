@@ -469,7 +469,8 @@ and should be merged only after the migration has run on production.
 ## Push notifications
 
 Rocket sends notifications to phones and computers with **Web Push**: a service worker
-(`apps/web/public/sw.js`) shows them, and the `push-reminders` Edge Function
+(`apps/web/public/sw.js`) shows them (with `icons/badge-96.png`, a white rocket on clear, as
+Android's small status-bar icon; its source is `icons/badge.svg`), and the `push-reminders` Edge Function
 (`supabase/functions/push-reminders`) sends them. Each PAX turns them on per device in **Settings →
 Notifications** (`push_subscriptions`) and chooses, for all their devices
 (`notification_settings`, with the device's time zone):
