@@ -570,7 +570,7 @@ export function BackblastForm({
             {step.title}
             {step.kind === "text" && step.optional && (
               <span className="ml-2 align-middle text-sm font-normal text-muted">
-                Optional
+                (Optional)
               </span>
             )}
           </h2>
