@@ -62,6 +62,8 @@ type Step =
       builtIns?: BuiltInTemplate[];
       /** Whether the page has no saved templates. */
       noTemplates?: boolean;
+      /** Marked "Optional" beside its title. */
+      optional?: boolean;
     }
   | { kind: "attendance"; title: string; hint: string }
   /** A backblast's copy of its workout's sections, all on one page. */
@@ -128,6 +130,13 @@ function allSteps(language: Language): Step[] {
     },
     {
       kind: "text",
+      name: "announcements",
+      title: "Announcements",
+      optional: true,
+      hint: "The site Q will have the normal announcements, this is a place for any other announcements that need to be said",
+    },
+    {
+      kind: "text",
       name: "wordsOfWisdom",
       title: terms.wordsOfWisdom,
       hint: "The wisdom you'd like to bestow onto the PAX this day",
@@ -169,6 +178,7 @@ function stepsFor(language: Language, mode: FormMode): Step[] {
         kind("workout"),
         text("notes"),
         kind("attendance"),
+        text("announcements"),
         text("secondF"),
         kind("review"),
       ];
@@ -558,6 +568,11 @@ export function BackblastForm({
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
           <h2 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-ink">
             {step.title}
+            {step.kind === "text" && step.optional && (
+              <span className="ml-2 align-middle text-sm font-normal text-muted">
+                Optional
+              </span>
+            )}
           </h2>
           {step.kind === "text" &&
             mode === "workout" &&

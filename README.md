@@ -91,7 +91,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   its Q's PAX profile. Its Q can switch it to **private** on its page. The backblast holds
   its own copy of the workout's sections, which can be edited without changing the workout
   (**Update from workout** copies it again). Its pages are Workout, Notes, Name-o-rama (Qs and
-  PAX, with roster suggestions and the AO's regulars), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
+  PAX, with roster suggestions and the AO's regulars), Announcements (optional; the backblast's own, not
+  copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
   and Share are on the finished backblast's page).
   - **Linking to a workout:** a backblast and its Q's workout stay linked while they're at the same
     AO on the same date (ignoring case and spaces). The database keeps it so (triggers in
