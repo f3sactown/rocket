@@ -31,6 +31,8 @@ export interface PaxEntry {
   /** Likes and reuses across their public Rocket workouts (matched by account name). */
   likes: number;
   reuses: number;
+  /** Whether they have a Rocket account (one with their name, in their organization or none). */
+  onRocket: boolean;
 }
 
 /** The key a PAX is known by: their organization and name (lower case), e.g. "f3:tinman". */
@@ -87,6 +89,25 @@ async function likesAndReusesByName(): Promise<
   return totals;
 }
 
+/**
+ * Every Rocket account's name, keyed like `paxKey` by its organization (or "any" for an account
+ * with no region), to tell which roster names have signed up.
+ */
+async function accountNames(): Promise<Set<string>> {
+  const { data, error } = await createClient()
+    .from("profiles")
+    .select(
+      "name, region_scope, region:regions!profiles_region_id_fkey(language)",
+    )
+    .limit(10000);
+  if (error) throw new Error(error.message);
+  return new Set(
+    ((data ?? []) as unknown as ({ name: string } & NonNullable<AuthorOrg>)[])
+      .filter((p) => p.name?.trim())
+      .map((p) => paxKey(orgOf(p) ?? "any", p.name)),
+  );
+}
+
 let cache: Promise<{ regions: Region[]; pax: PaxEntry[] }> | null = null;
 
 /**
@@ -96,11 +117,12 @@ let cache: Promise<{ regions: Region[]; pax: PaxEntry[] }> | null = null;
  */
 export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
   cache ??= (async () => {
-    const [regions, social] = await Promise.all([
+    const [regions, social, accounts] = await Promise.all([
       loadRegions(),
       likesAndReusesByName().catch(
         () => new Map<string, { likes: number; reuses: number }>(),
       ),
+      accountNames().catch(() => new Set<string>()),
     ]);
     const byName = new Map<string, PaxEntry>();
     // Each organization's region names: "Baby Shark (Dry Creek)" on one F3 region's roster is the
@@ -132,6 +154,7 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
             qs: 0,
             likes: own.likes + any.likes,
             reuses: own.reuses + any.reuses,
+            onRocket: accounts.has(key) || accounts.has(paxKey("any", name)),
           };
           // The sheet counts them under the name as listed there.
           const s = stats.get(lower) ?? { posts: 0, qs: 0 };

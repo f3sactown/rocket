@@ -172,7 +172,11 @@ function HomePage({ user }: { user: CurrentUser }) {
         </>
       )}
 
-      <Link href="/workouts/new" className="btn w-full">
+      <Link
+        href="/workouts/new"
+        data-tour="home-new-workout"
+        className="btn w-full"
+      >
         <PlusIcon />
         New workout
       </Link>
@@ -244,7 +248,10 @@ function Recent({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div
+      data-tour={`home-${title.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+      className="flex flex-col gap-2"
+    >
       <div className="flex items-baseline justify-between px-1">
         <h2 className="text-lg font-semibold tracking-tight text-ink">
           {title}
@@ -295,7 +302,7 @@ function Totals({ user }: { user: CurrentUser }) {
     </div>
   );
   return (
-    <div className="flex flex-col gap-2">
+    <div data-tour="home-totals" className="flex flex-col gap-2">
       <div className="grid grid-cols-2 gap-3">
         {tile("Posts", stats.value?.posts)}
         {tile("Qs", stats.value?.qs)}
@@ -322,6 +329,7 @@ function MyTotals({ userId }: { userId: string }) {
   const { likes, reuses } = totals.value;
   return (
     <div
+      data-tour="home-stats"
       className="mt-2 flex shrink-0 items-center gap-4 text-sm text-ink-soft"
       title="Likes and reuses your workouts have had"
     >

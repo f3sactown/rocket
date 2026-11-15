@@ -12,6 +12,8 @@ import {
 } from "@/components/auth-provider";
 import { AccountData } from "@/components/account-data";
 import { NOTICES } from "@/components/notice-dialog";
+import { PushSettings } from "@/components/push-settings";
+import { startTour } from "@/components/app-tour";
 import { PasswordInput } from "@/components/password-input";
 import { RegionSettings } from "@/components/region-settings";
 import {
@@ -196,6 +198,13 @@ function Settings({ user }: { user: CurrentUser }) {
       </Section>
 
       <Section
+        title="Region"
+        description="Your region's Google Sheet supplies AOs, PAX names and attendance when you write a backblast."
+      >
+        <RegionSettings user={user} />
+      </Section>
+
+      <Section
         title="Email"
         description="Used to sign in. You'll confirm a new address from your inbox."
         submitLabel="Change email"
@@ -246,13 +255,6 @@ function Settings({ user }: { user: CurrentUser }) {
       </Section>
 
       <Section
-        title="Region"
-        description="Your region's Google Sheet supplies AOs, PAX names and attendance when you write a backblast."
-      >
-        <RegionSettings user={user} />
-      </Section>
-
-      <Section
         title="Organization"
         description="Whether you post with F3 or FiA. It also sets the words the app uses: F3 says Warm-o-rama, The Thang and Coffeeteria; FiA says Warm-up, The Workout and CoFiA. Saved to your account."
       >
@@ -297,17 +299,39 @@ function Settings({ user }: { user: CurrentUser }) {
         <AccountSwitch
           divided
           on={user.shareWorkoutLink}
-          label="Link to the workout in shared backblasts"
-          hint="When a backblast from a public workout is copied or shared, it ends with a link to that workout, asking PAX to like it and reuse it. Not shown on screen."
+          label="Link to the workout in shared workouts and backblasts"
+          hint="When a public workout, or a backblast from one, is copied or shared, it ends with a link to that workout, asking PAX to like it and reuse it. Not shown on screen."
           save={(on) => ({ share_workout_link: on })}
         />
       </Section>
 
       <Section
         title="Notifications"
-        description="Notices you chose not to show again. Saved to your account."
+        description="Reminders and news on your phone or computer. Which ones come, and when, is saved to your account; turn them on for each device."
       >
-        <NoticeReset off={user.noticesOff} />
+        <PushSettings userId={user.id} />
+        <div className="flex flex-col gap-2 border-t border-line pt-4">
+          <span className="label">Notices you chose not to show again</span>
+          <NoticeReset off={user.noticesOff} />
+        </div>
+      </Section>
+
+      <Section
+        title="Tutorial"
+        description="A step-by-step tour of Rocket: Home, writing a workout, Discover, the Exicon and PAX. Once a workout of yours has happened, a short one shows how to write its backblast."
+      >
+        <button
+          type="button"
+          onClick={async () => {
+            await createClient().auth.updateUser({
+              data: { tutorial_done: false, tutorial_backblast_done: false },
+            });
+            startTour("main");
+          }}
+          className="self-start rounded-full border border-line-strong px-4 py-2 text-sm font-medium text-ink transition hover:border-accent/60"
+        >
+          Show the tutorial again
+        </button>
       </Section>
 
       <Section

@@ -31,6 +31,7 @@ export function SourceChips({
   }
   return (
     <div
+      data-tour="source-chips"
       aria-label="Sources"
       className="scroll-row -mx-4 flex shrink-0 items-center gap-2 overflow-x-auto px-4 pb-1 text-xs text-ink-soft sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
     >

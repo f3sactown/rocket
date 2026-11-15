@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppNav } from "@/components/app-nav";
 import { AuthProvider } from "@/components/auth-provider";
+import { DeviceSetup } from "@/components/device-setup";
+import { AppTour } from "@/components/app-tour";
 import { FaviconSync } from "@/components/favicon-sync";
 import { LaunchSplash } from "@/components/launch-splash";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -49,6 +51,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <FaviconSync />
             <LaunchSplash />
             <AppNav />
+            <DeviceSetup />
+            <AppTour />
             {children}
           </AuthProvider>
         </main>

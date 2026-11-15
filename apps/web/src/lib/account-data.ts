@@ -33,11 +33,14 @@ const ACCOUNT_KEYS = [
   "discover_own_asked",
   "share_workout_link",
   "pax_sources_off",
+  "pax_rocket_only",
   "default_workout_visibility",
   "default_backblast_visibility",
   "notices_off",
   "accent",
   "builtin_defaults",
+  "tutorial_done",
+  "tutorial_backblast_done",
 ] as const;
 
 /** Everything a user owns, as written to an export file. */
@@ -634,6 +637,7 @@ export async function resetAccount(): Promise<void> {
     // A workout's notes go with it.
     () => supabase.from("workouts").delete().eq("author_id", id),
     () => supabase.from("section_templates").delete().eq("owner_id", id),
+    () => supabase.from("notification_settings").delete().eq("user_id", id),
     () =>
       supabase
         .from("profiles")

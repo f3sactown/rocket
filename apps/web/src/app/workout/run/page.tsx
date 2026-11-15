@@ -270,7 +270,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
           <Link
             href={`/workout?id=${id}`}
             onClick={leave(`/workout?id=${id}`)}
-            className="btn shrink-0 px-5"
+            className="btn shrink-0 px-7"
           >
             Close
           </Link>

@@ -46,8 +46,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     profiles, likes) until its day, in Pacific time. Its Q sees it as usual, and its link (Share
     link) opens it for anyone signed in, with Run workout and Reuse; likes open on the day. Saving
     one (the **Save workout** button on the review step) says so in a notice, and the workout's page
-    then explains its Public / Private switch in another. Each notice closes by choosing **Show
-    every time** (dismissed for now) or **Don't show again** (Settings → Notifications brings it back).
+    then explains its Public / Private switch in another. Each notice closes with **OK**; ticking
+    its **Don't show again** box first silences it (Settings → Notifications brings it back).
   - **Editing** a finished workout or backblast puts it back to a draft as soon as something
     changes (others stop seeing it), until it's saved again with Save workout or Save backblast.
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
@@ -64,7 +64,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   buttons at either end page through a row of tiles, and it can be dragged.
 - **PAX** (in the menu, under Search) lists everyone on your region's roster (or every region's,
   when you've chosen all regions) as tiles in alphabetical order (three across on a phone, four on larger screens), with a search box that matches
-  names. Each tile shows the PAX's regions, posts and Qs (from the synced region stats, or read
+  names and an **Only PAX on Rocket** checkbox (saved to the account as `pax_rocket_only`) that
+  leaves just the roster names with a Rocket account, matched as on their profile. Each tile shows the PAX's regions, posts and Qs (from the synced region stats, or read
   straight from the sheet for a region added since the last sync) and the
   total likes and reuses on their public Rocket workouts, with the same heart and reuse icons as
   workout tiles. A **From** picker of regions, in each
@@ -89,10 +90,15 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   (Settings → Sharing can make new ones start private): anyone signed in can read it, and it shows on
   its Q's PAX profile. Its Q can switch it to **private** on its page. The backblast holds
   its own copy of the workout's sections, which can be edited without changing the workout
-  (**Update from workout** copies it again). Its pages are Workout, Notes, Name-o-rama (Qs and
-  PAX, with roster suggestions and the AO's regulars), Announcements (the backblast's own, not
+  (**Update from workout** copies it again). Finishing a backblast whose Introduction,
+  Warm-o-rama, The Thang or Words of Wisdom now differ from its own workout asks **Update the
+  workout too?**: Update workout copies those sections back (The Thang becomes one thang with the
+  backblast's text, replacing its timers and music), or keep the workout as it is. Its pages are Workout, Notes, Name-o-rama (Qs and
+  PAX, with roster suggestions and the AO's regulars), Announcements (optional; the backblast's own, not
   copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
-  and Share are on the finished backblast's page).
+  and Share are on the finished backblast's page). On a finished backblast's page, **From a
+  workout →** sits left of the Public / Private switch (where a workout shows its likes and
+  reuses); Copy, Share and Edit share one row, with a **Close** button back to Home below.
   - **Linking to a workout:** a backblast and its Q's workout stay linked while they're at the same
     AO on the same date (ignoring case and spaces). The database keeps it so (triggers in
     `20261110010000_backblast_workout_links.sql`): when either one's AO or date changes, or a
@@ -124,6 +130,13 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   template can be starred as the default too (saved as `builtin_defaults` in the account's
   metadata); starring one clears the section's other default.
 - **From pickers** (Exicon, PAX, Discover): on a phone, one line of chips that scrolls sideways.
+- **Tutorial:** a step-by-step tour that spotlights one part of the screen at a time, moving
+  between pages as it goes: Home's stats and sections, writing a first workout (each page of the
+  form, templates, The Thang's timers, music and Exicon, Notes, Review), Discover, the Exicon, and
+  PAX (searching names, e.g. before naming an FNG, and a PAX's profile). It starts once per
+  account, after the device setup (`tutorial_done` in the account's metadata). The first time Home
+  shows a workout that needs its backblast, a short second tour walks through writing it
+  (`tutorial_backblast_done`). Each can be skipped; **Settings → Tutorial** shows them again.
 - **About** (last in the menu): what Rocket is and does, the running version and build, and the
   **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
   open, the rest folded; commit links and repeated lines are left out.
@@ -145,15 +158,16 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   mailer and standard template, no custom SMTP needed). The link opens `/reset-password` on any
   device, signed in for the reset, where you choose a new password. Supabase → Authentication →
   URL Configuration must have the site as the Site URL and under Redirect URLs.
-- **Settings:** name, email, password, region, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
+- **Settings:** name, region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
   locked while you have one, and free to choose with no region or one you added), theme, accent color (Red, Teal, Blue, Green, Orange or Violet; saved to the account as `accent`, so it follows you to every device; the first region you choose sets Red for F3 or Teal for FiA, and later region changes leave it alone), the launch
   animation, what Home shows,
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,
-  and whether a copied or shared backblast from a public workout ends with
-  a link to that workout asking PAX to like and reuse it (right above the hidden PAX list; on by
-  default, never shown on screen). **Notifications** lists the notices you chose not to show again
-  (`notices_off` in the account's metadata, included in exports), with **Reset notifications** to
-  show them all again.
+  and whether a copied or shared public workout, or backblast from one, ends with
+  a link to that workout asking PAX to like and reuse it (a few lines below the text, and on a
+  backblast right above the hidden PAX list; on by default, never shown on screen). **Notifications** turns on push notifications for the device and
+  chooses which come and when (see [Push notifications](#push-notifications)), and lists the
+  notices you chose not to show again (`notices_off` in the account's metadata, included in
+  exports), with **Reset notifications** to show them all again.
 - **Copying:** the backblast and workout text on their pages and on the review step can't be
   selected, so it's copied with Copy or Share. If a copy takes it in anyway (Select All), it gets
   exactly what Copy gives, link and PAX list included. **Your data** exports everything you have
@@ -195,6 +209,7 @@ scripts/
 supabase/
   config.toml     Local Supabase settings
   migrations/     SQL migrations: tables and row-level security policies
+  functions/      Edge Functions: push-reminders sends push notifications
 ```
 
 New tools go in `apps/` (or as routes inside `apps/web`); code shared between them goes in `packages/`.
@@ -462,6 +477,61 @@ Each change to the database is a file in `supabase/migrations`. The dev site app
 the dev database when it deploys. On the production project, apply them with `pnpm db:push`, or
 paste them into the Supabase SQL Editor in filename order. A pull request that adds one says so,
 and should be merged only after the migration has run on production.
+
+## Push notifications
+
+Rocket sends notifications to phones and computers with **Web Push**: a service worker
+(`apps/web/public/sw.js`) shows them (with `icons/badge-96.png`, a white rocket on clear, as
+Android's small status-bar icon; its source is `icons/badge.svg`), and the `push-reminders` Edge Function
+(`supabase/functions/push-reminders`) sends them. Each PAX turns them on per device in **Settings →
+Notifications** (`push_subscriptions`) and chooses, for all their devices
+(`notification_settings`, with the device's time zone):
+
+| Notification                      | Default                                                                |
+| --------------------------------- | ---------------------------------------------------------------------- |
+| The day before your workout       | On, at 6:00am                                                          |
+| Before your workout starts        | On, 40 minutes before its start time                                   |
+| Write the backblast               | On, 30 minutes after it ends, if its backblast isn't finished          |
+| Finish a draft                    | On, 2 days after it's started; a 2nd (4 days) and 3rd (6 days) are off |
+| Likes and reuses of your workouts | On                                                                     |
+| A new PAX in your region joins    | On                                                                     |
+
+Workout reminders are for the Q's own finished workouts; times are read from the workout's time
+(like `5:15am-6:00am`; one with only a start counts as 45 minutes). Every 5 minutes the database
+(pg_cron) calls the function, which sends what's due and logs each one (`notification_log`) so
+nothing goes out twice. The schedule is in `supabase/functions/_shared/reminders.ts` (tested in
+`packages/core`).
+
+**iPhone and iPad** only offer notifications to Rocket added to the Home Screen (Share → Add to
+Home Screen) and opened from there; Settings says so.
+
+**Setting up a device:** the first time someone is signed in on a device, a short setup walks
+them through it, one step at a time:
+
+1. **Install Rocket**, unless it's already running as an app: an **Install Rocket** button where
+   the browser offers one (Chrome and Edge), or the steps for the device (Share → Add to Home
+   Screen on iPhone and iPad; the browser menu on Android; the address bar or File → Add to Dock on
+   a computer).
+2. **Turn on notifications**, with **Send a test** once they're on.
+
+Each step can be skipped. Finished or skipped, it doesn't come back on that device
+(`rocket-device-setup` in local storage); **Set up this device again** in Settings →
+Notifications runs it again. On iPhone, the Home Screen app keeps its own storage, so opening it
+from there picks up at the notifications step.
+
+### Setting it up (once per Supabase project: dev and production)
+
+1. **Keys:** run `npx web-push generate-vapid-keys`. In Supabase → Edge Functions → Secrets, add
+   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (`mailto:` and an address people
+   can reach). The same pair can serve both projects. Changing the keys means each device turns
+   notifications on again.
+2. **The function:** with a GitHub secret `SUPABASE_ACCESS_TOKEN` (Supabase → Account → Access
+   Tokens), the dev and Pages workflows deploy it to their project. Without it, deploy it by hand:
+   `supabase functions deploy push-reminders --project-ref <ref> --no-verify-jwt`.
+3. **The schedule:** the migration schedules the call, which needs the project's address in the
+   Vault. In the SQL Editor:
+   `select vault.create_secret('https://<ref>.supabase.co', 'project_url');`
+   Until it's there, nothing is sent.
 
 ## Daily users email
 

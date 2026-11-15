@@ -17,7 +17,10 @@ import { SwipeRow, type SwipeOption } from "./swipe-row";
 /** Marks one of your past workouts that doesn't have a finished backblast yet. */
 export function NeedsBackblastBadge() {
   return (
-    <span className="shrink-0 rounded-full border border-accent/50 bg-accent-soft px-2 py-0.5 text-[0.65rem] font-semibold whitespace-nowrap text-accent">
+    <span
+      data-tour="needs-backblast"
+      className="shrink-0 rounded-full border border-accent/50 bg-accent-soft px-2 py-0.5 text-[0.65rem] font-semibold whitespace-nowrap text-accent"
+    >
       Needs backblast
     </span>
   );

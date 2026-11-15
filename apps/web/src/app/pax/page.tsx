@@ -28,6 +28,8 @@ function Pax({ user }: { user: CurrentUser }) {
   const data = useLoad(loadAllPax, []);
   const [query, setQuery] = useState("");
   const [off, setOff] = useState(user.paxSourcesOff);
+  // Only PAX who've signed up for Rocket; saved to the account like the From picker.
+  const [onlyRocket, setOnlyRocket] = useState(user.paxRocketOnly);
   const [shown, setShown] = useState(PAGE);
   const colors = useMemo(
     () => regionColors(data.value?.regions ?? []),
@@ -63,9 +65,10 @@ function Pax({ user }: { user: CurrentUser }) {
         .filter(
           (p) =>
             p.regions.length > 0 &&
+            (!onlyRocket || p.onRocket) &&
             words.every((w) => p.name.toLowerCase().includes(w)),
         ),
-    [data.value, off, words],
+    [data.value, off, onlyRocket, words],
   );
 
   return (
@@ -81,6 +84,7 @@ function Pax({ user }: { user: CurrentUser }) {
       <div className="flex flex-col gap-3">
         <input
           type="search"
+          data-tour="pax-search"
           aria-label="Search PAX by name"
           placeholder="Search by name…"
           value={query}
@@ -90,17 +94,36 @@ function Pax({ user }: { user: CurrentUser }) {
           }}
           className="input text-base"
         />
-        {data.value && data.value.regions.length > 0 && (
-          <SourceChips
-            chips={data.value.regions.map((r) => ({
-              key: r.id,
-              label: r.name,
-              color: colors.get(r.id) ?? "var(--badge-region)",
-            }))}
-            off={off}
-            onChange={choose}
-          />
-        )}
+        {/* The region chips and the Rocket-only box, spotlit together in the tour. */}
+        <div data-tour="pax-filters" className="flex flex-col gap-3">
+          {data.value && data.value.regions.length > 0 && (
+            <SourceChips
+              chips={data.value.regions.map((r) => ({
+                key: r.id,
+                label: r.name,
+                color: colors.get(r.id) ?? "var(--badge-region)",
+              }))}
+              off={off}
+              onChange={choose}
+            />
+          )}
+          <label className="flex items-center gap-2 self-start text-sm text-ink">
+            <input
+              type="checkbox"
+              checked={onlyRocket}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setOnlyRocket(next);
+                setShown(PAGE);
+                createClient()
+                  .auth.updateUser({ data: { pax_rocket_only: next } })
+                  .then(() => {});
+              }}
+              className="size-4 accent-[var(--color-accent)]"
+            />
+            Only PAX on Rocket
+          </label>
+        </div>
       </div>
 
       {data.error ? (
@@ -109,7 +132,11 @@ function Pax({ user }: { user: CurrentUser }) {
         <p className="panel px-3 py-8 text-center text-muted">Loading…</p>
       ) : results.length === 0 ? (
         <p className="panel px-3 py-8 text-center text-muted">
-          {query ? `No PAX match “${query}”.` : "No PAX on these rosters yet."}
+          {query
+            ? `No PAX match “${query}”.`
+            : onlyRocket
+              ? "No PAX on these rosters have signed up for Rocket yet."
+              : "No PAX on these rosters yet."}
         </p>
       ) : (
         <div className="flex flex-col gap-3">
@@ -118,6 +145,7 @@ function Pax({ user }: { user: CurrentUser }) {
             {results.slice(0, shown).map((p) => (
               <li key={`${p.org}:${p.name}`} className="min-w-0">
                 <Link
+                  data-tour="pax-tile"
                   href={`/pax/profile?name=${encodeURIComponent(p.name)}&org=${p.org}`}
                   className="panel flex h-full flex-col gap-1.5 p-2 transition-colors hover:border-accent/40 sm:gap-2 sm:p-3"
                 >

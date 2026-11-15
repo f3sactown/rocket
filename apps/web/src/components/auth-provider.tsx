@@ -31,6 +31,8 @@ export interface CurrentUser {
   shareWorkoutLink: boolean;
   /** Regions (by ID) turned off in the PAX page's From picker; all are on by default. */
   paxSourcesOff: string[];
+  /** Whether the PAX page shows only PAX who've signed up for Rocket. */
+  paxRocketOnly: boolean;
   /** How the account signs in, e.g. ["email"], ["google"] or both. */
   providers: string[];
   /** Signed in with Google for the first time: still to give an F3 name and region. */
@@ -45,6 +47,10 @@ export interface CurrentUser {
   whatsNewSeen: string | null;
   /** Notices (by ID) the user chose not to show again; Settings → Notifications brings them back. */
   noticesOff: string[];
+  /** Whether the app tour has been finished or skipped (Settings → Tutorial shows it again). */
+  tutorialDone: boolean;
+  /** Whether the "write your first backblast" tour has been finished or skipped. */
+  tutorialBackblastDone: boolean;
   /** Built-in templates (by name) chosen as a section's default, by section. */
   builtInDefaults: Record<string, string>;
 }
@@ -164,6 +170,7 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
           (v): v is string => typeof v === "string",
         )
       : [],
+    paxRocketOnly: user.user_metadata?.pax_rocket_only === true,
     defaultWorkoutVisibility:
       user.user_metadata?.default_workout_visibility === "private"
         ? "private"
@@ -186,6 +193,8 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
         )
       : [],
     builtInDefaults: builtInDefaultsFrom(user.user_metadata?.builtin_defaults),
+    tutorialDone: user.user_metadata?.tutorial_done === true,
+    tutorialBackblastDone: user.user_metadata?.tutorial_backblast_done === true,
     regionId:
       typeof user.user_metadata?.region_id === "string"
         ? user.user_metadata.region_id

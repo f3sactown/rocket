@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="96" height="96">
+  <defs>
+    <mask id="cut">
+      <rect width="64" height="64" fill="#fff"/>
+      <g transform="translate(32 32) rotate(45) scale(0.34) translate(-50 -94)">
+        <circle cx="50" cy="76" r="9" fill="#000"/>
+        <rect x="44" y="52" width="12" height="2.5" fill="#000"/>
+      </g>
+    </mask>
+  </defs>
+  <g mask="url(#cut)" fill="#fff">
+    <g transform="translate(32 32) rotate(45) scale(0.34) translate(-50 -94)">
+      <path d="M42 150 Q50 182 58 150 Z"/>
+      <path d="M31 108 L10 138 L10 154 L31 141 Z"/>
+      <path d="M69 108 L90 138 L90 154 L69 141 Z"/>
+      <path d="M41 143 L59 143 L56 151 L44 151 Z"/>
+      <path d="M31 52 L69 52 L69 140 Q69 145 64 145 L36 145 Q31 145 31 140 Z"/>
+      <path d="M50 6 C38 18 31 36 31 53 L69 53 C69 36 62 18 50 6 Z"/>
+    </g>
+  </g>
+</svg>
