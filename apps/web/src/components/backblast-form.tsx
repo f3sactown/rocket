@@ -121,7 +121,7 @@ function allSteps(language: Language): Step[] {
     {
       kind: "workout",
       title: "Workout",
-      hint: "This backblast's copy of the workout. Edit it here for anything that went differently; the workout itself isn't changed.",
+      hint: "This backblast's copy of the workout. Edit it here for anything that went differently; when you finish, Rocket asks whether to update the workout to match.",
     },
     {
       kind: "attendance",

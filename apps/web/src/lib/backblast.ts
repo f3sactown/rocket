@@ -248,3 +248,61 @@ function parseMusic(value: unknown): Thang["music"] {
     ? { url: url.trim(), title: title.trim() }
     : { url: url.trim() };
 }
+
+/** The workout sections a backblast keeps its own copy of, which can be sent back to the workout. */
+export const SHARED_SECTIONS = [
+  "introduction",
+  "warmup",
+  "thang",
+  "wordsOfWisdom",
+] as const;
+export type SharedSection = (typeof SHARED_SECTIONS)[number];
+
+const sameText = (a: string | undefined, b: string | undefined) =>
+  (a ?? "").replace(/\r\n/g, "\n").trim() ===
+  (b ?? "").replace(/\r\n/g, "\n").trim();
+
+/**
+ * Which of a backblast's copied workout sections now differ from its workout's, when the workout
+ * is the user's own (only its Q can change it). Null when there's nothing to offer.
+ */
+export async function workoutDifferences(
+  backblast: Backblast,
+  userId: string,
+): Promise<{ workoutId: string; sections: SharedSection[] } | null> {
+  if (!backblast.workoutId) return null;
+  const workout = await loadWorkout(backblast.workoutId, userId);
+  if (typeof workout === "string") return null;
+  const sections = SHARED_SECTIONS.filter(
+    (key) => !sameText(backblast[key], workout[key]),
+  );
+  return sections.length ? { workoutId: backblast.workoutId, sections } : null;
+}
+
+/**
+ * Copies a backblast's sections back to its workout. The Thang becomes one thang with the
+ * backblast's text, so the workout's timers and music for it are replaced.
+ */
+export async function updateWorkoutFromBackblast(
+  workoutId: string,
+  backblast: Backblast,
+  sections: SharedSection[],
+): Promise<string | null> {
+  const text = (value: string | undefined) => value?.trim() || null;
+  const changes: Database["public"]["Tables"]["workouts"]["Update"] = {};
+  if (sections.includes("introduction"))
+    changes.introduction = text(backblast.introduction);
+  if (sections.includes("warmup")) changes.warmup = text(backblast.warmup);
+  if (sections.includes("wordsOfWisdom"))
+    changes.words_of_wisdom = text(backblast.wordsOfWisdom);
+  if (sections.includes("thang")) {
+    const thang = text(backblast.thang);
+    changes.thang = thang;
+    changes.thangs = (thang ? [{ text: thang }] : []) as unknown as Json;
+  }
+  const { error } = await createClient()
+    .from("workouts")
+    .update(changes)
+    .eq("id", workoutId);
+  return error?.message ?? null;
+}
