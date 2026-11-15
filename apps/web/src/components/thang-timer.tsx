@@ -132,6 +132,8 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
   const ticked = useRef<string | null>(null);
   // Seconds left in the current stretch, or (for a stopwatch) seconds so far.
   const [count, setCount] = useState(phases[0]?.seconds ?? 0);
+  // A stopwatch's time so far in milliseconds, shown to the hundredth of a second.
+  const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
   // When the current stretch ends (or when the stopwatch started), so pauses in the page don't
@@ -140,33 +142,39 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
 
   useEffect(() => {
     if (!running) return;
-    const tick = setInterval(() => {
-      if (timer.type === "stopwatch") {
-        setCount(Math.floor((Date.now() - mark.current) / 1000));
-        return;
-      }
-      const left = Math.max(0, Math.ceil((mark.current - Date.now()) / 1000));
-      setCount(left);
-      // Short beeps with 3, 2 and 1 seconds left in every stretch, then a long, louder one as it
-      // ends, like a Tabata timer.
-      const sound = beepAt(left);
-      const at = `${phaseRef.current}:${left}`;
-      if (sound && ticked.current !== at) {
-        ticked.current = at;
-        beep(sound);
-      }
-      if (left > 0) return;
-      const next = phaseRef.current + 1;
-      if (next >= phases.length) {
-        setRunning(false);
-        setDone(true);
-        return;
-      }
-      phaseRef.current = next;
-      mark.current = Date.now() + phases[next]!.seconds * 1000;
-      setPhase(next);
-      setCount(phases[next]!.seconds);
-    }, 250);
+    const tick = setInterval(
+      () => {
+        if (timer.type === "stopwatch") {
+          const ms = Date.now() - mark.current;
+          setElapsed(ms);
+          setCount(Math.floor(ms / 1000));
+          return;
+        }
+        const left = Math.max(0, Math.ceil((mark.current - Date.now()) / 1000));
+        setCount(left);
+        // Short beeps with 3, 2 and 1 seconds left in every stretch, then a long, louder one as it
+        // ends, like a Tabata timer.
+        const sound = beepAt(left);
+        const at = `${phaseRef.current}:${left}`;
+        if (sound && ticked.current !== at) {
+          ticked.current = at;
+          beep(sound);
+        }
+        if (left > 0) return;
+        const next = phaseRef.current + 1;
+        if (next >= phases.length) {
+          setRunning(false);
+          setDone(true);
+          return;
+        }
+        phaseRef.current = next;
+        mark.current = Date.now() + phases[next]!.seconds * 1000;
+        setPhase(next);
+        setCount(phases[next]!.seconds);
+      },
+      // Often enough for a stopwatch's hundredths; a countdown only shows seconds.
+      timer.type === "stopwatch" ? 31 : 250,
+    );
     return () => clearInterval(tick);
   }, [running, timer.type, phases]);
 
@@ -177,7 +185,7 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
     if (done) return reset(true);
     mark.current =
       timer.type === "stopwatch"
-        ? Date.now() - count * 1000
+        ? Date.now() - elapsed
         : Date.now() + count * 1000;
     setRunning(true);
   }
@@ -189,12 +197,20 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
     setPhase(0);
     const first = timer.type === "stopwatch" ? 0 : (phases[0]?.seconds ?? 0);
     setCount(first);
+    setElapsed(0);
     mark.current =
       timer.type === "stopwatch" ? Date.now() : Date.now() + first * 1000;
     setRunning(andStart);
   }
 
   const current = phases[phase];
+  // A stopwatch shows hundredths of a second ("1:05.37"); the others whole seconds.
+  const shown =
+    timer.type === "stopwatch"
+      ? `${formatTimer(Math.floor(elapsed / 1000))}.${String(
+          Math.floor(elapsed / 10) % 100,
+        ).padStart(2, "0")}`
+      : formatTimer(count);
   const fresh =
     !running &&
     !done &&
@@ -240,7 +256,7 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
               {current?.label && !done && ` · ${current.label}`}
             </span>
             <span className="font-mono text-2xl leading-tight text-ink tabular-nums">
-              {done ? "Time!" : formatTimer(count)}
+              {done ? "Time!" : shown}
             </span>
           </span>
           {controls}
@@ -268,7 +284,7 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
             aria-live={done ? "assertive" : "off"}
             className="font-mono text-[1.6em] leading-none text-ink tabular-nums"
           >
-            {done ? "Time!" : formatTimer(count)}
+            {done ? "Time!" : shown}
           </span>
           {controls}
         </div>
