@@ -313,7 +313,9 @@ export function AppTour() {
 
   // The main tour, once per account, after this device's setup is out of the way.
   useEffect(() => {
+    // Only from Home, so opening a shared link isn't interrupted.
     if (!user || user.needsProfile || user.tutorialDone || tour) return;
+    if (pathname !== "/") return;
     const begin = () => {
       if (offered.current || !deviceSetupFinished()) return;
       offered.current = true;
@@ -327,7 +329,7 @@ export function AppTour() {
       clearTimeout(timer);
       window.removeEventListener(DEVICE_SETUP_DONE_EVENT, begin);
     };
-  }, [user, tour, moveTo]);
+  }, [user, tour, moveTo, pathname]);
 
   // The backblast tour, the first time Home shows a workout that needs its backblast.
   useEffect(() => {
