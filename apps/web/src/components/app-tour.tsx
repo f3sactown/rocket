@@ -29,6 +29,8 @@ interface Step {
 }
 
 const TOUR_EVENT = "rocket-tour";
+/** Asks the PAX page to show tiles down to the PAX the tour opens (it may be far down the list). */
+export const TOUR_SHOW_PAX_EVENT = "rocket-tour-show-pax";
 
 /** Starts a tour now (from Settings). */
 export function startTour(name: TourName = "main") {
@@ -192,6 +194,7 @@ const MAIN: Step[] = [
   {
     route: "/pax",
     target: "pax-tile",
+    before: () => window.dispatchEvent(new Event(TOUR_SHOW_PAX_EVENT)),
     optional: true,
     title: "Each PAX",
     body: "Their regions, posts and Qs, and the likes and reuses their workouts have had. Tap one for their profile.",
@@ -276,6 +279,8 @@ export function AppTour() {
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [ready, setReady] = useState(false);
+  // Steps left out because what they point to isn't on screen, so the count has no gaps.
+  const [skipped, setSkipped] = useState<number[]>([]);
   const direction = useRef<1 | -1>(1);
   // When the current page opened, so targets get time to load on a new page but not after.
   const arrived = useRef({ path: "", at: 0 });
@@ -304,6 +309,7 @@ export function AppTour() {
   useEffect(() => {
     const start = (event: Event) => {
       direction.current = 1;
+      setSkipped([]);
       moveTo(0);
       setTour((event as CustomEvent<TourName>).detail);
     };
@@ -320,6 +326,7 @@ export function AppTour() {
       if (offered.current || !deviceSetupFinished()) return;
       offered.current = true;
       direction.current = 1;
+      setSkipped([]);
       moveTo(0);
       setTour("main");
     };
@@ -347,6 +354,7 @@ export function AppTour() {
         return;
       offered.current = true;
       direction.current = 1;
+      setSkipped([]);
       moveTo(0);
       setTour("backblast");
     }, 3000);
@@ -373,6 +381,7 @@ export function AppTour() {
       if (!step.target) return setReady(true);
       const el = find(step.target);
       if (el && el.getBoundingClientRect().height > 0) {
+        setSkipped((list) => list.filter((i) => i !== index));
         el.scrollIntoView({ block: "center", behavior: "smooth" });
         setReady(true);
         return;
@@ -380,6 +389,7 @@ export function AppTour() {
       if (Date.now() < deadline) return void setTimeout(look, 150);
       // Not on this page: leave optional steps out, and show the others without a spotlight.
       if (step.optional) {
+        setSkipped((list) => (list.includes(index) ? list : [...list, index]));
         const next = index + direction.current;
         if (next < 0 || next >= steps.length) finish();
         else moveTo(next);
@@ -455,8 +465,9 @@ export function AppTour() {
         }`}
       >
         <span className="font-mono text-xs text-muted">
-          {tour === "main" ? "Tour" : "Your first backblast"} · {index + 1} of{" "}
-          {steps.length}
+          {tour === "main" ? "Tour" : "Your first backblast"} ·{" "}
+          {index + 1 - skipped.filter((i) => i < index).length} of{" "}
+          {steps.length - skipped.length}
         </span>
         <h2 id="tour-title" className="text-lg font-semibold text-ink">
           {step.title}

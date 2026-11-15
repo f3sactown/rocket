@@ -133,7 +133,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Tutorial:** a step-by-step tour that spotlights one part of the screen at a time, moving
   between pages as it goes: Home's stats and sections, writing a first workout (each page of the
   form, templates, The Thang's timers, music and Exicon, Notes, Review), Discover, the Exicon, and
-  PAX (searching names, e.g. before naming an FNG, and a PAX's profile). It starts once per
+  PAX (searching names, e.g. before naming an FNG, and the profile of a PAX with at least one
+  public workout and backblast, so it has something to show). It starts once per
   account, after the device setup (`tutorial_done` in the account's metadata). The first time Home
   shows a workout that needs its backblast, a short second tour walks through writing it
   (`tutorial_backblast_done`). Each can be skipped; **Settings → Tutorial** shows them again.

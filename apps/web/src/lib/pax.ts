@@ -33,6 +33,9 @@ export interface PaxEntry {
   reuses: number;
   /** Whether they have a Rocket account (one with their name, in their organization or none). */
   onRocket: boolean;
+  /** How many public workouts and backblasts they've written on Rocket. */
+  workouts: number;
+  backblasts: number;
 }
 
 /** The key a PAX is known by: their organization and name (lower case), e.g. "f3:tinman". */
@@ -49,13 +52,20 @@ function orgOf(author: AuthorOrg): Language | null {
   return author?.region?.language ?? author?.region_scope ?? null;
 }
 
+interface Social {
+  likes: number;
+  reuses: number;
+  workouts: number;
+  backblasts: number;
+}
+const NO_SOCIAL: Social = { likes: 0, reuses: 0, workouts: 0, backblasts: 0 };
+
 /**
- * Likes and reuses added up per author, keyed by `paxKey` with the author's organization (or
- * "any" for an author with no region, who can't be told apart), across every public workout.
+ * Public workouts and backblasts counted, and likes and reuses added up, per author, keyed by
+ * `paxKey` with the author's organization (or "any" for an author with no region, who can't be
+ * told apart).
  */
-async function likesAndReusesByName(): Promise<
-  Map<string, { likes: number; reuses: number }>
-> {
+async function likesAndReusesByName(): Promise<Map<string, Social>> {
   const supabase = createClient();
   const rows: {
     id: string;
@@ -75,17 +85,40 @@ async function likesAndReusesByName(): Promise<
     rows.push(...((data ?? []) as unknown as typeof rows));
     if (!data || data.length < size) break;
   }
-  const stats = await loadWorkoutStats(rows.map((r) => r.id));
-  const totals = new Map<string, { likes: number; reuses: number }>();
-  for (const row of rows) {
-    if (!row.author?.name.trim()) continue;
-    const key = paxKey(orgOf(row.author) ?? "any", row.author.name);
-    const s = stats.get(row.id);
-    const t = totals.get(key) ?? { likes: 0, reuses: 0 };
-    t.likes += s?.likes ?? 0;
-    t.reuses += s?.reuses ?? 0;
+  const [stats, backblasts] = await Promise.all([
+    loadWorkoutStats(rows.map((r) => r.id)),
+    supabase
+      .from("backblasts")
+      .select(
+        "author:profiles!backblasts_author_id_fkey(name, region_scope, region:regions!profiles_region_id_fkey(language))",
+      )
+      .eq("status", "published")
+      .eq("visibility", "public")
+      .limit(10000),
+  ]);
+  const totals = new Map<string, Social>();
+  const add = (
+    author: ({ name: string } & NonNullable<AuthorOrg>) | null,
+    change: (t: Social) => void,
+  ) => {
+    if (!author?.name.trim()) return;
+    const key = paxKey(orgOf(author) ?? "any", author.name);
+    const t = totals.get(key) ?? { ...NO_SOCIAL };
+    change(t);
     totals.set(key, t);
+  };
+  for (const row of rows) {
+    const s = stats.get(row.id);
+    add(row.author, (t) => {
+      t.workouts++;
+      t.likes += s?.likes ?? 0;
+      t.reuses += s?.reuses ?? 0;
+    });
   }
+  for (const row of (backblasts.data ?? []) as unknown as {
+    author: ({ name: string } & NonNullable<AuthorOrg>) | null;
+  }[])
+    add(row.author, (t) => t.backblasts++);
   return totals;
 }
 
@@ -119,9 +152,7 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
   cache ??= (async () => {
     const [regions, social, accounts] = await Promise.all([
       loadRegions(),
-      likesAndReusesByName().catch(
-        () => new Map<string, { likes: number; reuses: number }>(),
-      ),
+      likesAndReusesByName().catch(() => new Map<string, Social>()),
       accountNames().catch(() => new Set<string>()),
     ]);
     const byName = new Map<string, PaxEntry>();
@@ -141,11 +172,8 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
           const name = paxBaseName(listed, regionNames(region.language));
           const key = paxKey(region.language, name);
           // Their own organization's, plus any from a same-named account with no region.
-          const own = social.get(key) ?? { likes: 0, reuses: 0 };
-          const any = social.get(paxKey("any", name)) ?? {
-            likes: 0,
-            reuses: 0,
-          };
+          const own = social.get(key) ?? NO_SOCIAL;
+          const any = social.get(paxKey("any", name)) ?? NO_SOCIAL;
           const entry = byName.get(key) ?? {
             name,
             org: region.language,
@@ -154,6 +182,8 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
             qs: 0,
             likes: own.likes + any.likes,
             reuses: own.reuses + any.reuses,
+            workouts: own.workouts + any.workouts,
+            backblasts: own.backblasts + any.backblasts,
             onRocket: accounts.has(key) || accounts.has(paxKey("any", name)),
           };
           // The sheet counts them under the name as listed there.

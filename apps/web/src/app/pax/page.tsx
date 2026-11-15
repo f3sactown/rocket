@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { TOUR_SHOW_PAX_EVENT } from "@/components/app-tour";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { Highlight } from "@/components/highlight";
 import { HeartIcon, ReuseIcon } from "@/components/icons";
@@ -69,6 +70,25 @@ function Pax({ user }: { user: CurrentUser }) {
             words.every((w) => p.name.toLowerCase().includes(w)),
         ),
     [data.value, off, onlyRocket, words],
+  );
+
+  // The tile the tour opens: the first PAX (of all of them, not just those shown so far) with a
+  // public workout and a public backblast to show, or else the first one.
+  const featuredIndex = Math.max(
+    0,
+    results.findIndex((p) => p.workouts > 0 && p.backblasts > 0),
+  );
+  const featured = results[featuredIndex];
+  // The tour asks for tiles down to that PAX so it can spotlight them, even before they've loaded.
+  const [touring, setTouring] = useState(false);
+  useEffect(() => {
+    const show = () => setTouring(true);
+    window.addEventListener(TOUR_SHOW_PAX_EVENT, show);
+    return () => window.removeEventListener(TOUR_SHOW_PAX_EVENT, show);
+  }, []);
+  const listed = results.slice(
+    0,
+    touring ? Math.max(shown, featuredIndex + 1) : shown,
   );
 
   return (
@@ -142,10 +162,10 @@ function Pax({ user }: { user: CurrentUser }) {
         <div className="flex flex-col gap-3">
           <p className="px-1 text-xs text-muted">{results.length} PAX</p>
           <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
-            {results.slice(0, shown).map((p) => (
+            {listed.map((p) => (
               <li key={`${p.org}:${p.name}`} className="min-w-0">
                 <Link
-                  data-tour="pax-tile"
+                  data-tour={p === featured ? "pax-tile" : undefined}
                   href={`/pax/profile?name=${encodeURIComponent(p.name)}&org=${p.org}`}
                   className="panel flex h-full flex-col gap-1.5 p-2 transition-colors hover:border-accent/40 sm:gap-2 sm:p-3"
                 >
@@ -208,13 +228,13 @@ function Pax({ user }: { user: CurrentUser }) {
               </li>
             ))}
           </ul>
-          {results.length > shown && (
+          {results.length > listed.length && (
             <button
               type="button"
-              onClick={() => setShown((n) => n + PAGE)}
+              onClick={() => setShown(listed.length + PAGE)}
               className="link self-center py-2 text-sm"
             >
-              Show more ({results.length - shown} left)
+              Show more ({results.length - listed.length} left)
             </button>
           )}
         </div>
