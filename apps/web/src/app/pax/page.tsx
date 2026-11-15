@@ -71,6 +71,12 @@ function Pax({ user }: { user: CurrentUser }) {
     [data.value, off, onlyRocket, words],
   );
 
+  // The tile the tour opens: the first PAX with a public workout and a public backblast to show,
+  // or else the first one.
+  const listed = results.slice(0, shown);
+  const featured =
+    listed.find((p) => p.workouts > 0 && p.backblasts > 0) ?? listed[0];
+
   return (
     <section className="card">
       <header className="flex flex-col gap-1">
@@ -142,10 +148,10 @@ function Pax({ user }: { user: CurrentUser }) {
         <div className="flex flex-col gap-3">
           <p className="px-1 text-xs text-muted">{results.length} PAX</p>
           <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
-            {results.slice(0, shown).map((p) => (
+            {listed.map((p) => (
               <li key={`${p.org}:${p.name}`} className="min-w-0">
                 <Link
-                  data-tour="pax-tile"
+                  data-tour={p === featured ? "pax-tile" : undefined}
                   href={`/pax/profile?name=${encodeURIComponent(p.name)}&org=${p.org}`}
                   className="panel flex h-full flex-col gap-1.5 p-2 transition-colors hover:border-accent/40 sm:gap-2 sm:p-3"
                 >
