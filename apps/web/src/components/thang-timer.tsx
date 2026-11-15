@@ -19,26 +19,72 @@ import {
 } from "react";
 
 /**
+ * One audio context for every timer on the page. iPhones and iPads only let a page make sound
+ * once its audio has been started by a tap, so it's made (or woken) when Start is tapped, and
+ * every beep after reuses it.
+ */
+let audio: AudioContext | null = null;
+
+function audioContext(): AudioContext | null {
+  if (audio) return audio;
+  try {
+    const Context =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext: typeof window.AudioContext })
+        .webkitAudioContext;
+    audio = new Context();
+  } catch {
+    audio = null;
+  }
+  return audio;
+}
+
+/**
+ * Called from a tap (Start): lets the beeps play. On Apple devices it also asks for "playback"
+ * audio, so the beeps sound even with the ring/silent switch on silent, as a timer app's would.
+ */
+function unlockAudio() {
+  const session = (navigator as Navigator & { audioSession?: { type: string } })
+    .audioSession;
+  if (session) {
+    try {
+      session.type = "playback";
+    } catch {
+      // Older Safari: beeps follow the silent switch.
+    }
+  }
+  const ctx = audioContext();
+  if (!ctx) return;
+  if (ctx.state !== "running") ctx.resume().catch(() => {});
+  // A silent moment of sound, played within the tap, is what unlocks it on iOS.
+  const buffer = ctx.createBuffer(1, 1, 22050);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(ctx.destination);
+  source.start(0);
+}
+
+/**
  * A beep where the browser allows sound, like a Tabata timer's: a short one counting down the last
  * seconds, and a long, louder, higher one as a stretch ends.
  */
 function beep(kind: BeepKind) {
   const end = kind === "end";
   try {
-    const AudioContext =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext: typeof window.AudioContext })
-        .webkitAudioContext;
-    const audio = new AudioContext();
-    const tone = audio.createOscillator();
-    const volume = audio.createGain();
-    tone.frequency.value = end ? 880 : 660;
-    const length = end ? 0.9 : 0.15;
-    volume.gain.setValueAtTime(end ? 0.9 : 0.35, audio.currentTime);
-    volume.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + length);
-    tone.connect(volume).connect(audio.destination);
-    tone.start();
-    tone.stop(audio.currentTime + length);
+    const ctx = audioContext();
+    if (ctx) {
+      // Wakes it after the phone has paused it (e.g. the screen locked), where that's allowed.
+      if (ctx.state !== "running") ctx.resume().catch(() => {});
+      const tone = ctx.createOscillator();
+      const volume = ctx.createGain();
+      tone.frequency.value = end ? 880 : 660;
+      const length = end ? 0.9 : 0.15;
+      volume.gain.setValueAtTime(end ? 0.9 : 0.35, ctx.currentTime);
+      volume.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + length);
+      tone.connect(volume).connect(ctx.destination);
+      tone.start();
+      tone.stop(ctx.currentTime + length);
+    }
   } catch {
     // No sound; the screen still shows what's happening.
   }
@@ -125,6 +171,8 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
   }, [running, timer.type, phases]);
 
   function start() {
+    // From the tap itself, so iPhones and iPads let the beeps play.
+    unlockAudio();
     setActive(id, () => setRunning(false));
     if (done) return reset(true);
     mark.current =
