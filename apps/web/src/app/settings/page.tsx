@@ -197,6 +197,13 @@ function Settings({ user }: { user: CurrentUser }) {
       </Section>
 
       <Section
+        title="Region"
+        description="Your region's Google Sheet supplies AOs, PAX names and attendance when you write a backblast."
+      >
+        <RegionSettings user={user} />
+      </Section>
+
+      <Section
         title="Email"
         description="Used to sign in. You'll confirm a new address from your inbox."
         submitLabel="Change email"
@@ -244,13 +251,6 @@ function Settings({ user }: { user: CurrentUser }) {
             className="input"
           />
         </label>
-      </Section>
-
-      <Section
-        title="Region"
-        description="Your region's Google Sheet supplies AOs, PAX names and attendance when you write a backblast."
-      >
-        <RegionSettings user={user} />
       </Section>
 
       <Section
