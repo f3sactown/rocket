@@ -30,7 +30,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - **Run workout** shows the whole workout to lead from (web addresses are clickable links), in Normal, Large or Extra large text, with
     each timer's countdown and each song as a button (♫ Title ♫) that opens its link. Like a Tabata timer, every stretch (each round's work and rest) ends with
     short beeps at 3, 2 and 1 seconds left and a long, louder beep at 0. The beeps share one audio context, started by the Start tap, which is what iPhones and iPads need to let a page make sound; there it also asks for "playback" audio, so the beeps sound with the ring/silent switch on silent (Safari 16.4 and later). Starting one timer pauses any other that's running. The timer in use pins to the top
-    when scrolled away, and the screen stays awake. At the bottom, a **Close** button back to the workout's page sits to the left of
+    when scrolled away, and the screen stays awake. A stopwatch shows hundredths of a second. On the
+    workout's day, five minutes before the end of its time (or 45 minutes after a start with no
+    end), a **5 minutes left** banner with a beep says it's time to wrap up for COT. At the bottom, a **Close** button back to the workout's page sits to the left of
     Create backblast (or Continue or Open backblast). Leaving a private workout of yours that way
     first asks whether to make it public (Make public / Keep private). Tabata and EMOM timers take 1 to 99 rounds.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to

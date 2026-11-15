@@ -43,7 +43,7 @@ function audioContext(): AudioContext | null {
  * Called from a tap (Start): lets the beeps play. On Apple devices it also asks for "playback"
  * audio, so the beeps sound even with the ring/silent switch on silent, as a timer app's would.
  */
-function unlockAudio() {
+export function unlockAudio() {
   const session = (navigator as Navigator & { audioSession?: { type: string } })
     .audioSession;
   if (session) {
@@ -68,7 +68,7 @@ function unlockAudio() {
  * A beep where the browser allows sound, like a Tabata timer's: a short one counting down the last
  * seconds, and a long, louder, higher one as a stretch ends.
  */
-function beep(kind: BeepKind) {
+export function beep(kind: BeepKind) {
   const end = kind === "end";
   try {
     const ctx = audioContext();
