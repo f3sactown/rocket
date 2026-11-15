@@ -336,6 +336,7 @@ export function LibraryBrowser({
         type="search"
         autoFocus={autoFocus}
         aria-label="Search the library"
+        data-tour="exicon-search"
         placeholder="Search by name or description…"
         value={query}
         onChange={(e) => {

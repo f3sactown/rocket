@@ -39,6 +39,8 @@ const ACCOUNT_KEYS = [
   "notices_off",
   "accent",
   "builtin_defaults",
+  "tutorial_done",
+  "tutorial_backblast_done",
 ] as const;
 
 /** Everything a user owns, as written to an export file. */

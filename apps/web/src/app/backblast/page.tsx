@@ -127,57 +127,61 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         <span className="font-medium text-ink">{backblast.ao}</span>
         <span className="text-ink-soft">{formatDate(backblast.date)}</span>
       </div>
-      {mine && result.status === "published" && (
-        <div className="-mt-2 flex justify-end">
-          <VisibilitySwitch
-            value={visibility}
-            label="Who can see this backblast"
-            publicHint="Anyone signed in can see it on your PAX profile"
-            onChange={async (next) => {
-              const before = visibility;
-              setVisibilityState(next);
-              setDeleteError(null);
-              try {
-                await setVisibility(id!, next, "backblast");
-              } catch (error) {
-                setVisibilityState(before);
-                setDeleteError((error as Error).message);
-              }
-            }}
-          />
+      {(backblast.workoutId || (mine && result.status === "published")) && (
+        // Like a workout's likes and reuses, its workout link sits left of Public / Private.
+        <div className="-mt-2 flex items-center justify-between gap-3">
+          {backblast.workoutId ? (
+            <Link
+              href={`/workout?id=${backblast.workoutId}`}
+              className="link text-sm"
+            >
+              From a workout →
+            </Link>
+          ) : (
+            <span />
+          )}
+          {mine && result.status === "published" && (
+            <VisibilitySwitch
+              value={visibility}
+              label="Who can see this backblast"
+              publicHint="Anyone signed in can see it on your PAX profile"
+              onChange={async (next) => {
+                const before = visibility;
+                setVisibilityState(next);
+                setDeleteError(null);
+                try {
+                  await setVisibility(id!, next, "backblast");
+                } catch (error) {
+                  setVisibilityState(before);
+                  setDeleteError((error as Error).message);
+                }
+              }}
+            />
+          )}
         </div>
       )}
       {mine && result.status === "published" && (
         <VisibilityNotice kind="backblast" noticesOff={user.noticesOff} />
       )}
-      {backblast.workoutId ? (
-        <Link
-          href={`/workout?id=${backblast.workoutId}`}
-          className="link -mt-2 self-start text-sm"
-        >
-          From a workout →
-        </Link>
-      ) : (
-        mine && (
-          <LinkWorkout
-            userId={user.id}
-            backblastId={id!}
-            ao={backblast.ao}
-            date={backblast.date}
-            onLinked={(workoutId) =>
-              setResult(
-                (current) =>
-                  current && {
-                    ...current,
-                    backblast: current.backblast && {
-                      ...current.backblast,
-                      workoutId,
-                    },
+      {!backblast.workoutId && mine && (
+        <LinkWorkout
+          userId={user.id}
+          backblastId={id!}
+          ao={backblast.ao}
+          date={backblast.date}
+          onLinked={(workoutId) =>
+            setResult(
+              (current) =>
+                current && {
+                  ...current,
+                  backblast: current.backblast && {
+                    ...current.backblast,
+                    workoutId,
                   },
-              )
-            }
-          />
-        )
+                },
+            )
+          }
+        />
       )}
 
       <ProtectedText
@@ -187,16 +191,20 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         {text}
       </ProtectedText>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={`grid gap-3 ${mine ? "grid-cols-3" : "grid-cols-2"}`}>
         <CopyButton text={shared} disabled={!ready} />
         <ShareButton text={shared} disabled={!ready} />
+        {mine && (
+          <Link href={`/backblasts/edit?id=${id}`} className="btn w-full px-4">
+            <PencilIcon />
+            Edit
+          </Link>
+        )}
       </div>
-      {mine && (
-        <Link href={`/backblasts/edit?id=${id}`} className="btn -mt-2 w-full">
-          <PencilIcon />
-          Edit backblast
-        </Link>
-      )}
+      {/* Done with it: back to Home. */}
+      <Link href="/" className="btn -mt-2 w-full">
+        Close
+      </Link>
       <div className="-mt-1 flex flex-wrap justify-center gap-x-6 gap-y-2">
         <ShareLinkButton
           path={`/backblast/?id=${id}`}

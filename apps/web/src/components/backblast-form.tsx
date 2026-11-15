@@ -121,7 +121,7 @@ function allSteps(language: Language): Step[] {
     {
       kind: "workout",
       title: "Workout",
-      hint: "This backblast's copy of the workout. Edit it here for anything that went differently; the workout itself isn't changed.",
+      hint: "This backblast's copy of the workout. Edit it here for anything that went differently; when you finish, Rocket asks whether to update the workout to match.",
     },
     {
       kind: "attendance",
@@ -518,6 +518,7 @@ export function BackblastForm({
       </header>
 
       <nav
+        data-tour="editor-steps"
         aria-label={
           mode === "workout" ? "Workout sections" : "Backblast sections"
         }
@@ -564,7 +565,11 @@ export function BackblastForm({
         </p>
       </nav>
 
-      <div ref={page} className="panel flex min-h-[55vh] flex-col gap-4">
+      <div
+        ref={page}
+        data-tour="editor-page"
+        className="panel flex min-h-[55vh] flex-col gap-4"
+      >
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
           <h2 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-ink">
             {step.title}
@@ -815,6 +820,7 @@ export function BackblastForm({
         ) : (
           <button
             type="submit"
+            data-tour="editor-save"
             disabled={saving || tooEarly}
             className="btn gap-2 px-4 text-base whitespace-nowrap disabled:opacity-50"
           >
@@ -827,6 +833,7 @@ export function BackblastForm({
         <button
           type="button"
           onClick={() => goTo(lastStep)}
+          data-tour="editor-skip"
           className="link -mt-2 inline-flex items-center gap-1.5 self-center"
         >
           Skip to review

@@ -90,10 +90,15 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   (Settings → Sharing can make new ones start private): anyone signed in can read it, and it shows on
   its Q's PAX profile. Its Q can switch it to **private** on its page. The backblast holds
   its own copy of the workout's sections, which can be edited without changing the workout
-  (**Update from workout** copies it again). Its pages are Workout, Notes, Name-o-rama (Qs and
+  (**Update from workout** copies it again). Finishing a backblast whose Introduction,
+  Warm-o-rama, The Thang or Words of Wisdom now differ from its own workout asks **Update the
+  workout too?**: Update workout copies those sections back (The Thang becomes one thang with the
+  backblast's text, replacing its timers and music), or keep the workout as it is. Its pages are Workout, Notes, Name-o-rama (Qs and
   PAX, with roster suggestions and the AO's regulars), Announcements (optional; the backblast's own, not
   copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
-  and Share are on the finished backblast's page).
+  and Share are on the finished backblast's page). On a finished backblast's page, **From a
+  workout →** sits left of the Public / Private switch (where a workout shows its likes and
+  reuses); Copy, Share and Edit share one row, with a **Close** button back to Home below.
   - **Linking to a workout:** a backblast and its Q's workout stay linked while they're at the same
     AO on the same date (ignoring case and spaces). The database keeps it so (triggers in
     `20261110010000_backblast_workout_links.sql`): when either one's AO or date changes, or a
@@ -125,6 +130,13 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   template can be starred as the default too (saved as `builtin_defaults` in the account's
   metadata); starring one clears the section's other default.
 - **From pickers** (Exicon, PAX, Discover): on a phone, one line of chips that scrolls sideways.
+- **Tutorial:** a step-by-step tour that spotlights one part of the screen at a time, moving
+  between pages as it goes: Home's stats and sections, writing a first workout (each page of the
+  form, templates, The Thang's timers, music and Exicon, Notes, Review), Discover, the Exicon, and
+  PAX (searching names, e.g. before naming an FNG, and a PAX's profile). It starts once per
+  account, after the device setup (`tutorial_done` in the account's metadata). The first time Home
+  shows a workout that needs its backblast, a short second tour walks through writing it
+  (`tutorial_backblast_done`). Each can be skipped; **Settings → Tutorial** shows them again.
 - **About** (last in the menu): what Rocket is and does, the running version and build, and the
   **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
   open, the rest folded; commit links and repeated lines are left out.

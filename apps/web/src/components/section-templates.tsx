@@ -208,7 +208,7 @@ export function SectionTemplates({
 
   return (
     <>
-      <span className="flex shrink-0 items-center gap-1">
+      <span data-tour="templates" className="flex shrink-0 items-center gap-1">
         <IconButton
           label={`Save ${label} as a template`}
           active={mode === "save"}
