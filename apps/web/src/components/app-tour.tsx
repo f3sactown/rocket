@@ -29,6 +29,8 @@ interface Step {
 }
 
 const TOUR_EVENT = "rocket-tour";
+/** Asks the PAX page to show tiles down to the PAX the tour opens (it may be far down the list). */
+export const TOUR_SHOW_PAX_EVENT = "rocket-tour-show-pax";
 
 /** Starts a tour now (from Settings). */
 export function startTour(name: TourName = "main") {
@@ -192,6 +194,7 @@ const MAIN: Step[] = [
   {
     route: "/pax",
     target: "pax-tile",
+    before: () => window.dispatchEvent(new Event(TOUR_SHOW_PAX_EVENT)),
     optional: true,
     title: "Each PAX",
     body: "Their regions, posts and Qs, and the likes and reuses their workouts have had. Tap one for their profile.",
