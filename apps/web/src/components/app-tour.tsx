@@ -184,7 +184,7 @@ const MAIN: Step[] = [
   },
   {
     route: "/pax",
-    target: "source-chips",
+    target: "pax-filters",
     optional: true,
     title: "Regions and Rocket",
     body: "Choose which regions to list, and tick Only PAX on Rocket to see who's signed up.",
@@ -206,7 +206,7 @@ const MAIN: Step[] = [
   {
     target: "profile-stats",
     optional: true,
-    title: "Their numbers",
+    title: "Their stats",
     body: "Posts, Qs, likes and reuses, and their posts and Qs in each region.",
   },
   {
