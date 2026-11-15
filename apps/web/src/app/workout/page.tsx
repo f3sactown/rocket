@@ -323,7 +323,11 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
               ? `/backblasts/edit?id=${existing.id}`
               : `/backblast?id=${existing.id}`;
           return (
-            <Link href={href} className="btn w-full">
+            <Link
+              href={href}
+              data-tour={existing ? undefined : "create-backblast"}
+              className="btn w-full"
+            >
               <ArrowIcon />
               {!existing
                 ? "Create backblast"

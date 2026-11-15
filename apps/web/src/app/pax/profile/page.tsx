@@ -61,7 +61,10 @@ function PaxProfile({ user }: { user: CurrentUser }) {
       <Link href="/pax" className="link -mb-2 self-start text-sm">
         ← PAX
       </Link>
-      <header className="flex items-start justify-between gap-4">
+      <header
+        data-tour="profile-header"
+        className="flex items-start justify-between gap-4"
+      >
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className="card-title break-words">{name || "PAX"}</h1>
           {name && (
@@ -98,7 +101,7 @@ function PaxProfile({ user }: { user: CurrentUser }) {
       )}
       {entry && (
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-4 gap-2">
+          <div data-tour="profile-stats" className="grid grid-cols-4 gap-2">
             {[
               ["Posts", entry.posts],
               ["Qs", entry.qs],
@@ -239,7 +242,7 @@ function Group({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div data-tour="profile-section" className="flex flex-col gap-2">
       <h2 className="px-1 text-lg font-semibold tracking-tight text-ink">
         {title}
         {count ? (

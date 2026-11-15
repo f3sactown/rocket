@@ -125,6 +125,13 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   template can be starred as the default too (saved as `builtin_defaults` in the account's
   metadata); starring one clears the section's other default.
 - **From pickers** (Exicon, PAX, Discover): on a phone, one line of chips that scrolls sideways.
+- **Tutorial:** a step-by-step tour that spotlights one part of the screen at a time, moving
+  between pages as it goes: Home's stats and sections, writing a first workout (each page of the
+  form, templates, The Thang's timers, music and Exicon, Notes, Review), Discover, the Exicon, and
+  PAX (searching names, e.g. before naming an FNG, and a PAX's profile). It starts once per
+  account, after the device setup (`tutorial_done` in the account's metadata). The first time Home
+  shows a workout that needs its backblast, a short second tour walks through writing it
+  (`tutorial_backblast_done`). Each can be skipped; **Settings → Tutorial** shows them again.
 - **About** (last in the menu): what Rocket is and does, the running version and build, and the
   **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
   open, the rest folded; commit links and repeated lines are left out.

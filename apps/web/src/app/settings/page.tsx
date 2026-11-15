@@ -13,6 +13,7 @@ import {
 import { AccountData } from "@/components/account-data";
 import { NOTICES } from "@/components/notice-dialog";
 import { PushSettings } from "@/components/push-settings";
+import { startTour } from "@/components/app-tour";
 import { PasswordInput } from "@/components/password-input";
 import { RegionSettings } from "@/components/region-settings";
 import {
@@ -313,6 +314,24 @@ function Settings({ user }: { user: CurrentUser }) {
           <span className="label">Notices you chose not to show again</span>
           <NoticeReset off={user.noticesOff} />
         </div>
+      </Section>
+
+      <Section
+        title="Tutorial"
+        description="A step-by-step tour of Rocket: Home, writing a workout, Discover, the Exicon and PAX. Once a workout of yours has happened, a short one shows how to write its backblast."
+      >
+        <button
+          type="button"
+          onClick={async () => {
+            await createClient().auth.updateUser({
+              data: { tutorial_done: false, tutorial_backblast_done: false },
+            });
+            startTour("main");
+          }}
+          className="self-start rounded-full border border-line-strong px-4 py-2 text-sm font-medium text-ink transition hover:border-accent/60"
+        >
+          Show the tutorial again
+        </button>
       </Section>
 
       <Section

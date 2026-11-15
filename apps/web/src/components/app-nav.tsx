@@ -157,6 +157,7 @@ export function AppNav() {
       </Link>
       <button
         type="button"
+        data-tour="menu"
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
         aria-controls="app-menu"

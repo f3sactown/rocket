@@ -84,6 +84,7 @@ function Pax({ user }: { user: CurrentUser }) {
       <div className="flex flex-col gap-3">
         <input
           type="search"
+          data-tour="pax-search"
           aria-label="Search PAX by name"
           placeholder="Search by name…"
           value={query}
@@ -141,6 +142,7 @@ function Pax({ user }: { user: CurrentUser }) {
             {results.slice(0, shown).map((p) => (
               <li key={`${p.org}:${p.name}`} className="min-w-0">
                 <Link
+                  data-tour="pax-tile"
                   href={`/pax/profile?name=${encodeURIComponent(p.name)}&org=${p.org}`}
                   className="panel flex h-full flex-col gap-1.5 p-2 transition-colors hover:border-accent/40 sm:gap-2 sm:p-3"
                 >

@@ -28,12 +28,21 @@ function setupDone(): boolean {
   }
 }
 
+/** Fired when this device's setup is finished or skipped (the app tour waits for it). */
+export const DEVICE_SETUP_DONE_EVENT = "rocket-device-setup-done";
+
 function markDone() {
   try {
     localStorage.setItem(DEVICE_SETUP_KEY, new Date().toISOString());
   } catch {
     // Not remembered; it shows again next time.
   }
+  window.dispatchEvent(new Event(DEVICE_SETUP_DONE_EVENT));
+}
+
+/** Whether this device's setup is out of the way (finished, skipped, or not stored). */
+export function deviceSetupFinished(): boolean {
+  return setupDone();
 }
 
 /** Opens the device setup again, e.g. from Settings. */

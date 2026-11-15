@@ -168,7 +168,10 @@ function Discover({ user }: { user: CurrentUser }) {
           off={ALL_PUBLIC_SOURCES.filter((s) => !chosen.includes(s))}
           onChange={chooseSources}
         />
-        <label className="flex items-center gap-2 self-start text-sm text-ink-soft">
+        <label
+          data-tour="discover-include"
+          className="flex items-center gap-2 self-start text-sm text-ink-soft"
+        >
           <input
             type="checkbox"
             checked={includeOwn}
@@ -188,7 +191,11 @@ function Discover({ user }: { user: CurrentUser }) {
         </p>
       ) : (
         groups.map((group) => (
-          <div key={group.title} className="flex flex-col gap-2">
+          <div
+            key={group.title}
+            data-tour="discover-group"
+            className="flex flex-col gap-2"
+          >
             <h2 className="px-1 text-lg font-semibold tracking-tight text-ink">
               {group.title}
             </h2>
