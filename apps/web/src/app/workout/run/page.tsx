@@ -11,6 +11,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { ArrowIcon } from "@/components/icons";
 import { ActiveTimer, ThangTimer } from "@/components/thang-timer";
+import { WrapUpWarning } from "@/components/wrap-up-warning";
 import { fromWorkoutRow, loadWorkoutNotes, workoutById } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/client";
 import { setVisibility } from "@/lib/workout-social";
@@ -189,6 +190,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
       }}
     >
       <article className="card">
+        <WrapUpWarning date={workout.date} time={workout.time} />
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
             <Link href={`/workout?id=${id}`} className="link text-sm">
