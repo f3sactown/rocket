@@ -94,33 +94,36 @@ function Pax({ user }: { user: CurrentUser }) {
           }}
           className="input text-base"
         />
-        {data.value && data.value.regions.length > 0 && (
-          <SourceChips
-            chips={data.value.regions.map((r) => ({
-              key: r.id,
-              label: r.name,
-              color: colors.get(r.id) ?? "var(--badge-region)",
-            }))}
-            off={off}
-            onChange={choose}
-          />
-        )}
-        <label className="flex items-center gap-2 self-start text-sm text-ink">
-          <input
-            type="checkbox"
-            checked={onlyRocket}
-            onChange={(e) => {
-              const next = e.target.checked;
-              setOnlyRocket(next);
-              setShown(PAGE);
-              createClient()
-                .auth.updateUser({ data: { pax_rocket_only: next } })
-                .then(() => {});
-            }}
-            className="size-4 accent-[var(--color-accent)]"
-          />
-          Only PAX on Rocket
-        </label>
+        {/* The region chips and the Rocket-only box, spotlit together in the tour. */}
+        <div data-tour="pax-filters" className="flex flex-col gap-3">
+          {data.value && data.value.regions.length > 0 && (
+            <SourceChips
+              chips={data.value.regions.map((r) => ({
+                key: r.id,
+                label: r.name,
+                color: colors.get(r.id) ?? "var(--badge-region)",
+              }))}
+              off={off}
+              onChange={choose}
+            />
+          )}
+          <label className="flex items-center gap-2 self-start text-sm text-ink">
+            <input
+              type="checkbox"
+              checked={onlyRocket}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setOnlyRocket(next);
+                setShown(PAGE);
+                createClient()
+                  .auth.updateUser({ data: { pax_rocket_only: next } })
+                  .then(() => {});
+              }}
+              className="size-4 accent-[var(--color-accent)]"
+            />
+            Only PAX on Rocket
+          </label>
+        </div>
       </div>
 
       {data.error ? (
