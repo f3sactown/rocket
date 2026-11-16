@@ -85,14 +85,27 @@ const AUTOSAVE_DELAY_MS = 800;
 
 type SaveState = "new" | "saving" | "saved" | "error";
 
-function statusLabel(state: SaveState, published: boolean): string {
+/** When it was last saved, as people read it: "Nov 16, 5:42am". */
+function savedTime(at: Date): string {
+  const date = at.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+  const time = at
+    .toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+    .replace(/\s?([AP])M$/i, (_, h: string) => `${h.toLowerCase()}m`);
+  return `${date}, ${time}`;
+}
+
+/** The header's save state: "Saving…" while it saves, then "Saved" with when. */
+function statusLabel(state: SaveState, savedAt: Date | null): string {
   switch (state) {
     case "new":
-      return published ? "Saved" : "Draft";
+      return "Saves as you type";
     case "saving":
       return "Saving…";
     case "saved":
-      return published ? "Saved" : "Draft saved";
+      return savedAt ? `Saved ${savedTime(savedAt)}` : "Saved";
     case "error":
       return "Not saved";
   }
@@ -107,7 +120,7 @@ const WORDS = {
     new: "New workout",
     draft: "Edit workout draft",
     published: "Edit workout",
-    finish: "Save workout",
+    finish: "Done",
     failed: "Couldn't save the workout.",
   },
   backblast: {
@@ -118,7 +131,7 @@ const WORDS = {
     new: "New backblast",
     draft: "Edit draft",
     published: "Edit backblast",
-    finish: "Finish draft",
+    finish: "Done",
     failed: "Couldn't save the backblast.",
   },
 } as const;
@@ -133,6 +146,7 @@ export function BackblastEditor({
   user,
   draftId,
   published = false,
+  savedAt,
   initial,
 }: {
   mode?: FormMode;
@@ -141,6 +155,8 @@ export function BackblastEditor({
   draftId?: string;
   /** Whether the backblast being edited is already published. */
   published?: boolean;
+  /** When the one being edited was last saved. */
+  savedAt?: string;
   initial: Backblast;
 }) {
   const router = useRouter();
@@ -149,11 +165,13 @@ export function BackblastEditor({
     templates: SectionTemplate[];
     start: Backblast;
   } | null>(null);
+  // An existing one opens as saved, with when it was last saved; a new one saves once typed in.
   const [saveState, setSaveState] = useState<SaveState>(
-    draftId && !published ? "saved" : "new",
+    draftId ? "saved" : "new",
   );
-  // Once changed, a finished one goes back to being a draft until it's saved again.
-  const [edited, setEdited] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(
+    savedAt ? new Date(savedAt) : null,
+  );
   // A finished backblast's changes to its workout's sections, offered back to the workout.
   const [offer, setOffer] = useState<Offer | null>(null);
   // Where to go once the saved notice is closed.
@@ -259,7 +277,10 @@ export function BackblastEditor({
   const saveNow = useCallback(() => {
     timer.current = null;
     persist("draft").then(
-      () => setSaveState((state) => (timer.current ? state : "saved")),
+      () => {
+        setLastSaved(new Date());
+        setSaveState((state) => (timer.current ? state : "saved"));
+      },
       () => setSaveState("error"),
     );
   }, [persist]);
@@ -267,7 +288,6 @@ export function BackblastEditor({
   const onChange = useCallback(
     (backblast: Backblast) => {
       latest.current = backblast;
-      setEdited(true);
       setSaveState("saving");
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(saveNow, AUTOSAVE_DELAY_MS);
@@ -312,10 +332,8 @@ export function BackblastEditor({
         heading={
           published ? words.published : draftId ? words.draft : words.new
         }
-        status={statusLabel(saveState, published && !edited)}
-        saveLabel={
-          published && mode === "backblast" ? "Save backblast" : words.finish
-        }
+        status={statusLabel(saveState, lastSaved)}
+        saveLabel={words.finish}
         initial={loaded.start}
         userId={user.id}
         initialTemplates={loaded.templates}

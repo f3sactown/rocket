@@ -144,8 +144,8 @@ const MAIN: Step[] = [
   {
     target: "editor-save",
     before: click('[data-tour="editor-skip"]'),
-    title: "Review and save",
-    body: "Check it over, then Save workout. From its page you can Copy or Share it to Band or Slack, Run it at the AO with its timers, and make it public or private.",
+    title: "Review and Done",
+    body: "It saves as you type, so there's no Save button: check it over and tap Done when it's ready. From its page you can Copy or Share it to Band or Slack, Run it at the AO with its timers, and make it public or private.",
   },
   {
     route: "/discover",
@@ -255,7 +255,7 @@ const BACKBLAST: Step[] = [
     target: "editor-save",
     before: click('[data-tour="editor-skip"]'),
     title: "Finish and share",
-    body: "Check it over and finish it. Then Copy or Share it to Band or Slack from its page.",
+    body: "Check it over and tap Done. Then Copy or Share it to Band or Slack from its page.",
   },
 ];
 

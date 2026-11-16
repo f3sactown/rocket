@@ -23,7 +23,9 @@ function EditBackblast({ user }: { user: CurrentUser }) {
   const router = useRouter();
   const id = useSearchParams().get("id");
   const [loaded, setLoaded] = useState<
-    { backblast: Backblast; published: boolean } | null | undefined
+    | { backblast: Backblast; published: boolean; savedAt: string }
+    | null
+    | undefined
   >(undefined);
 
   useEffect(() => {
@@ -43,6 +45,7 @@ function EditBackblast({ user }: { user: CurrentUser }) {
               ? {
                   backblast: fromRow(data),
                   published: data.status === "published",
+                  savedAt: data.updated_at,
                 }
               : null,
           );
@@ -63,6 +66,7 @@ function EditBackblast({ user }: { user: CurrentUser }) {
       user={user}
       draftId={id!}
       published={loaded.published}
+      savedAt={loaded.savedAt}
       initial={loaded.backblast}
     />
   );

@@ -21,7 +21,7 @@ function EditWorkout({ user }: { user: CurrentUser }) {
   const router = useRouter();
   const id = useSearchParams().get("id");
   const [loaded, setLoaded] = useState<
-    { workout: Workout; published: boolean } | null | undefined
+    { workout: Workout; published: boolean; savedAt: string } | null | undefined
   >(undefined);
 
   useEffect(() => {
@@ -44,6 +44,7 @@ function EditWorkout({ user }: { user: CurrentUser }) {
                     await loadWorkoutNotes(data.id),
                   ),
                   published: data.status === "published",
+                  savedAt: data.updated_at,
                 }
               : null,
           );
@@ -65,6 +66,7 @@ function EditWorkout({ user }: { user: CurrentUser }) {
       user={user}
       draftId={id!}
       published={loaded.published}
+      savedAt={loaded.savedAt}
       initial={loaded.workout}
     />
   );
