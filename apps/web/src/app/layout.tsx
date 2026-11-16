@@ -4,6 +4,7 @@ import { AppNav } from "@/components/app-nav";
 import { AuthProvider } from "@/components/auth-provider";
 import { DeviceSetup } from "@/components/device-setup";
 import { AppTour } from "@/components/app-tour";
+import { OfflineSupport } from "@/components/offline-support";
 import { FaviconSync } from "@/components/favicon-sync";
 import { LaunchSplash } from "@/components/launch-splash";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <FaviconSync />
             <LaunchSplash />
             <AppNav />
+            <OfflineSupport />
             <DeviceSetup />
             <AppTour />
             {children}
