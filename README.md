@@ -152,11 +152,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   account, after the device setup (`tutorial_done` in the account's metadata). The first time Home
   shows a workout that needs its backblast, a short second tour walks through writing it
   (`tutorial_backblast_done`). Each can be skipped; **Settings → Tutorial** shows them again.
-- **Examples for a new account:** the first time Home opens on an account with no workouts or
-  backblasts, Rocket adds an example of each, both private and named "Example: …" (a workout
-  dated yesterday, so it shows **Needs backblast**, and a backblast two days back), so the tour
-  has something to show. It checks only once (`examples_added` in the account's metadata), so
-  deleting them doesn't bring them back; an account that already has its own never gets them.
+- **Tutorial examples:** before a tour starts (on its own or from Settings → Tutorial), Rocket
+  makes sure the account has an example workout and an example backblast to show, both private
+  and named "Example: …" (a workout dated yesterday, so it shows **Needs backblast**, and a
+  backblast two days back). Whichever is missing is added, whether or not the account has its
+  own; one already there (found by its name) isn't added again.
 - **Offline:** the service worker (`apps/web/public/sw.js`, registered on every visit) keeps the
   app's pages and code, so Rocket opens with no signal, and keeps the data you've looked at, so a
   workout you've opened before can be read and run offline. Pages and data are fetched fresh

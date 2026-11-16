@@ -68,56 +68,71 @@ function exampleBackblast(q: string): Backblast {
   };
 }
 
+/** Fired once examples have been added, so Home shows them. */
+export const EXAMPLES_EVENT = "rocket-examples-added";
+
+type ExampleUser = { id: string; name: string; language: Language };
+const checks = new Map<string, Promise<boolean>>();
+
 /**
- * Gives a new account something to look at, and for the app tour to show: an example workout
- * (dated yesterday, so it's ready for its backblast) and an example backblast, both private, their
- * names starting "Example:". Only for an account with no workouts or backblasts at all, and only
- * once (`examples_added` in the account's metadata), so deleting them doesn't bring them back.
- * Returns whether it added them.
+ * Before the tutorial runs: makes sure the account has the example workout (dated yesterday, so
+ * it's ready for its backblast) and the example backblast, both private, their names starting
+ * "Example:". Whichever is missing is added, whether or not the account has its own; one already
+ * there (found by its name) isn't added again. Returns whether it added any.
  */
-export function addExamplesIfEmpty(user: ExampleUser): Promise<boolean> {
-  if (user.examplesAdded) return Promise.resolve(false);
-  // One check per account at a time, however many times Home loads meanwhile.
+export function ensureExamples(user: ExampleUser): Promise<boolean> {
+  // One check per account at a time, however many times it's asked meanwhile.
   let check = checks.get(user.id);
   if (!check) {
-    check = addExamples(user);
+    check = addMissing(user)
+      .catch(() => false)
+      .finally(() => checks.delete(user.id));
     checks.set(user.id, check);
   }
   return check;
 }
 
-type ExampleUser = {
-  id: string;
-  name: string;
-  language: Language;
-  examplesAdded: boolean;
-};
-const checks = new Map<string, Promise<boolean>>();
-
-async function addExamples(user: ExampleUser): Promise<boolean> {
+async function addMissing(user: ExampleUser): Promise<boolean> {
   const supabase = createClient();
+  const workout = exampleWorkout(user.language, user.name);
+  const backblast = exampleBackblast(user.name);
   const [workouts, backblasts] = await Promise.all([
-    supabase.from("workouts").select("id").eq("author_id", user.id).limit(1),
-    supabase.from("backblasts").select("id").eq("author_id", user.id).limit(1),
+    supabase
+      .from("workouts")
+      .select("id")
+      .eq("author_id", user.id)
+      .eq("title", workout.title)
+      .limit(1),
+    supabase
+      .from("backblasts")
+      .select("id")
+      .eq("author_id", user.id)
+      .eq("title", backblast.title)
+      .limit(1),
   ]);
   if (workouts.error || backblasts.error) return false;
-  const empty = !workouts.data?.length && !backblasts.data?.length;
-  if (empty) {
-    const { error: workoutError } = await supabase.from("workouts").insert({
-      ...toWorkoutInsert(exampleWorkout(user.language, user.name)),
-      status: "published",
-      visibility: "private",
-      author_id: user.id,
-    });
-    if (workoutError) return false;
-    await supabase.from("backblasts").insert({
-      ...toInsert(exampleBackblast(user.name)),
-      status: "published",
-      visibility: "private",
-      author_id: user.id,
-    });
-  }
-  // Checked once either way: someone with workouts of their own never gets examples.
-  await supabase.auth.updateUser({ data: { examples_added: true } });
-  return empty;
+  const adding: PromiseLike<{ error: unknown }>[] = [];
+  if (!workouts.data?.length)
+    adding.push(
+      supabase.from("workouts").insert({
+        ...toWorkoutInsert(workout),
+        status: "published",
+        visibility: "private",
+        author_id: user.id,
+      }),
+    );
+  if (!backblasts.data?.length)
+    adding.push(
+      supabase.from("backblasts").insert({
+        ...toInsert(backblast),
+        status: "published",
+        visibility: "private",
+        author_id: user.id,
+      }),
+    );
+  if (!adding.length) return false;
+  const results = await Promise.all(adding);
+  const added = results.some((r) => !r.error);
+  if (added) window.dispatchEvent(new Event(EXAMPLES_EVENT));
+  return added;
 }

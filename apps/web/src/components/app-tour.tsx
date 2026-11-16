@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "./auth-provider";
+import { ensureExamples } from "@/lib/examples";
 import { DEVICE_SETUP_DONE_EVENT, deviceSetupFinished } from "./device-setup";
 
 /**
@@ -285,6 +286,10 @@ export function AppTour() {
   // When the current page opened, so targets get time to load on a new page but not after.
   const arrived = useRef({ path: "", at: 0 });
   const offered = useRef(false);
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const steps = tour ? TOURS[tour] : [];
   const step = steps[index];
@@ -295,6 +300,22 @@ export function AppTour() {
     setRect(null);
     setIndex(next);
   }, []);
+
+  /**
+   * Starts a tour, once the example workout and backblast are there for it to show (added if
+   * missing, never twice).
+   */
+  const begin = useCallback(
+    async (name: TourName) => {
+      const current = userRef.current;
+      if (current) await ensureExamples(current);
+      direction.current = 1;
+      setSkipped([]);
+      moveTo(0);
+      setTour(name);
+    },
+    [moveTo],
+  );
 
   const finish = useCallback(() => {
     if (tour)
@@ -307,36 +328,29 @@ export function AppTour() {
 
   // Settings → Tutorial.
   useEffect(() => {
-    const start = (event: Event) => {
-      direction.current = 1;
-      setSkipped([]);
-      moveTo(0);
-      setTour((event as CustomEvent<TourName>).detail);
-    };
+    const start = (event: Event) =>
+      void begin((event as CustomEvent<TourName>).detail);
     window.addEventListener(TOUR_EVENT, start);
     return () => window.removeEventListener(TOUR_EVENT, start);
-  }, [moveTo]);
+  }, [begin]);
 
   // The main tour, once per account, after this device's setup is out of the way.
   useEffect(() => {
     // Only from Home, so opening a shared link isn't interrupted.
     if (!user || user.needsProfile || user.tutorialDone || tour) return;
     if (pathname !== "/") return;
-    const begin = () => {
+    const offer = () => {
       if (offered.current || !deviceSetupFinished()) return;
       offered.current = true;
-      direction.current = 1;
-      setSkipped([]);
-      moveTo(0);
-      setTour("main");
+      void begin("main");
     };
-    const timer = setTimeout(begin, 2500);
-    window.addEventListener(DEVICE_SETUP_DONE_EVENT, begin);
+    const timer = setTimeout(offer, 2500);
+    window.addEventListener(DEVICE_SETUP_DONE_EVENT, offer);
     return () => {
       clearTimeout(timer);
-      window.removeEventListener(DEVICE_SETUP_DONE_EVENT, begin);
+      window.removeEventListener(DEVICE_SETUP_DONE_EVENT, offer);
     };
-  }, [user, tour, moveTo, pathname]);
+  }, [user, tour, begin, pathname]);
 
   // The backblast tour, the first time Home shows a workout that needs its backblast.
   useEffect(() => {
@@ -353,13 +367,10 @@ export function AppTour() {
       if (!find("needs-backblast") || offered.current || !deviceSetupFinished())
         return;
       offered.current = true;
-      direction.current = 1;
-      setSkipped([]);
-      moveTo(0);
-      setTour("backblast");
+      void begin("backblast");
     }, 3000);
     return () => clearTimeout(timer);
-  }, [user, tour, pathname, moveTo]);
+  }, [user, tour, pathname, begin]);
 
   // Go to the step's page, run its action, then find what it spotlights.
   useEffect(() => {

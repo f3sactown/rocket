@@ -47,8 +47,6 @@ export interface CurrentUser {
   whatsNewSeen: string | null;
   /** Notices (by ID) the user chose not to show again; Settings → Notifications brings them back. */
   noticesOff: string[];
-  /** Whether the account has been checked for (and maybe given) an example workout and backblast. */
-  examplesAdded: boolean;
   /** Whether the app tour has been finished or skipped (Settings → Tutorial shows it again). */
   tutorialDone: boolean;
   /** Whether the "write your first backblast" tour has been finished or skipped. */
@@ -196,7 +194,6 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
       : [],
     builtInDefaults: builtInDefaultsFrom(user.user_metadata?.builtin_defaults),
     tutorialDone: user.user_metadata?.tutorial_done === true,
-    examplesAdded: user.user_metadata?.examples_added === true,
     tutorialBackblastDone: user.user_metadata?.tutorial_backblast_done === true,
     regionId:
       typeof user.user_metadata?.region_id === "string"
