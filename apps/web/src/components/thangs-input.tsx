@@ -8,7 +8,7 @@ import {
   type Thang,
   type Timer,
 } from "@rocket/core";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LibraryButton } from "./library-picker";
 
 /** Reads a time typed as minutes ("5") or m:ss ("4:30"); null if it isn't one. */
@@ -33,6 +33,36 @@ export function ThangsInput({
   placeholder: string;
 }) {
   const rows = value.length > 0 ? value : [{ text: "" }];
+  const firstBox = useRef<HTMLTextAreaElement>(null);
+  const end = useRef<HTMLButtonElement>(null);
+  const single = rows.length === 1;
+
+  // A single thang's box is as tall as the screen allows while its timer, music and Exicon
+  // buttons and "Add another thang" stay in view on a phone, without scrolling.
+  useEffect(() => {
+    const box = firstBox.current;
+    if (!box) return;
+    if (!single) {
+      box.style.minHeight = "";
+      return;
+    }
+    const fit = () => {
+      const top = box.getBoundingClientRect().top + window.scrollY;
+      const below = end.current
+        ? end.current.getBoundingClientRect().bottom +
+          window.scrollY -
+          (top + box.offsetHeight)
+        : 0;
+      const room = window.innerHeight - top - below - 12;
+      box.style.minHeight = `${Math.max(96, Math.min(room, 640))}px`;
+    };
+    const frame = requestAnimationFrame(fit);
+    window.addEventListener("resize", fit);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", fit);
+    };
+  }, [single]);
   const update = (index: number, patch: Partial<Thang>) =>
     onChange(rows.map((t, i) => (i === index ? { ...t, ...patch } : t)));
 
@@ -63,7 +93,8 @@ export function ThangsInput({
             placeholder={placeholder}
             value={thang.text}
             onChange={(e) => update(index, { text: e.target.value })}
-            className="input min-h-36 resize-y text-base leading-relaxed"
+            ref={index === 0 ? firstBox : undefined}
+            className="input min-h-24 resize-y text-base leading-relaxed"
           />
           <TimerInput
             timer={thang.timer}
@@ -101,6 +132,7 @@ export function ThangsInput({
         </div>
       ))}
       <button
+        ref={end}
         type="button"
         onClick={() => onChange([...rows, { text: "" }])}
         className="link self-start py-1"
