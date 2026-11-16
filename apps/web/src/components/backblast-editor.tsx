@@ -85,6 +85,47 @@ const AUTOSAVE_DELAY_MS = 800;
 
 type SaveState = "new" | "saving" | "saved" | "error";
 
+/**
+ * A copy of the form kept on the phone until it's saved, so nothing typed is lost to a dropped
+ * connection, even if the app is closed first. Opening the same workout or backblast again
+ * brings it back and saves it.
+ */
+interface Backup {
+  /** When it was typed (ms). */
+  at: number;
+  content: Backblast;
+}
+const backupKey = (mode: FormMode, id: string) =>
+  `rocket-unsaved:${mode}:${id}`;
+
+function readBackup(key: string): Backup | null {
+  try {
+    const raw = localStorage.getItem(key);
+    const backup = raw ? (JSON.parse(raw) as Backup) : null;
+    return backup && typeof backup.at === "number" && backup.content
+      ? backup
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeBackup(key: string, content: Backblast) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ at: Date.now(), content }));
+  } catch {
+    // No room or no storage: it still saves to Rocket as usual.
+  }
+}
+
+function dropBackup(...keys: string[]) {
+  try {
+    for (const key of keys) localStorage.removeItem(key);
+  } catch {
+    // Nothing kept.
+  }
+}
+
 /** When it was last saved, as people read it: "Nov 16, 5:42am". */
 function savedTime(at: Date): string {
   const date = at.toLocaleDateString(undefined, {
@@ -107,7 +148,7 @@ function statusLabel(state: SaveState, savedAt: Date | null): string {
     case "saved":
       return savedAt ? `Saved ${savedTime(savedAt)}` : "Saved";
     case "error":
-      return "Not saved";
+      return "Not saved yet · kept on this phone";
   }
 }
 
@@ -186,6 +227,16 @@ export function BackblastEditor({
     builtInDefaults: user.builtInDefaults,
   });
   const queue = useRef<Promise<unknown>>(Promise.resolve());
+  // Where this one's unsaved copy is kept: a new one's under "new" (by workout, for a backblast)
+  // until it has an ID.
+  const newKey = backupKey(mode, `new-${initial.workoutId ?? ""}`);
+  const keyFor = useCallback(
+    () => (id.current ? backupKey(mode, id.current) : newKey),
+    [mode, newKey],
+  );
+  const restore = useRef<Backblast | null>(null);
+  // Whether the last save failed, so reconnecting retries it (and nothing else).
+  const failed = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -205,13 +256,23 @@ export function BackblastEditor({
               startUser.current,
             );
         // The person writing a backblast is the Q unless they say otherwise.
-        const start =
+        const fresh =
           mode === "workout" || loaded.q.trim()
             ? loaded
             : { ...loaded, q: user.name };
+        // Changes kept on the phone that never reached Rocket (newer than its last save) come back.
+        const backup = readBackup(draftId ? backupKey(mode, draftId) : newKey);
+        const kept =
+          backup &&
+          (!savedAt || backup.at > Date.parse(savedAt)) &&
+          backup.content;
+        const start = kept || fresh;
+        restore.current = kept || null;
         latest.current = start;
         setLoaded({ templates, start });
       });
+    // `savedAt` and the backup key are fixed for this editor; only these reload it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftId, user.name, mode]);
 
   /** Writes the latest content, one save at a time so a new draft is only created once. */
@@ -276,24 +337,52 @@ export function BackblastEditor({
   // Edits save as a draft (a finished one goes back to a draft) until the last page's button.
   const saveNow = useCallback(() => {
     timer.current = null;
+    const saving = latest.current;
     persist("draft").then(
       () => {
+        failed.current = false;
         setLastSaved(new Date());
         setSaveState((state) => (timer.current ? state : "saved"));
+        // Saved: the phone's copy isn't needed, unless more was typed meanwhile.
+        if (latest.current === saving) dropBackup(keyFor(), newKey);
+        else writeBackup(keyFor(), latest.current);
       },
-      () => setSaveState("error"),
+      () => {
+        failed.current = true;
+        setSaveState("error");
+      },
     );
-  }, [persist]);
+  }, [persist, keyFor, newKey]);
 
   const onChange = useCallback(
     (backblast: Backblast) => {
       latest.current = backblast;
+      // Kept on the phone first, so a dropped connection or a closed app loses nothing.
+      writeBackup(keyFor(), backblast);
       setSaveState("saving");
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(saveNow, AUTOSAVE_DELAY_MS);
     },
-    [saveNow],
+    [saveNow, keyFor],
   );
+
+  // Kept changes brought back on opening: save them now.
+  useEffect(() => {
+    if (!loaded || !restore.current) return;
+    const content = restore.current;
+    restore.current = null;
+    const timer = setTimeout(() => onChange(content), 0);
+    return () => clearTimeout(timer);
+  }, [loaded, onChange]);
+
+  // When the connection comes back, save what couldn't be saved.
+  useEffect(() => {
+    const retry = () => {
+      if (failed.current && !timer.current) saveNow();
+    };
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
+  }, [saveNow]);
 
   // Don't lose the last edits when leaving the page before the autosave fires.
   useEffect(
@@ -310,6 +399,7 @@ export function BackblastEditor({
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     await queue.current;
+    dropBackup(keyFor(), newKey);
     if (id.current)
       await createClient()
         .from(words.table as "backblasts")
@@ -345,8 +435,11 @@ export function BackblastEditor({
           try {
             await persist("published");
           } catch (error) {
+            if (!navigator.onLine)
+              return "You're offline. It's kept on this phone; tap Done again once you're back online.";
             return (error as { message?: string }).message ?? words.failed;
           }
+          dropBackup(keyFor(), newKey);
           // The page says what its Public / Private switch is for, just after a save.
           const view = `${words.view}?id=${id.current}&saved=1`;
           // A backblast whose copy of its workout now differs from the workout: offer to update it.
