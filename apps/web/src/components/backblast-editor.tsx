@@ -127,13 +127,24 @@ function dropBackup(...keys: string[]) {
 }
 
 /**
- * How long ago it was last saved: "just now", then "12 sec ago", "4 min ago", "2 hr ago",
- * "3 days ago".
+ * How long ago it was last saved, in steps that grow as it gets older: "just now", then 5, 10 and
+ * 15 sec; every 10 sec to a minute; every 15 sec to 2 min; every 30 sec to 3 min; then every
+ * minute ("4 min ago"), then hours and days.
  */
 function savedAgo(at: Date, now: number): string {
   const seconds = Math.floor((now - at.getTime()) / 1000);
   if (seconds < 5) return "just now";
-  if (seconds < 60) return `${seconds} sec ago`;
+  if (seconds < 60) {
+    const step = seconds < 20 ? 5 : 10;
+    return `${seconds - (seconds % step)} sec ago`;
+  }
+  if (seconds < 180) {
+    const step = seconds < 120 ? 15 : 30;
+    const shown = seconds - (seconds % step);
+    const min = Math.floor(shown / 60);
+    const sec = shown % 60;
+    return sec ? `${min} min ${sec} sec ago` : `${min} min ago`;
+  }
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes} min ago`;
   const hours = Math.floor(minutes / 60);
@@ -142,7 +153,6 @@ function savedAgo(at: Date, now: number): string {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
-/** The header's save state: "Saving…" while it saves, then how long ago it was saved. */
 function statusLabel(
   state: SaveState,
   savedAt: Date | null,

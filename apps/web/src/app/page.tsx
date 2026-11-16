@@ -16,6 +16,7 @@ import {
   type ListItem,
 } from "@/lib/backblast-list";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
+import { addExamplesIfEmpty } from "@/lib/examples";
 import { loadMyTotals, type WorkoutStats } from "@/lib/workout-social";
 import {
   endMinutes,
@@ -56,22 +57,30 @@ function HomePage({ user }: { user: CurrentUser }) {
   const sources = user.publicSources.join();
 
   useEffect(() => {
-    Promise.all([
-      loadLists("workout", user.id, RECENT, wantsFuture),
-      loadLists("backblast", user.id, RECENT),
-      wantsFuture ? loadFutureWorkouts(user.id, RECENT) : [],
-    ]).then(
-      ([workouts, backblasts, future]) =>
-        setLists({
-          drafts: [...workouts.drafts, ...backblasts.drafts].sort(
-            byWorkoutDate,
-          ),
-          future,
-          workouts: workouts.published,
-          backblasts: backblasts.published,
-        }),
-      (e: Error) => setError(e.message),
-    );
+    // A new account first gets an example workout and backblast (the tour shows them).
+    addExamplesIfEmpty(user)
+      .catch(() => false)
+      .then(() =>
+        Promise.all([
+          loadLists("workout", user.id, RECENT, wantsFuture),
+          loadLists("backblast", user.id, RECENT),
+          wantsFuture ? loadFutureWorkouts(user.id, RECENT) : [],
+        ]),
+      )
+      .then(
+        ([workouts, backblasts, future]) =>
+          setLists({
+            drafts: [...workouts.drafts, ...backblasts.drafts].sort(
+              byWorkoutDate,
+            ),
+            future,
+            workouts: workouts.published,
+            backblasts: backblasts.published,
+          }),
+        (e: Error) => setError(e.message),
+      );
+    // Only when the account (or what it wants on Home) changes, not on every user refresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id, wantsFuture]);
 
   useEffect(() => {
