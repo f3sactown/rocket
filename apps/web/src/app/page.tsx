@@ -16,6 +16,7 @@ import {
   type ListItem,
 } from "@/lib/backblast-list";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
+import { keepForOffline, MAIN_SCREENS, workoutScreens } from "@/lib/offline";
 import { loadMyTotals, type WorkoutStats } from "@/lib/workout-social";
 import {
   endMinutes,
@@ -61,7 +62,17 @@ function HomePage({ user }: { user: CurrentUser }) {
       loadLists("backblast", user.id, RECENT),
       wantsFuture ? loadFutureWorkouts(user.id, RECENT) : [],
     ]).then(
-      ([workouts, backblasts, future]) =>
+      ([workouts, backblasts, future]) => {
+        // Copies for offline use: the main screens, and these workouts with their Run screens.
+        keepForOffline([
+          ...MAIN_SCREENS,
+          ...[...future, ...workouts.published]
+            .slice(0, 2 * RECENT)
+            .flatMap((w) => workoutScreens(w.id)),
+          ...backblasts.published
+            .slice(0, RECENT)
+            .map((b) => `/backblast/?id=${b.id}`),
+        ]);
         setLists({
           drafts: [...workouts.drafts, ...backblasts.drafts].sort(
             byWorkoutDate,
@@ -69,7 +80,8 @@ function HomePage({ user }: { user: CurrentUser }) {
           future,
           workouts: workouts.published,
           backblasts: backblasts.published,
-        }),
+        });
+      },
       (e: Error) => setError(e.message),
     );
   }, [user.id, wantsFuture]);

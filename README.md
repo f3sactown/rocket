@@ -146,11 +146,12 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **From pickers** (Exicon, PAX, Discover): on a phone, one line of chips that scrolls sideways.
 - **Tutorial:** a step-by-step tour that spotlights one part of the screen at a time, moving
   between pages as it goes. After Home's stats and sections, it walks the user through writing a
-  real workout: it opens each page of the form in turn (Basics, Introduction, warm-up, The Thang,
-  Notes, words of wisdom) while they fill it in, then they tap **Done** on Review. On to that
-  workout's page, then **Create backblast**, and the same for its backblast (the copied workout,
-  Notes, Name-o-rama, Announcements, Coffeeteria, Review and **Done**), ending on Copy and Share.
-  (A workout dated after today can't have its backblast yet, so the tour says so and goes on.)
+  real workout, dated today (the date can't be changed, so its backblast can follow): it opens
+  each page of the form in turn (Basics, Introduction, warm-up, The Thang, Notes, words of
+  wisdom) while they fill it in, then they tap **Done** on Review. On to that workout's page
+  (Run workout, Copy and Share), then **Create backblast**, and the same for its backblast (the
+  copied workout, Notes, Name-o-rama, Announcements, Coffeeteria, Review and **Done**), ending on
+  Copy and Share.
   Then Discover, the Exicon and PAX (searching names, e.g. before naming an FNG, and the profile
   of a PAX with at least one public workout and backblast). While the user fills in a page, the
   page stays usable around the tour's card, and notices wait until the tour is over. It starts
@@ -158,7 +159,13 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   skipped, and **Settings → Tutorial** shows it again.
 - **Offline:** the service worker (`apps/web/public/sw.js`, registered on every visit) keeps the
   app's pages and code, so Rocket opens with no signal, and keeps the data you've looked at, so a
-  workout you've opened before can be read and run offline. Pages and data are fetched fresh
+  workout you've opened before can be read and run offline. When Home opens on a connection it
+  also keeps copies of the main screens (Workouts, Backblasts, Discover, Exicon, PAX, Settings),
+  your upcoming and recent workouts with their Run workout screens, and your recent backblasts,
+  by opening each one in turn in a hidden frame (`lib/offline.ts`; again when that list changes,
+  or every 3 hours; not in Data Saver). Offline, a sign-in Supabase can't renew (they last an
+  hour) still counts: the account is kept on the device (`rocket-offline-user`) until the
+  connection's back. Pages and data are fetched fresh
   when there's a connection (a kept copy is used offline, or after 5 seconds on a slow one);
   signing out drops the kept data. An **Offline** banner says what still works. The workout and
   backblast forms keep a copy of what's typed on the phone (`rocket-unsaved:*` in local storage)

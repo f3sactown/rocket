@@ -41,9 +41,10 @@ export function OfflineSupport() {
     >
       <span className="size-2 shrink-0 rounded-full bg-muted" aria-hidden />
       <span>
-        <strong className="text-ink">Offline.</strong> You can keep going:
-        workouts you&apos;ve opened before still show, and what you type is kept
-        on this phone and saved once you&apos;re back online.
+        <strong className="text-ink">Offline.</strong> You can keep going: the
+        main screens, your recent and upcoming workouts (and running them), and
+        anything you&apos;ve opened before still show. What you type is kept on
+        this phone and saved once you&apos;re back online.
       </span>
     </div>
   );
