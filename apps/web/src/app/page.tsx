@@ -2,7 +2,7 @@
 
 import { formatDate, type Language } from "@rocket/core";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
 import { HeartIcon, PlayIcon, PlusIcon, ReuseIcon } from "@/components/icons";
@@ -287,13 +287,21 @@ function Totals({ user }: { user: CurrentUser }) {
   // Your region, or (with "all F3 or FiA regions") every one of them added up.
   const scope = useRegionScope();
   const key = scope?.regions.map((r) => r.id).join() ?? "";
+  // Kept on this device too, so they still show offline.
+  const kept = `rocket-totals:${user.id}:${key}`;
   const stats = useLoad(
-    scope ? () => loadPaxStatsIn(scope.regions, user.name) : null,
+    scope
+      ? () => remembered(kept, () => loadPaxStatsIn(scope.regions, user.name))
+      : null,
     [key, user.name],
   );
-  const latest = useLoad(scope ? () => loadLatestPostIn(scope.regions) : null, [
-    key,
-  ]);
+  const latest = useLoad(
+    scope
+      ? () =>
+          remembered(`${kept}:latest`, () => loadLatestPostIn(scope.regions))
+      : null,
+    [key],
+  );
   if (scope === null)
     return (
       <Link href="/settings" className="link">
@@ -326,6 +334,9 @@ function Totals({ user }: { user: CurrentUser }) {
         {stats.error
           ? `Totals unavailable: ${stats.error}`
           : (scope?.label ?? "")}
+        {stats.value?.kept && (
+          <span className="block">Offline: as last seen on this phone</span>
+        )}
         {latest.value && (
           <span className="block">Updated {formatDate(latest.value)}</span>
         )}
@@ -340,6 +351,23 @@ function Totals({ user }: { user: CurrentUser }) {
  */
 function MyTotals({ userId }: { userId: string }) {
   const totals = useLoad(() => loadMyTotals(userId), [userId]);
+  const online = useSyncExternalStore(
+    subscribeOnline,
+    () => navigator.onLine,
+    () => true,
+  );
+  // Counted fresh only: offline, it says so where they'd be.
+  if (!online || (totals.error && !totals.value))
+    return (
+      <span
+        data-tour="home-stats"
+        className="mt-2 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3 py-1 text-sm text-muted"
+        title="Likes and reuses show once you're back online"
+      >
+        <span className="size-2 rounded-full bg-muted" aria-hidden />
+        Offline
+      </span>
+    );
   if (!totals.value) return null;
   const { likes, reuses } = totals.value;
   return (
@@ -368,4 +396,43 @@ function MyTotals({ userId }: { userId: string }) {
       </span>
     </div>
   );
+}
+
+function subscribeOnline(onChange: () => void) {
+  window.addEventListener("online", onChange);
+  window.addEventListener("offline", onChange);
+  return () => {
+    window.removeEventListener("online", onChange);
+    window.removeEventListener("offline", onChange);
+  };
+}
+
+/**
+ * Loads something and keeps it on this device; when it can't be loaded (offline), the kept copy
+ * instead, marked `kept`.
+ */
+async function remembered<T>(
+  key: string,
+  load: () => Promise<T>,
+): Promise<T & { kept?: boolean }> {
+  try {
+    const value = await load();
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // Not kept; it loads fresh next time.
+    }
+    return value as T & { kept?: boolean };
+  } catch (error) {
+    let kept: T | null = null;
+    try {
+      kept = JSON.parse(localStorage.getItem(key) ?? "null") as T | null;
+    } catch {
+      kept = null;
+    }
+    if (kept === null) throw error;
+    return typeof kept === "object"
+      ? { ...kept, kept: true }
+      : (kept as T & { kept?: boolean });
+  }
 }
