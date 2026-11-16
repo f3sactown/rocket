@@ -126,10 +126,15 @@ function dropBackup(...keys: string[]) {
   }
 }
 
-/** How long ago it was last saved: "just now", "4 min ago", "2 hr ago", "3 days ago". */
+/**
+ * How long ago it was last saved: "just now", then "12 sec ago", "4 min ago", "2 hr ago",
+ * "3 days ago".
+ */
 function savedAgo(at: Date, now: number): string {
-  const minutes = Math.floor((now - at.getTime()) / 60_000);
-  if (minutes < 1) return "just now";
+  const seconds = Math.floor((now - at.getTime()) / 1000);
+  if (seconds < 5) return "just now";
+  if (seconds < 60) return `${seconds} sec ago`;
+  const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes} min ago`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} hr ago`;
@@ -213,13 +218,12 @@ export function BackblastEditor({
   const [saveState, setSaveState] = useState<SaveState>(
     draftId ? "saved" : "new",
   );
-  const [lastSaved, setLastSaved] = useState<Date | null>(
-    savedAt ? new Date(savedAt) : null,
-  );
+  // When it was saved in this visit; one just opened shows plain "Saved" until it saves again.
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   // The time now, so "Saved 3 min ago" keeps counting.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const tick = setInterval(() => setNow(Date.now()), 15_000);
+    const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
   }, []);
   // A finished backblast's changes to its workout's sections, offered back to the workout.
