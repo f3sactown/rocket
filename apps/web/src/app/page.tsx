@@ -9,6 +9,7 @@ import { HeartIcon, PlayIcon, PlusIcon, ReuseIcon } from "@/components/icons";
 import { WhatsNew } from "@/components/whats-new";
 import { WorkoutCards } from "@/components/workout-card";
 import {
+  byWorkoutDate,
   loadFutureWorkouts,
   loadLists,
   loadTodaysWorkouts,
@@ -62,7 +63,9 @@ function HomePage({ user }: { user: CurrentUser }) {
     ]).then(
       ([workouts, backblasts, future]) =>
         setLists({
-          drafts: [...workouts.drafts, ...backblasts.drafts],
+          drafts: [...workouts.drafts, ...backblasts.drafts].sort(
+            byWorkoutDate,
+          ),
           future,
           workouts: workouts.published,
           backblasts: backblasts.published,
