@@ -248,6 +248,7 @@ export function BackblastForm({
   onDiscard,
   userId,
   initialTemplates,
+  fixedDate,
 }: {
   mode?: FormMode;
   /**
@@ -268,8 +269,12 @@ export function BackblastForm({
   onDiscard?: () => void;
   userId: string;
   initialTemplates: SectionTemplate[];
+  /** A date it keeps, shown but not changeable (the app tour's workout is today's). */
+  fixedDate?: string;
 }) {
-  const [backblast, setBackblast] = useState<Backblast>(initial);
+  const [backblast, setBackblast] = useState<Backblast>(
+    fixedDate ? { ...initial, date: fixedDate } : initial,
+  );
   const [templates, setTemplates] = useState(initialTemplates);
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -496,9 +501,15 @@ export function BackblastForm({
         <input
           type="date"
           value={backblast.date}
+          disabled={!!fixedDate}
           onChange={(e) => set("date", e.target.value)}
-          className="input text-base"
+          className="input text-base disabled:opacity-70"
         />
+        {fixedDate && (
+          <span className="text-xs font-normal text-muted">
+            Today, for the tutorial, so you can write its backblast next.
+          </span>
+        )}
       </label>
       <label className="label flex flex-col gap-1.5">
         Time

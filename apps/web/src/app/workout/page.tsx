@@ -239,13 +239,15 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         {shown}
       </ProtectedText>
 
-      <Link href={`/workout/run?id=${id}`} className="btn w-full">
-        <PlayIcon />
-        Run workout
-      </Link>
-      <div data-tour="workout-share" className="grid grid-cols-2 gap-3">
-        <CopyButton text={text} />
-        <ShareButton title={workout.title} text={text} />
+      <div data-tour="workout-share" className="flex flex-col gap-3">
+        <Link href={`/workout/run?id=${id}`} className="btn w-full">
+          <PlayIcon />
+          Run workout
+        </Link>
+        <div className="grid grid-cols-2 gap-3">
+          <CopyButton text={text} />
+          <ShareButton title={workout.title} text={text} />
+        </div>
       </div>
       <div
         className={`-mt-2 grid gap-3 ${mine ? "grid-cols-2" : "grid-cols-1"}`}

@@ -1,7 +1,7 @@
 "use client";
 
 import { termsFor, type Language } from "@rocket/core";
-import type { User } from "@supabase/supabase-js";
+import { isAuthRetryableFetchError, type User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AuthForm } from "./auth-form";
@@ -135,6 +135,31 @@ const AuthContext = createContext<{
   loading: true,
 });
 
+/**
+ * The signed-in account, kept on this device. Offline, Supabase can't renew a sign-in that has
+ * expired (after an hour), and reports no session though you're still signed in; Rocket then
+ * carries on as this account until it's back online.
+ */
+const OFFLINE_USER = "rocket-offline-user";
+
+function keepUser(user: User | null | undefined) {
+  try {
+    if (user) localStorage.setItem(OFFLINE_USER, JSON.stringify(user));
+    else localStorage.removeItem(OFFLINE_USER);
+  } catch {
+    // Not kept: offline, it asks to sign in again.
+  }
+}
+
+function keptUser(): User | undefined {
+  try {
+    const kept = localStorage.getItem(OFFLINE_USER);
+    return kept ? (JSON.parse(kept) as User) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function toCurrentUser(user: User | undefined): CurrentUser | null {
   if (!user) return null;
   // The F3 name is kept as f3_name too, since signing in with Google overwrites `name` with the
@@ -211,14 +236,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data }) => {
-      setState({ user: toCurrentUser(data.session?.user), loading: false });
+    supabase.auth.getSession().then(({ data, error }) => {
+      // Offline with a sign-in that needs renewing: still you, until the connection's back.
+      const offline =
+        !data.session && error && isAuthRetryableFetchError(error);
+      const user = offline ? keptUser() : data.session?.user;
+      if (!offline) keepUser(data.session?.user);
+      setState({ user: toCurrentUser(user), loading: false });
       if (data.session) syncAccent(data.session.user.user_metadata?.accent);
     });
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       // Signing out drops the data kept for offline use, so the next person doesn't see it.
-      if (event === "SIGNED_OUT" && "caches" in window)
-        caches.delete("rocket-data-v1").catch(() => {});
+      if (event === "SIGNED_OUT") {
+        keepUser(null);
+        if ("caches" in window) caches.delete("rocket-data-v1").catch(() => {});
+      }
+      // No session but not signed out: the sign-in couldn't be renewed (offline). The check
+      // above decides who's signed in.
+      if (!session && event !== "SIGNED_OUT") return;
+      keepUser(session?.user);
       setState({ user: toCurrentUser(session?.user), loading: false });
       // The accent color follows the account to every device.
       if (session) syncAccent(session.user.user_metadata?.accent);

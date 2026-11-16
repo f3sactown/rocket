@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastEditor } from "@/components/backblast-editor";
 import { fromWorkoutRow, loadWorkoutNotes, workoutById } from "@/lib/backblast";
+import { localToday } from "@/lib/backblast-list";
 
 export default function NewWorkoutPage() {
   return (
@@ -25,6 +26,9 @@ function NewWorkout({ user }: { user: CurrentUser }) {
   // Read once: saving the first draft changes the address to its edit link, dropping ?from=.
   const fromParam = useSearchParams().get("from");
   const [fromId] = useState(fromParam);
+  // The app tour's workout: dated today, so the tour can go on to write its backblast.
+  const tourParam = useSearchParams().get("tour") === "1";
+  const [forTour] = useState(tourParam);
   const [from, setFrom] = useState<Workout | string | null>(null);
 
   useEffect(() => {
@@ -51,7 +55,14 @@ function NewWorkout({ user }: { user: CurrentUser }) {
   }, [fromId, user.id]);
 
   if (!fromId)
-    return <BackblastEditor mode="workout" user={user} initial={BLANK} />;
+    return (
+      <BackblastEditor
+        mode="workout"
+        user={user}
+        initial={BLANK}
+        fixedDate={forTour ? localToday() : undefined}
+      />
+    );
   if (from === null) return <div className="card h-96 animate-pulse" />;
   if (typeof from === "string")
     return (

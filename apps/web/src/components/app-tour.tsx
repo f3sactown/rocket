@@ -16,6 +16,8 @@ import { DEVICE_SETUP_DONE_EVENT, deviceSetupFinished } from "./device-setup";
 interface Step {
   /** The page the step is on (the tour goes there first); none to stay where the last step left. */
   route?: string;
+  /** Added to the route when the tour opens it. */
+  query?: string;
   /** Other pages that count as being there (a new workout's address changes once it's saved). */
   alsoAt?: string[];
   /** The `data-tour` name of what to spotlight; none for a card in the middle of the screen. */
@@ -129,6 +131,7 @@ const STEPS: Step[] = [
   },
   {
     route: "/workouts/new",
+    query: "?tour=1",
     alsoAt: ["/workouts/edit"],
     target: "editor-steps",
     title: "A workout, page by page",
@@ -139,7 +142,7 @@ const STEPS: Step[] = [
     before: openPage("basics"),
     interactive: true,
     title: "Basics",
-    body: "Give it a title, choose the AO (that fills in the address and time), and set the date and time. Use today's date to write its backblast next. Then tap Next.",
+    body: "Give it a title and choose the AO (that fills in the address and time). It's dated today, so you can write its backblast next. Then tap Next.",
   },
   {
     target: "editor-page",
@@ -188,7 +191,7 @@ const STEPS: Step[] = [
     target: "workout-share",
     noBack: true,
     title: "Your workout",
-    body: "Copy or Share it to Band or Slack, Run it at the AO with its timers, and choose who sees it with Public / Private.",
+    body: "Run workout takes you through it at the AO, with its timers and music. Copy or Share it to Band or Slack, and choose who sees it with Public / Private.",
   },
   {
     target: "backblast-not-yet",
@@ -438,7 +441,7 @@ export function AppTour() {
       return () => clearTimeout(timer);
     }
     if (step.route && page !== step.route && !step.alsoAt?.includes(page)) {
-      router.push(step.route);
+      router.push(step.route + (step.query ?? ""));
       return;
     }
     if (arrived.current.path !== pathname)

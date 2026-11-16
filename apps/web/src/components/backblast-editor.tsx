@@ -208,6 +208,7 @@ export function BackblastEditor({
   published = false,
   savedAt,
   initial,
+  fixedDate,
 }: {
   mode?: FormMode;
   user: CurrentUser;
@@ -218,6 +219,8 @@ export function BackblastEditor({
   /** When the one being edited was last saved. */
   savedAt?: string;
   initial: Backblast;
+  /** A date it keeps, which can't be changed (the app tour's workout is today's). */
+  fixedDate?: string;
 }) {
   const router = useRouter();
   const words = WORDS[mode];
@@ -450,6 +453,7 @@ export function BackblastEditor({
         status={statusLabel(saveState, lastSaved, now)}
         saveLabel={words.finish}
         initial={loaded.start}
+        fixedDate={fixedDate}
         userId={user.id}
         initialTemplates={loaded.templates}
         onChange={onChange}
