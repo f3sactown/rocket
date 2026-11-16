@@ -218,7 +218,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setState({ user: toCurrentUser(data.session?.user), loading: false });
       if (data.session) syncAccent(data.session.user.user_metadata?.accent);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      // Signing out drops the data kept for offline use, so the next person doesn't see it.
+      if (event === "SIGNED_OUT" && "caches" in window)
+        caches.delete("rocket-data-v1").catch(() => {});
       setState({ user: toCurrentUser(session?.user), loading: false });
       // The accent color follows the account to every device.
       if (session) syncAccent(session.user.user_metadata?.accent);

@@ -55,8 +55,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - **Saving:** the workout and backblast forms save as you type. The top right shows "Saves as
     you type" on a new one, "Saving…" while it saves, then "Saved" with the date and time (e.g.
     "Saved Nov 16, 5:42am"; an opened one shows when it was last saved). The last page's button
-    is **Done**, which finishes it. With one thang, The Thang's box is as tall as the screen
-    allows while its timer, music and Exicon buttons and "Add another thang" stay in view.
+    is **Done**, which finishes it. The Thang's boxes are all as tall as the screen allows for
+    the first while its timer, music and Exicon buttons and "Add another thang" stay in view
+    (worked out once, so adding a thang doesn't shrink the first).
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
   F3's, FiA's or both (the default), going by each author's region (authors with no region always
   show), and **Include my workouts** (off by default) adds yours; both are saved to your account.
@@ -145,6 +146,15 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   account, after the device setup (`tutorial_done` in the account's metadata). The first time Home
   shows a workout that needs its backblast, a short second tour walks through writing it
   (`tutorial_backblast_done`). Each can be skipped; **Settings → Tutorial** shows them again.
+- **Offline:** the service worker (`apps/web/public/sw.js`, registered on every visit) keeps the
+  app's pages and code, so Rocket opens with no signal, and keeps the data you've looked at, so a
+  workout you've opened before can be read and run offline. Pages and data are fetched fresh
+  when there's a connection (a kept copy is used offline, or after 5 seconds on a slow one);
+  signing out drops the kept data. An **Offline** banner says what still works. The workout and
+  backblast forms keep a copy of what's typed on the phone (`rocket-unsaved:*` in local storage)
+  until it's saved, so a dropped connection or a closed app loses nothing: the status shows "Not
+  saved yet · kept on this phone", it saves again when the connection returns, and opening the
+  same one later brings the kept copy back and saves it.
 - **About** (last in the menu): what Rocket is and does, the running version and build, and the
   **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
   open, the rest folded; commit links and repeated lines are left out.
