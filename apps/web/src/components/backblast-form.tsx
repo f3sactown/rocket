@@ -560,6 +560,8 @@ export function BackblastForm({
               key={s.title}
               type="button"
               aria-label={`Go to ${s.title}`}
+              // Which page, whatever its title (the app tour opens pages by this).
+              data-step={s.kind === "text" ? s.name : s.kind}
               aria-current={index === stepIndex ? "step" : undefined}
               onClick={() => goTo(index)}
               className="group relative flex-1 py-2"
