@@ -310,6 +310,18 @@ export function BackblastForm({
       ? formatBackblast({ ...backblast, notes: "" }, language)
       : copyText(backblast, language, workoutLink);
   const step = steps[stepIndex]!;
+  // Whether the header (with the save status) has scrolled out of view.
+  const header = useRef<HTMLElement>(null);
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    const el = header.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) =>
+      setPinned(!entry!.isIntersecting),
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const allText = useMemo(() => stepsFor(language, "workout"), [language]);
   // A backblast is written after its workout, so it can't be finished before the workout's date.
   const tooEarly =
@@ -510,12 +522,30 @@ export function BackblastForm({
       }}
       className="card"
     >
-      <header className="flex items-start justify-between gap-4">
+      <header ref={header} className="flex items-start justify-between gap-4">
         <h1 className="text-lg font-semibold tracking-tight text-ink-soft">
           {heading}
         </h1>
         <span className="status shrink-0">{status}</span>
       </header>
+      {/* Once the header scrolls away: the title, the save status and the page you're on. */}
+      {pinned && (
+        <div
+          role="status"
+          aria-label="Editing"
+          className="fixed inset-x-3 top-3 z-30 mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-line-strong bg-surface-raised/95 px-4 py-2.5 shadow-xl backdrop-blur"
+        >
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate font-semibold text-ink">
+              {backblast.title.trim() || heading}
+            </span>
+            <span className="truncate text-xs text-muted">
+              Step {stepIndex + 1} of {steps.length} · {step.title}
+            </span>
+          </span>
+          <span className="status shrink-0 text-sm">{status}</span>
+        </div>
+      )}
 
       <nav
         data-tour="editor-steps"

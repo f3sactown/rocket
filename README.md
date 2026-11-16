@@ -56,7 +56,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - **Saving:** the workout and backblast forms save as you type. The top right shows "Saves as
     you type" on a new one, "Saving…" while it saves, then how long ago it was saved ("Saved just
     now", then "Saved 12 sec ago", "Saved 4 min ago", "Saved 2 hr ago", "Saved 3 days ago",
-    counting up each second as it sits; one just opened shows "Saved" until it saves again). The last page's button
+    counting up each second as it sits; one just opened shows "Saved" until it saves again). Scrolled down, past that header, a bar pinned to the top shows the title (or "New
+    workout" until one is set), the same save status with its dot, and the page being edited
+    ("Step 4 of 7 · The Thang"). The last page's button
     is **Done**, which finishes it. The Thang's boxes are all as tall as the screen allows for
     the first while its timer, music and Exicon buttons and "Add another thang" stay in view
     (worked out once, so adding a thang doesn't shrink the first).
