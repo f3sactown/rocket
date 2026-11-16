@@ -35,26 +35,24 @@ export function ThangsInput({
   const rows = value.length > 0 ? value : [{ text: "" }];
   const firstBox = useRef<HTMLTextAreaElement>(null);
   const end = useRef<HTMLButtonElement>(null);
-  const single = rows.length === 1;
+  // Every thang's box is this tall: as tall as the screen allows for the first while its timer,
+  // music and Exicon buttons and "Add another thang" stay in view on a phone. Worked out once
+  // (and again if the screen turns), so adding a thang doesn't shrink the first.
+  const [boxHeight, setBoxHeight] = useState<number | null>(null);
 
-  // A single thang's box is as tall as the screen allows while its timer, music and Exicon
-  // buttons and "Add another thang" stay in view on a phone, without scrolling.
   useEffect(() => {
-    const box = firstBox.current;
-    if (!box) return;
-    if (!single) {
-      box.style.minHeight = "";
-      return;
-    }
     const fit = () => {
+      const box = firstBox.current;
+      const card = box?.parentElement;
+      if (!box || !card) return;
       const top = box.getBoundingClientRect().top + window.scrollY;
-      const below = end.current
-        ? end.current.getBoundingClientRect().bottom +
-          window.scrollY -
-          (top + box.offsetHeight)
-        : 0;
-      const room = window.innerHeight - top - below - 12;
-      box.style.minHeight = `${Math.max(96, Math.min(room, 640))}px`;
+      // Below the box: the rest of its thang (the buttons), the gap, and "Add another thang".
+      const rest =
+        card.getBoundingClientRect().bottom -
+        box.getBoundingClientRect().bottom;
+      const add = end.current ? end.current.offsetHeight + 16 : 0;
+      const room = window.innerHeight - top - rest - add - 12;
+      setBoxHeight(Math.max(96, Math.min(room, 640)));
     };
     const frame = requestAnimationFrame(fit);
     window.addEventListener("resize", fit);
@@ -62,7 +60,7 @@ export function ThangsInput({
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", fit);
     };
-  }, [single]);
+  }, []);
   const update = (index: number, patch: Partial<Thang>) =>
     onChange(rows.map((t, i) => (i === index ? { ...t, ...patch } : t)));
 
@@ -94,6 +92,7 @@ export function ThangsInput({
             value={thang.text}
             onChange={(e) => update(index, { text: e.target.value })}
             ref={index === 0 ? firstBox : undefined}
+            style={boxHeight ? { minHeight: boxHeight } : undefined}
             className="input min-h-24 resize-y text-base leading-relaxed"
           />
           <TimerInput
