@@ -126,27 +126,30 @@ function dropBackup(...keys: string[]) {
   }
 }
 
-/** When it was last saved, as people read it: "Nov 16, 5:42am". */
-function savedTime(at: Date): string {
-  const date = at.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-  const time = at
-    .toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
-    .replace(/\s?([AP])M$/i, (_, h: string) => `${h.toLowerCase()}m`);
-  return `${date}, ${time}`;
+/** How long ago it was last saved: "just now", "4 min ago", "2 hr ago", "3 days ago". */
+function savedAgo(at: Date, now: number): string {
+  const minutes = Math.floor((now - at.getTime()) / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
-/** The header's save state: "Saving…" while it saves, then "Saved" with when. */
-function statusLabel(state: SaveState, savedAt: Date | null): string {
+/** The header's save state: "Saving…" while it saves, then how long ago it was saved. */
+function statusLabel(
+  state: SaveState,
+  savedAt: Date | null,
+  now: number,
+): string {
   switch (state) {
     case "new":
       return "Saves as you type";
     case "saving":
       return "Saving…";
     case "saved":
-      return savedAt ? `Saved ${savedTime(savedAt)}` : "Saved";
+      return savedAt ? `Saved ${savedAgo(savedAt, now)}` : "Saved";
     case "error":
       return "Not saved yet · kept on this phone";
   }
@@ -213,6 +216,12 @@ export function BackblastEditor({
   const [lastSaved, setLastSaved] = useState<Date | null>(
     savedAt ? new Date(savedAt) : null,
   );
+  // The time now, so "Saved 3 min ago" keeps counting.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(tick);
+  }, []);
   // A finished backblast's changes to its workout's sections, offered back to the workout.
   const [offer, setOffer] = useState<Offer | null>(null);
   // Where to go once the saved notice is closed.
@@ -342,6 +351,7 @@ export function BackblastEditor({
       () => {
         failed.current = false;
         setLastSaved(new Date());
+        setNow(Date.now());
         setSaveState((state) => (timer.current ? state : "saved"));
         // Saved: the phone's copy isn't needed, unless more was typed meanwhile.
         if (latest.current === saving) dropBackup(keyFor(), newKey);
@@ -422,7 +432,7 @@ export function BackblastEditor({
         heading={
           published ? words.published : draftId ? words.draft : words.new
         }
-        status={statusLabel(saveState, lastSaved)}
+        status={statusLabel(saveState, lastSaved, now)}
         saveLabel={words.finish}
         initial={loaded.start}
         userId={user.id}
