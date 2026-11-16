@@ -16,6 +16,7 @@ import {
   type ListItem,
 } from "@/lib/backblast-list";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
+import { EXAMPLES_EVENT } from "@/lib/examples";
 import { loadMyTotals, type WorkoutStats } from "@/lib/workout-social";
 import {
   endMinutes,
@@ -46,6 +47,8 @@ function HomePage({ user }: { user: CurrentUser }) {
     backblasts: ListItem[];
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Bumped to load the lists again (when the tutorial adds its examples).
+  const [reloads, setReloads] = useState(0);
   const [hot, setHot] = useState<{
     workouts: ListItem[];
     stats: Map<string, WorkoutStats>;
@@ -72,7 +75,14 @@ function HomePage({ user }: { user: CurrentUser }) {
         }),
       (e: Error) => setError(e.message),
     );
-  }, [user.id, wantsFuture]);
+  }, [user.id, wantsFuture, reloads]);
+
+  // The tutorial added the example workout and backblast: show them.
+  useEffect(() => {
+    const reload = () => setReloads((n) => n + 1);
+    window.addEventListener(EXAMPLES_EVENT, reload);
+    return () => window.removeEventListener(EXAMPLES_EVENT, reload);
+  }, []);
 
   useEffect(() => {
     if (!wantsTrending) return;

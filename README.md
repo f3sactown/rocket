@@ -55,8 +55,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     changes (others stop seeing it), until **Done** finishes it again.
   - **Saving:** the workout and backblast forms save as you type. The top right shows "Saves as
     you type" on a new one, "Saving…" while it saves, then how long ago it was saved ("Saved just
-    now", then "Saved 12 sec ago", "Saved 4 min ago", "Saved 2 hr ago", "Saved 3 days ago",
-    counting up each second as it sits; one just opened shows "Saved" until it saves again). Scrolled down, past that header, a bar pinned to the top shows the title (or "New
+    now", then in steps that grow as it sits: 5, 10 and 15 sec; every 10 sec to a minute; every
+    15 sec to 2 min ("1 min 15 sec ago"); every 30 sec to 3 min; then every minute, then hours and
+    days. One just opened shows "Saved" until it saves again). Scrolled down, past that header, a bar pinned to the top shows the title (or "New
     workout" until one is set), the same save status with its dot, and the page being edited
     ("Step 4 of 7 · The Thang"). The last page's button
     is **Done**, which finishes it. The Thang's boxes are all as tall as the screen allows for
@@ -151,6 +152,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   account, after the device setup (`tutorial_done` in the account's metadata). The first time Home
   shows a workout that needs its backblast, a short second tour walks through writing it
   (`tutorial_backblast_done`). Each can be skipped; **Settings → Tutorial** shows them again.
+- **Tutorial examples:** before a tour starts (on its own or from Settings → Tutorial), Rocket
+  makes sure the account has an example workout and an example backblast to show, both private
+  and named "Example: …" (a workout dated yesterday, so it shows **Needs backblast**, and a
+  backblast two days back). Whichever is missing is added, whether or not the account has its
+  own; one already there (found by its name) isn't added again.
 - **Offline:** the service worker (`apps/web/public/sw.js`, registered on every visit) keeps the
   app's pages and code, so Rocket opens with no signal, and keeps the data you've looked at, so a
   workout you've opened before can be read and run offline. Pages and data are fetched fresh
