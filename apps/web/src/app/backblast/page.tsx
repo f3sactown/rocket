@@ -21,7 +21,12 @@ import {
   VisibilitySwitch,
   type Visibility,
 } from "@/components/visibility-switch";
-import { ArchiveIcon, PencilIcon, TrashIcon } from "@/components/icons";
+import {
+  ArchiveIcon,
+  ArrowIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@/components/icons";
 import { fromRow } from "@/lib/backblast";
 import { useWorkoutLinkState } from "@/lib/workout-link";
 import { archive, unarchive } from "@/lib/backblast-list";
@@ -201,10 +206,24 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
           </Link>
         )}
       </div>
-      {/* Done with it: back to Home. */}
-      <Link href="/" className="btn -mt-2 w-full">
-        Close
-      </Link>
+      {/* Done with it: back to Home; or on to the workout it's from. */}
+      <div className="-mt-2 flex gap-2">
+        <Link
+          href="/"
+          className={`btn ${backblast.workoutId ? "shrink-0 px-7" : "w-full"}`}
+        >
+          Close
+        </Link>
+        {backblast.workoutId && (
+          <Link
+            href={`/workout?id=${backblast.workoutId}`}
+            className="btn flex-1"
+          >
+            <ArrowIcon />
+            Open workout
+          </Link>
+        )}
+      </div>
       <div className="-mt-1 flex flex-wrap justify-center gap-x-6 gap-y-2">
         <ShareLinkButton
           path={`/backblast/?id=${id}`}

@@ -13,7 +13,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   updated), **Today's workouts** (your finished workouts dated today, by start time; tap one to
   run it; each drops off an hour after its end time, and the section hides when none are left), your drafts, **Future workouts** (your finished workouts dated after today, soonest
   first; Recent workouts then keeps to today and earlier), trending workouts, and your most recent
-  workouts and backblasts. Which of
+  workouts and backblasts. Drafts and your workouts and backblasts are listed by workout date, the
+  most recent on top (undated ones last), here and on the Workouts and Backblasts pages. Which of
   these show is chosen in Settings → Home screen (all but trending, to start).
   At the top right, next to "Hey, …", a heart and a reuse icon show the likes and reuses your
   finished workouts have had from others (private ones included).
@@ -53,8 +54,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - **Editing** a finished workout or backblast puts it back to a draft as soon as something
     changes (others stop seeing it), until **Done** finishes it again.
   - **Saving:** the workout and backblast forms save as you type. The top right shows "Saves as
-    you type" on a new one, "Saving…" while it saves, then "Saved" with the date and time (e.g.
-    "Saved Nov 16, 5:42am"; an opened one shows when it was last saved). The last page's button
+    you type" on a new one, "Saving…" while it saves, then how long ago it was saved ("Saved just
+    now", "Saved 4 min ago", "Saved 2 hr ago", "Saved 3 days ago", counting up as it sits; an
+    opened one counts from its last save). The last page's button
     is **Done**, which finishes it. The Thang's boxes are all as tall as the screen allows for
     the first while its timer, music and Exicon buttons and "Add another thang" stay in view
     (worked out once, so adding a thang doesn't shrink the first).
@@ -106,7 +108,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
   and Share are on the finished backblast's page). On a finished backblast's page, **From a
   workout →** sits left of the Public / Private switch (where a workout shows its likes and
-  reuses); Copy, Share and Edit share one row, with a **Close** button back to Home below.
+  reuses); Copy, Share and Edit share one row, with **Close** (back to Home) below, and beside it
+  **Open workout** when the backblast has a workout.
   - **Linking to a workout:** a backblast and its Q's workout stay linked while they're at the same
     AO on the same date (ignoring case and spaces). The database keeps it so (triggers in
     `20261110010000_backblast_workout_links.sql`): when either one's AO or date changes, or a
