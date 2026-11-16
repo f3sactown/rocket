@@ -9,7 +9,7 @@ import { ArrowIcon } from "./icons";
  */
 export function BackblastNotYet({ date }: { date: string }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div data-tour="backblast-not-yet" className="flex flex-col gap-1.5">
       <button type="button" disabled className="btn w-full opacity-50">
         <ArrowIcon />
         Create backblast

@@ -145,18 +145,17 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   metadata); starring one clears the section's other default.
 - **From pickers** (Exicon, PAX, Discover): on a phone, one line of chips that scrolls sideways.
 - **Tutorial:** a step-by-step tour that spotlights one part of the screen at a time, moving
-  between pages as it goes: Home's stats and sections, writing a first workout (each page of the
-  form, templates, The Thang's timers, music and Exicon, Notes, Review), Discover, the Exicon, and
-  PAX (searching names, e.g. before naming an FNG, and the profile of a PAX with at least one
-  public workout and backblast, so it has something to show). It starts once per
-  account, after the device setup (`tutorial_done` in the account's metadata). The first time Home
-  shows a workout that needs its backblast, a short second tour walks through writing it
-  (`tutorial_backblast_done`). Each can be skipped; **Settings → Tutorial** shows them again.
-- **Tutorial examples:** before a tour starts (on its own or from Settings → Tutorial), Rocket
-  makes sure the account has an example workout and an example backblast to show, both private
-  and named "Example: …" (a workout dated yesterday, so it shows **Needs backblast**, and a
-  backblast two days back). Whichever is missing is added, whether or not the account has its
-  own; one already there (found by its name) isn't added again.
+  between pages as it goes. After Home's stats and sections, it walks the user through writing a
+  real workout: it opens each page of the form in turn (Basics, Introduction, warm-up, The Thang,
+  Notes, words of wisdom) while they fill it in, then they tap **Done** on Review. On to that
+  workout's page, then **Create backblast**, and the same for its backblast (the copied workout,
+  Notes, Name-o-rama, Announcements, Coffeeteria, Review and **Done**), ending on Copy and Share.
+  (A workout dated after today can't have its backblast yet, so the tour says so and goes on.)
+  Then Discover, the Exicon and PAX (searching names, e.g. before naming an FNG, and the profile
+  of a PAX with at least one public workout and backblast). While the user fills in a page, the
+  page stays usable around the tour's card, and notices wait until the tour is over. It starts
+  once per account, after the device setup (`tutorial_done` in the account's metadata), can be
+  skipped, and **Settings → Tutorial** shows it again.
 - **Offline:** the service worker (`apps/web/public/sw.js`, registered on every visit) keeps the
   app's pages and code, so Rocket opens with no signal, and keeps the data you've looked at, so a
   workout you've opened before can be read and run offline. Pages and data are fetched fresh

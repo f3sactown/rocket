@@ -243,7 +243,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         <PlayIcon />
         Run workout
       </Link>
-      <div className="grid grid-cols-2 gap-3">
+      <div data-tour="workout-share" className="grid grid-cols-2 gap-3">
         <CopyButton text={text} />
         <ShareButton title={workout.title} text={text} />
       </div>

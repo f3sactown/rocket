@@ -16,6 +16,7 @@ import { isUpcoming } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 import type { CurrentUser } from "./auth-provider";
 import { BackblastForm, type FormMode } from "./backblast-form";
+import { tourRunning } from "./app-tour";
 import { HIDDEN_UNTIL_THE_DAY, NoticeDialog } from "./notice-dialog";
 import {
   builtInTemplates,
@@ -476,6 +477,7 @@ export function BackblastEditor({
           // A public workout before its day is hidden from others: say so, unless that's silenced.
           if (
             mode === "workout" &&
+            !tourRunning() &&
             !user.noticesOff.includes(HIDDEN_UNTIL_THE_DAY) &&
             isUpcoming(backblast.date) &&
             (await isPublic(id.current!))

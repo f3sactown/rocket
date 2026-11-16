@@ -318,15 +318,15 @@ function Settings({ user }: { user: CurrentUser }) {
 
       <Section
         title="Tutorial"
-        description="A step-by-step tour of Rocket: Home, writing a workout, Discover, the Exicon and PAX. Once a workout of yours has happened, a short one shows how to write its backblast."
+        description="A step-by-step tour of Rocket: Home, then writing a workout and its backblast with you, page by page, then Discover, the Exicon and PAX."
       >
         <button
           type="button"
           onClick={async () => {
             await createClient().auth.updateUser({
-              data: { tutorial_done: false, tutorial_backblast_done: false },
+              data: { tutorial_done: false },
             });
-            startTour("main");
+            startTour();
           }}
           className="self-start rounded-full border border-line-strong px-4 py-2 text-sm font-medium text-ink transition hover:border-accent/60"
         >

@@ -196,7 +196,10 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         {text}
       </ProtectedText>
 
-      <div className={`grid gap-3 ${mine ? "grid-cols-3" : "grid-cols-2"}`}>
+      <div
+        data-tour="backblast-share"
+        className={`grid gap-3 ${mine ? "grid-cols-3" : "grid-cols-2"}`}
+      >
         <CopyButton text={shared} disabled={!ready} />
         <ShareButton text={shared} disabled={!ready} />
         {mine && (
