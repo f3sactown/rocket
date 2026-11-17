@@ -306,7 +306,10 @@ export function NameField({
   userId,
   defaultValue = "",
   onChange,
+  changing = false,
 }: {
+  /** Changing it in Settings (it's off the roster): a roster name only, and the warning says so. */
+  changing?: boolean;
   /** The region chosen above, if any. */
   region?: Region | null;
   /** Signed in already (after Google): taken names are known then. */
@@ -392,7 +395,7 @@ export function NameField({
                 ? "Type your name as it will be on the roster."
                 : `${available.length} names on the ${region.name} roster. It's the name others see on your workouts and backblasts.`}
       </span>
-      {!!region && names.length > 0 && (
+      {!!region && names.length > 0 && !changing && (
         <label className="flex items-center gap-2 text-xs text-ink-soft">
           <input
             type="checkbox"
@@ -408,8 +411,8 @@ export function NameField({
       )}
       <span className="rounded-xl border border-accent/40 bg-accent-soft px-3 py-2 text-xs text-ink">
         <strong>Choose carefully:</strong> your name must match the database
-        (your region&apos;s roster) exactly, and it can&apos;t be changed once
-        your account is set up.
+        (your region&apos;s roster) exactly, and it can&apos;t be changed{" "}
+        {changing ? "again once it's saved" : "once your account is set up"}.
       </span>
     </div>
   );
