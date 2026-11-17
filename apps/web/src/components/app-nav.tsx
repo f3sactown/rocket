@@ -21,6 +21,7 @@ import {
   PeopleIcon,
   PlusIcon,
   SearchIcon,
+  SparkleIcon,
 } from "./icons";
 import { RocketArt } from "./rocket-art";
 import { Wordmark } from "./wordmark";
@@ -55,6 +56,13 @@ const LINKS: {
     icon: <PlusIcon />,
     sub: true,
     match: (path) => path.startsWith("/workouts/new"),
+  },
+  {
+    href: "/workouts/generate",
+    label: "Generate workout",
+    icon: <SparkleIcon />,
+    sub: true,
+    match: (path) => path.startsWith("/workouts/generate"),
   },
   {
     href: "/backblasts",

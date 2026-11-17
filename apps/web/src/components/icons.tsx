@@ -478,3 +478,17 @@ export function GoogleIcon() {
     </svg>
   );
 }
+
+/** A sparkle: something made up for you (Generate workout). */
+export function SparkleIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="btn-icon size-4"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M6 1l1.2 3.8L11 6 7.2 7.2 6 11 4.8 7.2 1 6l3.8-1.2zM12 9l.7 2.3L15 12l-2.3.7L12 15l-.7-2.3L9 12l2.3-.7z" />
+    </svg>
+  );
+}

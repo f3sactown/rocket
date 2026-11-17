@@ -6,7 +6,7 @@ import { loadLists, type ItemKind, type ListItem } from "@/lib/backblast-list";
 import type { CurrentUser } from "./auth-provider";
 import { BackblastList } from "./backblast-list";
 import { LocalDraftList, useOnDraftsSent } from "./local-drafts";
-import { PlusIcon } from "./icons";
+import { PlusIcon, SparkleIcon } from "./icons";
 
 const WORDS = {
   workout: {
@@ -73,6 +73,15 @@ export function ItemDashboard({
         <PlusIcon />
         {words.newLabel}
       </Link>
+      {kind === "workout" && (
+        <Link
+          href="/workouts/generate"
+          className="link -mt-2 inline-flex items-center gap-1.5 self-center text-sm"
+        >
+          <SparkleIcon />
+          Or generate one from the Exicon
+        </Link>
+      )}
     </section>
   );
 }
