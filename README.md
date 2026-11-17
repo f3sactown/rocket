@@ -214,8 +214,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   button, with a small **Sign in or sign up with email** link under it that opens the email and
   password form (sign up and forgot password included), which has **Use Google instead** to go
   back. Google signs in or signs up with no password. The
-  first time, a **Welcome** step asks for your F3 name and region (Google gives your real name and
-  no region, and Rocket matches PAX to their roster by F3 name), then you're in. Signing in with
+  first time, a **Welcome** step asks for your region and then your F3 name (Google gives your
+  real name and no region, and Rocket matches PAX to their roster by F3 name), then you're in.
+  Signing up with email asks for the same two first. Either way the name comes with a warning that
+  it can't be changed once the account is set up, and the first tap shows it back ("You'll be …
+  on Rocket, for good") to confirm with a second. Settings shows it but doesn't let it change. Signing in with
   Google using the same email as an existing account opens that account. The F3 name is also kept
   as `f3_name` in the account, since each Google sign-in overwrites `name` with the Google name.
   Setup: see "Google sign-in" below.
@@ -223,7 +226,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   mailer and standard template, no custom SMTP needed). The link opens `/reset-password` on any
   device, signed in for the reset, where you choose a new password. Supabase → Authentication →
   URL Configuration must have the site as the Site URL and under Redirect URLs.
-- **Settings:** name, region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
+- **Settings:** name (shown, not changeable: it's set at sign-up), region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
   locked while you have one, and free to choose with no region or one you added), theme, accent color (Red, Teal, Blue, Green, Orange or Violet; saved to the account as `accent`, so it follows you to every device; the first region you choose sets Red for F3 or Teal for FiA, and later region changes leave it alone), the launch
   animation, what Home shows,
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,
