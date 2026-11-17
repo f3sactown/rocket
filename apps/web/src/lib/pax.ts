@@ -260,7 +260,7 @@ export async function loadPaxWorkouts(
       .in("author_id", ids)
       .eq("status", "published")
       .eq("visibility", "public")
-      .order("date", { ascending: false })
+      .order("date", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(PROFILE_LIMIT);
   const [w, b] = await Promise.all([

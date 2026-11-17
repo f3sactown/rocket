@@ -294,7 +294,7 @@ export async function offlineWorkoutIds(userId: string): Promise<string[]> {
     .eq("author_id", userId)
     .eq("status", "published")
     .gte("date", addDays(localToday(), -14))
-    .order("date", { ascending: false })
+    .order("date", { ascending: false, nullsFirst: false })
     .limit(20);
   return (data ?? []).map((w) => w.id);
 }

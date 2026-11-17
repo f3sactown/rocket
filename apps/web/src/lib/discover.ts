@@ -41,7 +41,7 @@ export async function loadPublicWorkouts(
     )
     .eq("status", "published")
     .eq("visibility", "public")
-    .order("date", { ascending: false })
+    .order("date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .limit(300);
   if (error) throw new Error(error.message);
