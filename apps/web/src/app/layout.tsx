@@ -6,6 +6,7 @@ import { DeviceSetup } from "@/components/device-setup";
 import { AppTour } from "@/components/app-tour";
 import { NameCheck } from "@/components/name-check";
 import { OfflineGate } from "@/components/offline-gate";
+import { TestingBanner } from "@/components/testing-banner";
 import { KeepOnLeave, OfflineSupport } from "@/components/offline-support";
 import { FaviconSync } from "@/components/favicon-sync";
 import { LaunchSplash } from "@/components/launch-splash";
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="flex min-h-full flex-col">
+        <TestingBanner />
         <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-2 py-6 sm:gap-6 sm:px-4 sm:py-16">
           <AuthProvider>
             <FaviconSync />
