@@ -28,6 +28,9 @@ function NewWorkout({ user }: { user: CurrentUser }) {
   const [fromId] = useState(fromParam);
   // The app tour's workout: dated today, so the tour can go on to write its backblast.
   const tourParam = useSearchParams().get("tour") === "1";
+  // One started on the phone (offline, say), to carry on with.
+  const localParam = useSearchParams().get("local");
+  const [localId] = useState(localParam ?? undefined);
   const [forTour] = useState(tourParam);
   const [from, setFrom] = useState<Workout | string | null>(null);
 
@@ -61,6 +64,7 @@ function NewWorkout({ user }: { user: CurrentUser }) {
         user={user}
         initial={BLANK}
         fixedDate={forTour ? localToday() : undefined}
+        localId={localId}
       />
     );
   if (from === null) return <div className="card h-96 animate-pulse" />;

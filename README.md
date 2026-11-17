@@ -201,7 +201,18 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   backblast forms keep a copy of what's typed on the phone (`rocket-unsaved:*` in local storage)
   until it's saved, so a dropped connection or a closed app loses nothing: the status shows "Not
   saved yet · kept on this phone", it saves again when the connection returns, and opening the
-  same one later brings the kept copy back and saves it.
+  same one later brings the kept copy back and saves it. **Drafts offline:** workouts and
+  backblasts can be written with no connection at all (`lib/local-drafts.ts`). A new one gets an
+  ID on the phone (its address becomes `/workouts/new?local=…`), is listed on Home and on the
+  Workouts or Backblasts page under **On this phone** ("Saves once online"), and is sent to Rocket
+  as a draft as soon as there's a connection (`DraftSender`: on opening, on reconnecting, and
+  every minute), then joins the lists. **Done** offline keeps it as finished ("Finishes once
+  online"): it's finished when it's sent, and an editor still open goes on to its page. Changes
+  to one already in Rocket are sent the same way, unless it's been saved since from somewhere
+  else. An open editor sends its own; the hidden frames that keep copies never save. To write a
+  backblast offline, the new-backblast form is kept for each of your workouts that has happened
+  (with the workout's copy, the roster and the AO's regulars), along with the new workout and
+  new backblast forms.
 - **About** (last in the menu): what Rocket is and does, the running version and build, and the
   **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
   open, the rest folded; commit links and repeated lines are left out.

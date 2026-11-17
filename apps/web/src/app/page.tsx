@@ -2,14 +2,16 @@
 
 import { formatDate, type Language } from "@rocket/core";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
 import { HeartIcon, PlayIcon, PlusIcon, ReuseIcon } from "@/components/icons";
+import { LocalDraftList, useOnDraftsSent } from "@/components/local-drafts";
 import { WhatsNew } from "@/components/whats-new";
 import { WorkoutCards } from "@/components/workout-card";
 import {
   byWorkoutDate,
+  isUpcoming,
   loadFutureWorkouts,
   loadLists,
   loadTodaysWorkouts,
@@ -18,6 +20,7 @@ import {
 import { useConnection } from "@/lib/connection";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
 import {
+  backblastForScreen,
   keepLater,
   MAIN_SCREENS,
   offlineWorkoutIds,
@@ -62,6 +65,7 @@ function HomePage({ user }: { user: CurrentUser }) {
   // With Future workouts shown, Recent workouts keeps to ones dated today or earlier.
   const wantsFuture = show.has("upcoming");
   const sources = user.publicSources.join();
+  const [reloads, setReloads] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -72,22 +76,26 @@ function HomePage({ user }: { user: CurrentUser }) {
       ([workouts, backblasts, future]) => {
         // Copies for offline use: the main screens, and these workouts with their Run screens.
         // (Home's own, and every one from the last two weeks and coming up.)
+        // Those that have happened bring their new backblast, to write it at the AO with no signal.
         offlineWorkoutIds(user.id)
-          .catch(() => [] as string[])
-          .then((recent) =>
+          .catch(() => [] as { id: string; date: string | null }[])
+          .then((recent) => {
+            const all = [...future, ...workouts.published, ...recent];
+            const ids = [...new Set(all.map((w) => w.id))];
+            const happened = [
+              ...new Set(
+                all.filter((w) => !isUpcoming(w.date)).map((w) => w.id),
+              ),
+            ];
             keepLater([
               ...MAIN_SCREENS,
-              ...[
-                ...new Set([
-                  ...[...future, ...workouts.published].map((w) => w.id),
-                  ...recent,
-                ]),
-              ].flatMap(workoutScreens),
+              ...ids.flatMap(workoutScreens),
+              ...happened.map(backblastForScreen),
               ...backblasts.published
                 .slice(0, RECENT)
                 .map((b) => `/backblast/?id=${b.id}`),
-            ]),
-          );
+            ]);
+          });
         setLists({
           drafts: [...workouts.drafts, ...backblasts.drafts].sort(
             byWorkoutDate,
@@ -99,7 +107,10 @@ function HomePage({ user }: { user: CurrentUser }) {
       },
       (e: Error) => setError(e.message),
     );
-  }, [user.id, wantsFuture]);
+  }, [user.id, wantsFuture, reloads]);
+
+  // Drafts kept on the phone reached Rocket: load the lists again to show them.
+  useOnDraftsSent(useCallback(() => setReloads((n) => n + 1), []));
 
   useEffect(() => {
     if (!wantsTrending) return;
@@ -126,6 +137,7 @@ function HomePage({ user }: { user: CurrentUser }) {
       <WhatsNew user={user} />
       {show.has("totals") && <Totals user={user} />}
       {show.has("today") && <TodaysWorkouts user={user} />}
+      <LocalDraftList />
 
       {error ? (
         <p className="panel px-3 py-8 text-center text-accent">
