@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef } from "react";
 import { useConnection } from "@/lib/connection";
+import { leftScreen, resumeKeeping } from "@/lib/offline";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -51,4 +53,49 @@ export function OfflineSupport() {
       </span>
     </div>
   );
+}
+
+/**
+ * Keeps the screen you leave for offline use first: when you move to another, or put Rocket away
+ * (another app, the home screen, locking the phone).
+ */
+export function KeepOnLeave() {
+  return (
+    <Suspense fallback={null}>
+      <LeaveWatcher />
+    </Suspense>
+  );
+}
+
+function LeaveWatcher() {
+  const pathname = usePathname();
+  const search = useSearchParams().toString();
+  const current = useRef({ pathname, search });
+
+  useEffect(() => {
+    // Not inside the hidden frames that keep the copies.
+    if (window.top !== window) return;
+    const before = current.current;
+    current.current = { pathname, search };
+    if (before.pathname !== pathname || before.search !== search)
+      leftScreen(before.pathname, before.search);
+  }, [pathname, search]);
+
+  useEffect(() => {
+    if (window.top !== window) return;
+    resumeKeeping();
+    // Back online: carry on with what's waiting.
+    window.addEventListener("online", resumeKeeping);
+    const away = () => {
+      if (document.visibilityState === "hidden")
+        leftScreen(current.current.pathname, current.current.search);
+    };
+    document.addEventListener("visibilitychange", away);
+    return () => {
+      window.removeEventListener("online", resumeKeeping);
+      document.removeEventListener("visibilitychange", away);
+    };
+  }, []);
+
+  return null;
 }
