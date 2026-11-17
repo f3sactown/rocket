@@ -54,6 +54,8 @@ export interface CurrentUser {
   noticesOff: string[];
   /** Whether the app tour has been finished or skipped (Settings → Tutorial shows it again). */
   tutorialDone: boolean;
+  /** Whether the name has ever been found on the region's roster (so one missing was removed). */
+  nameOnRoster: boolean;
   /** Built-in templates (by name) chosen as a section's default, by section. */
   builtInDefaults: Record<string, string>;
 }
@@ -197,6 +199,7 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
       : [],
     builtInDefaults: builtInDefaultsFrom(user.user_metadata?.builtin_defaults),
     tutorialDone: user.user_metadata?.tutorial_done === true,
+    nameOnRoster: user.user_metadata?.name_on_roster === true,
     regionId:
       typeof user.user_metadata?.region_id === "string"
         ? user.user_metadata.region_id
