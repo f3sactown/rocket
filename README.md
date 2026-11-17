@@ -63,6 +63,14 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     is **Done**, which finishes it. The Thang's boxes are all as tall as the screen allows for
     the first while its timer, music and Exicon buttons and "Add another thang" stay in view
     (worked out once, so adding a thang doesn't shrink the first).
+- **Generate workout** (in the menu under New workout, and from the Workouts page): choose 2 to 5
+  of the Exicon's tags, with the same From, All / Exercises / Routines and tag chips as the Exicon,
+  and **Generate** puts a workout together at random from them (`generateWorkout` in
+  `packages/core`): a Warm-o-rama of five warm-up exercises (those tagged Warm-Up and one of the
+  tags first), then three thangs, each a routine or three or four exercises done as an AMRAP,
+  EMOM, Tabata or rounds for time, with the timer for Run workout. Entries with more of the tags
+  come up more often, and nothing repeats. **Generate again** makes another; **Create workout from
+  these** opens New workout with the Warm-o-rama and The Thang filled in. It needs a connection.
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
   F3's, FiA's or both (the default), going by each author's region (authors with no region always
   show), and **Include my workouts** (off by default) adds yours; both are saved to your account.
@@ -223,7 +231,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   still shows unless it's private. **Archive** lists what you've archived, by workout date (newest first); **Search** finds workouts and backblasts by any word, with matches
   highlighted.
 - **Testing banner:** while the version is an alpha or beta (`0.1.0-alpha.7`), a slim bar across the
-  top of every screen says Rocket is being tested and things may change or not work as expected;
+  top of every screen says Rocket is being tested and things may change or not work as expected, and asks people to contact the developer with any issues;
   it goes away by itself with the first full release.
 - **Continue with Google:** the sign-in screen leads with Google: one **Continue with Google**
   button, with a small **Sign in or sign up with email** link under it that opens the email and

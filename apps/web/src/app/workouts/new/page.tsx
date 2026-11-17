@@ -7,6 +7,7 @@ import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastEditor } from "@/components/backblast-editor";
 import { fromWorkoutRow, loadWorkoutNotes, workoutById } from "@/lib/backblast";
 import { localToday } from "@/lib/backblast-list";
+import { takeGenerated } from "@/lib/generated-workout";
 
 export default function NewWorkoutPage() {
   return (
@@ -32,6 +33,13 @@ function NewWorkout({ user }: { user: CurrentUser }) {
   const localParam = useSearchParams().get("local");
   const [localId] = useState(localParam ?? undefined);
   const [forTour] = useState(tourParam);
+  // From Generate workout: its Warm-o-rama and thangs filled in.
+  const generatedParam = useSearchParams().get("generated") === "1";
+  const [generated] = useState(() =>
+    generatedParam && typeof window !== "undefined"
+      ? takeGenerated(BLANK)
+      : null,
+  );
   const [from, setFrom] = useState<Workout | string | null>(null);
 
   useEffect(() => {
@@ -62,7 +70,7 @@ function NewWorkout({ user }: { user: CurrentUser }) {
       <BackblastEditor
         mode="workout"
         user={user}
-        initial={BLANK}
+        initial={generated ?? BLANK}
         fixedDate={forTour ? localToday() : undefined}
         localId={localId}
       />

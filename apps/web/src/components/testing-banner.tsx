@@ -19,6 +19,7 @@ export function TestingBanner() {
       </span>
       <span>
         Rocket is being tested: things may change or not work as expected.
+        Please contact the developer with any issues.
       </span>
     </div>
   );
