@@ -57,7 +57,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     you type" on a new one, "Saving…" while it saves, then how long ago it was saved ("Saved just
     now", then in steps that grow as it sits: 5, 10 and 15 sec; every 10 sec to a minute; every
     15 sec to 2 min ("1 min 15 sec ago"); every 30 sec to 3 min; then every minute, then hours and
-    days. One just opened shows "Saved" until it saves again). Scrolled down, past that header, a bar pinned to the top shows the title (or "New
+    days. One just opened shows "Saved" until it saves again). Scrolled down, past that header, a bar pinned to the top of what's visible (keyboard up too: it follows the visible area, `lib/visible-top.ts`) shows the title (or "New
     workout" until one is set), the same save status with its dot, and the page being edited
     ("Step 4 of 7 · The Thang"). The last page's button
     is **Done**, which finishes it. The Thang's boxes are all as tall as the screen allows for
