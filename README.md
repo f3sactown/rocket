@@ -14,7 +14,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   run it; each drops off an hour after its end time, and the section hides when none are left), your drafts, **Future workouts** (your finished workouts dated after today, soonest
   first; Recent workouts then keeps to today and earlier), trending workouts, and your most recent
   workouts and backblasts. Drafts and your workouts and backblasts are listed by workout date, the
-  most recent on top (undated ones last), here and on the Workouts and Backblasts pages. Which of
+  most recent on top (undated ones last), here and on the Workouts and Backblasts pages, as are the Archive, Search results, PAX profiles, Discover's Newest and New backblast's choice of workout. Which of
   these show is chosen in Settings → Home screen (all but trending, to start).
   At the top right, next to "Hey, …", a heart and a reuse icon show the likes and reuses your
   finished workouts have had from others (private ones included).
@@ -207,7 +207,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. Archiving hides a
   workout or backblast only from your own Workouts and Backblasts lists (and Home's Recent lists);
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
-  still shows unless it's private. **Archive** lists what you've archived; **Search** finds workouts and backblasts by any word, with matches
+  still shows unless it's private. **Archive** lists what you've archived, by workout date (newest first); **Search** finds workouts and backblasts by any word, with matches
   highlighted.
 - **Continue with Google:** the sign-in screen leads with Google: one **Continue with Google**
   button, with a small **Sign in or sign up with email** link under it that opens the email and
