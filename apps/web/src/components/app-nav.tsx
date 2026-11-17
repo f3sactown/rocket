@@ -115,7 +115,7 @@ const LINKS: {
   },
 ];
 
-/** Top bar with the app name and a menu to every page. Shown only when signed in. */
+/** Top bar with the app name and a menu to every page. Shown only when signed in and set up. */
 export function AppNav() {
   const { user } = useAuth();
   const pathname = usePathname();
@@ -139,7 +139,8 @@ export function AppNav() {
     };
   }, [open]);
 
-  if (!user) return null;
+  // Not while signing up: the Welcome step (region and name) comes first, with nothing to leave to.
+  if (!user || user.needsProfile) return null;
 
   return (
     <nav
