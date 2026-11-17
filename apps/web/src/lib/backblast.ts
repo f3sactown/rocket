@@ -45,7 +45,17 @@ export function fromRow(row: BackblastRow): Backblast {
     q: row.q,
     introduction: row.introduction ?? undefined,
     warmup: row.warmup ?? undefined,
-    thang: row.thang ?? undefined,
+    // Shared with its workout (timers and music included), written out as the workout's is.
+    thang: (() => {
+      const thangs = parseThangs(row.thangs, row.thang);
+      return row.thangs && (row.thangs as unknown[]).length
+        ? thangText(thangs)
+        : (row.thang ?? undefined);
+    })(),
+    thangs:
+      row.thangs && (row.thangs as unknown[]).length
+        ? parseThangs(row.thangs, row.thang)
+        : undefined,
     notes: row.notes ?? undefined,
     attendees: parseAttendees(row.attendees),
     announcements: row.announcements ?? undefined,
@@ -68,7 +78,11 @@ export function toInsert(
     q: backblast.q.trim(),
     introduction: text(backblast.introduction),
     warmup: text(backblast.warmup),
-    thang: text(backblast.thang),
+    // Like a workout's: the thangs (timers and music) with their text written out.
+    thang: backblast.thangs
+      ? text(thangText(backblast.thangs))
+      : text(backblast.thang),
+    thangs: cleanThangs(backblast.thangs) as unknown as Json,
     notes: text(backblast.notes),
     attendees: parseAttendees(backblast.attendees) as unknown as Json,
     announcements: text(backblast.announcements),
@@ -78,6 +92,17 @@ export function toInsert(
     second_f: text(backblast.secondF),
     workout_id: backblast.workoutId ?? null,
   };
+}
+
+/** Thangs as saved: empty ones left out, music kept only once it's a full link. */
+function cleanThangs(thangs: Thang[] | undefined): Thang[] {
+  return (thangs ?? [])
+    .filter((t) => t.text.trim() || t.timer || t.music)
+    .map((t) =>
+      t.music && !/^https?:\/\/\S+$/i.test(t.music.url.trim())
+        ? { ...t, music: undefined }
+        : t,
+    );
 }
 
 /** A workout from its row; its notes are kept apart (see loadWorkoutNotes). */
@@ -124,14 +149,7 @@ export function toWorkoutInsert(
     thang: workout.thangs
       ? text(thangText(workout.thangs))
       : text(workout.thang),
-    thangs: (workout.thangs ?? [])
-      .filter((t) => t.text.trim() || t.timer || t.music)
-      .map((t) =>
-        // Music is kept only once it's a full link.
-        t.music && !/^https?:\/\/\S+$/i.test(t.music.url.trim())
-          ? { ...t, music: undefined }
-          : t,
-      ) as unknown as Json,
+    thangs: cleanThangs(workout.thangs) as unknown as Json,
     announcements: null,
     words_of_wisdom: text(workout.wordsOfWisdom),
     reused_from: workout.reusedFrom ?? null,
@@ -247,62 +265,4 @@ function parseMusic(value: unknown): Thang["music"] {
   return typeof title === "string" && title.trim()
     ? { url: url.trim(), title: title.trim() }
     : { url: url.trim() };
-}
-
-/** The workout sections a backblast keeps its own copy of, which can be sent back to the workout. */
-export const SHARED_SECTIONS = [
-  "introduction",
-  "warmup",
-  "thang",
-  "wordsOfWisdom",
-] as const;
-export type SharedSection = (typeof SHARED_SECTIONS)[number];
-
-const sameText = (a: string | undefined, b: string | undefined) =>
-  (a ?? "").replace(/\r\n/g, "\n").trim() ===
-  (b ?? "").replace(/\r\n/g, "\n").trim();
-
-/**
- * Which of a backblast's copied workout sections now differ from its workout's, when the workout
- * is the user's own (only its Q can change it). Null when there's nothing to offer.
- */
-export async function workoutDifferences(
-  backblast: Backblast,
-  userId: string,
-): Promise<{ workoutId: string; sections: SharedSection[] } | null> {
-  if (!backblast.workoutId) return null;
-  const workout = await loadWorkout(backblast.workoutId, userId);
-  if (typeof workout === "string") return null;
-  const sections = SHARED_SECTIONS.filter(
-    (key) => !sameText(backblast[key], workout[key]),
-  );
-  return sections.length ? { workoutId: backblast.workoutId, sections } : null;
-}
-
-/**
- * Copies a backblast's sections back to its workout. The Thang becomes one thang with the
- * backblast's text, so the workout's timers and music for it are replaced.
- */
-export async function updateWorkoutFromBackblast(
-  workoutId: string,
-  backblast: Backblast,
-  sections: SharedSection[],
-): Promise<string | null> {
-  const text = (value: string | undefined) => value?.trim() || null;
-  const changes: Database["public"]["Tables"]["workouts"]["Update"] = {};
-  if (sections.includes("introduction"))
-    changes.introduction = text(backblast.introduction);
-  if (sections.includes("warmup")) changes.warmup = text(backblast.warmup);
-  if (sections.includes("wordsOfWisdom"))
-    changes.words_of_wisdom = text(backblast.wordsOfWisdom);
-  if (sections.includes("thang")) {
-    const thang = text(backblast.thang);
-    changes.thang = thang;
-    changes.thangs = (thang ? [{ text: thang }] : []) as unknown as Json;
-  }
-  const { error } = await createClient()
-    .from("workouts")
-    .update(changes)
-    .eq("id", workoutId);
-  return error?.message ?? null;
 }

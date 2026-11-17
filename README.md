@@ -101,26 +101,27 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   pick from, or starts one without a workout. Only a workout's Q writes its backblast, so other
   people's workouts have no Create backblast button. A finished backblast is **public** by default
   (Settings → Sharing can make new ones start private): anyone signed in can read it, and it shows on
-  its Q's PAX profile. Its Q can switch it to **private** on its page. The backblast holds
-  its own copy of the workout's sections, which can be edited without changing the workout
-  (**Update from workout** copies it again). Finishing a backblast whose Introduction,
-  Warm-o-rama, The Thang or Words of Wisdom now differ from its own workout asks **Update the
-  workout too?**: Update workout copies those sections back (The Thang becomes one thang with the
-  backblast's text, replacing its timers and music), or keep the workout as it is. Its pages are Workout, Notes, Name-o-rama (Qs and
+  its Q's PAX profile. Its Q can switch it to **private** on its page. A backblast linked to
+  its workout **shares** it: the title, basics (date, AO, address, time) and sections
+  (Introduction, Warm-o-rama, The Thang with its timers and music, Words of Wisdom) are the same
+  in both, and a change to either is made to the other (the backblast's Workout page says so). Its pages are Workout, Notes, Name-o-rama (Qs and
   PAX, with roster suggestions and the AO's regulars), Announcements (optional; the backblast's own, not
   copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
   and Share are on the finished backblast's page). On a finished backblast's page, **From a
   workout →** sits left of the Public / Private switch (where a workout shows its likes and
   reuses); Copy, Share and Edit share one row, with **Close** (back to Home) below, and beside it
   **Open workout** when the backblast has a workout.
-  - **Linking to a workout:** a backblast and its Q's workout stay linked while they're at the same
-    AO on the same date (ignoring case and spaces). The database keeps it so (triggers in
-    `20261110010000_backblast_workout_links.sql`): when either one's AO or date changes, or a
-    workout is finished, a pair that no longer matches is unlinked, and one with no partner links
-    to the single match that has none. With two matches it doesn't guess. A backblast started
-    from a workout keeps its link while its AO and date are blank. One without a workout shows
-    **Link to a workout** on its page (matches first); a link made there stays until its AO or
-    date is edited.
+  - **Linking to a workout:** a backblast without a workout links on its own to its Q's one
+    finished workout at the same AO on the same date (ignoring case and spaces) that has no
+    backblast, and a workout that's finished links its Q's one such backblast (triggers in
+    `20261110010000_backblast_workout_links.sql`, changed by
+    `20261117000000_backblast_shares_workout.sql`). With two matches it doesn't guess. One
+    without a workout shows **Link to a workout** on its page (matches first). Once linked, they
+    stay linked: changing the AO or date of either changes both. The sharing is done by the
+    database too (`backblasts_share_workout` and `workouts_share_backblasts`): on linking, what the
+    backblast has goes to the workout and what it hasn't is filled from the workout; after that,
+    each change to the shared parts is made to the other. A backblast keeps the Thang's thangs
+    (`thangs`) like a workout.
   - A backblast waits for its workout: until the workout's date, **Create backblast** is greyed
     out with the reason, and New backblast shows that workout greyed out with the date it opens.
   - **Copy** and **Share** produce Band- and Slack-ready text (Event Data, Workout Details, COT), ending with a

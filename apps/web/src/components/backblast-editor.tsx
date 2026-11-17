@@ -1,17 +1,9 @@
 "use client";
 
-import { termsFor, type Backblast } from "@rocket/core";
+import type { Backblast } from "@rocket/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  loadWorkout,
-  saveWorkoutNotes,
-  toInsert,
-  toWorkoutInsert,
-  updateWorkoutFromBackblast,
-  workoutDifferences,
-  type SharedSection,
-} from "@/lib/backblast";
+import { saveWorkoutNotes, toInsert, toWorkoutInsert } from "@/lib/backblast";
 import { isUpcoming } from "@/lib/backblast-list";
 import { useConnection } from "@/lib/connection";
 import {
@@ -213,8 +205,6 @@ export function BackblastEditor({
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
   }, []);
-  // A finished backblast's changes to its workout's sections, offered back to the workout.
-  const [offer, setOffer] = useState<Offer | null>(null);
   // Where to go once the saved notice is closed.
   const [notice, setNotice] = useState<string | null>(null);
   const id = useRef(draftId ?? null);
@@ -484,11 +474,6 @@ export function BackblastEditor({
     <>
       <BackblastForm
         mode={mode}
-        onCopyWorkout={
-          mode === "backblast" && loaded.start.workoutId
-            ? () => loadWorkout(loaded.start.workoutId!)
-            : undefined
-        }
         heading={
           published ? words.published : draftId ? words.draft : words.new
         }
@@ -518,13 +503,6 @@ export function BackblastEditor({
           dropBackup(keyFor(), newKey);
           // The page says what its Public / Private switch is for, just after a save.
           const view = `${words.view}?id=${id.current}&saved=1`;
-          // A backblast whose copy of its workout now differs from the workout: offer to update it.
-          if (mode === "backblast") {
-            const differs = await workoutDifferences(backblast, user.id).catch(
-              () => null,
-            );
-            if (differs) return void setOffer({ ...differs, view, backblast });
-          }
           // A public workout before its day is hidden from others: say so, unless that's silenced.
           if (
             mode === "workout" &&
@@ -538,13 +516,6 @@ export function BackblastEditor({
         }}
         onDiscard={published ? undefined : discard}
       />
-      {offer && (
-        <UpdateWorkout
-          offer={offer}
-          language={user.language}
-          onDone={() => router.push(offer.view)}
-        />
-      )}
       {notice && (
         <NoticeDialog
           id={HIDDEN_UNTIL_THE_DAY}
@@ -556,95 +527,6 @@ export function BackblastEditor({
         </NoticeDialog>
       )}
     </>
-  );
-}
-
-interface Offer {
-  workoutId: string;
-  sections: SharedSection[];
-  /** The backblast's page, to go to once answered. */
-  view: string;
-  backblast: Backblast;
-}
-
-/**
- * After finishing a backblast whose copy of its workout's sections now differs from the workout:
- * update the workout to match, or keep it as it was.
- */
-function UpdateWorkout({
-  offer,
-  language,
-  onDone,
-}: {
-  offer: Offer;
-  language: CurrentUser["language"];
-  onDone: () => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const terms = termsFor(language);
-  const names: Record<SharedSection, string> = {
-    introduction: "Introduction",
-    warmup: terms.warmup,
-    thang: terms.thang,
-    wordsOfWisdom: terms.wordsOfWisdom,
-  };
-  const chip =
-    "rounded-full border border-line-strong px-3 py-1.5 text-sm font-medium text-ink transition hover:border-accent/60 disabled:opacity-50";
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="update-workout-title"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
-    >
-      <div className="flex w-full max-w-md flex-col gap-4 rounded-3xl border border-line-strong bg-surface-raised p-5 shadow-2xl">
-        <h2
-          id="update-workout-title"
-          className="text-lg font-semibold text-ink"
-        >
-          Update the workout too?
-        </h2>
-        <p className="text-sm text-ink-soft">
-          {offer.sections.map((s) => names[s]).join(", ")} in this backblast{" "}
-          {offer.sections.length === 1 ? "differs" : "differ"} from the workout.
-          Update the workout to match, so it shows what was actually done?
-          {offer.sections.includes("thang") &&
-            ` The workout's timers and music for ${terms.thang} would be replaced by the backblast's text.`}
-        </p>
-        {error && <p className="text-sm text-accent">{error}</p>}
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            autoFocus
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              const message = await updateWorkoutFromBackblast(
-                offer.workoutId,
-                offer.backblast,
-                offer.sections,
-              );
-              if (message) {
-                setError(message);
-                setBusy(false);
-              } else onDone();
-            }}
-            className={chip}
-          >
-            Update workout
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onDone}
-            className={chip}
-          >
-            Keep the workout as it is
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 

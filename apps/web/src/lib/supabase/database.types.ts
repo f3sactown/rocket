@@ -55,6 +55,7 @@ export type Database = {
           introduction: string | null;
           warmup: string | null;
           thang: string | null;
+          thangs: Json;
           notes: string | null;
           workout_id: string | null;
           attendees: Json;
@@ -79,6 +80,7 @@ export type Database = {
           introduction?: string | null;
           warmup?: string | null;
           thang?: string | null;
+          thangs?: Json;
           notes?: string | null;
           workout_id?: string | null;
           attendees?: Json;
