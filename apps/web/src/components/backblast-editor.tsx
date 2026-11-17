@@ -16,6 +16,7 @@ import { isUpcoming } from "@/lib/backblast-list";
 import { createClient } from "@/lib/supabase/client";
 import type { CurrentUser } from "./auth-provider";
 import { BackblastForm, type FormMode } from "./backblast-form";
+import { backblastScreens, markChanged, workoutScreens } from "@/lib/offline";
 import { tourRunning } from "./app-tour";
 import { HIDDEN_UNTIL_THE_DAY, NoticeDialog } from "./notice-dialog";
 import {
@@ -348,6 +349,17 @@ export function BackblastEditor({
         // A workout's notes are private to its Q, so they're saved apart from the workout.
         if (mode === "workout")
           await saveWorkoutNotes(id.current, latest.current.notes ?? "");
+        // Its copies for offline use are kept again (once you leave), with its workout's.
+        markChanged(
+          mode === "workout"
+            ? workoutScreens(id.current)
+            : [
+                ...backblastScreens(id.current),
+                ...(latest.current.workoutId
+                  ? workoutScreens(latest.current.workoutId)
+                  : []),
+              ],
+        );
       });
       queue.current = run.catch(() => {});
       return run;

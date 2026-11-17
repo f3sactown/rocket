@@ -159,12 +159,17 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   skipped, and **Settings → Tutorial** shows it again.
 - **Offline:** the service worker (`apps/web/public/sw.js`, registered on every visit) keeps the
   app's pages and code, so Rocket opens with no signal, and keeps the data you've looked at, so a
-  workout you've opened before can be read and run offline. When Home opens on a connection it
-  also keeps copies of the main screens that work offline (Workouts, Backblasts, Settings),
-  your upcoming workouts and those from the last two weeks (plus Home's lists) with their Run
-  workout screens, and your recent backblasts (waiting for the service worker on a first visit),
-  by opening each one in turn in a hidden frame (`lib/offline.ts`; again when that list changes,
-  or every 3 hours; not in Data Saver). Offline, a sign-in Supabase can't renew (they last an
+  workout you've opened before can be read and run offline. Rocket also keeps copies of screens
+  by opening them in turn in a hidden frame (`lib/offline.ts`), in order: first the screen you've
+  just left (a workout's page brings its Run workout screen, and the other way round), including
+  on putting Rocket away; and, forced even if kept recently, any workout or backblast saved since
+  (its pages, its workout's, and the Workouts or Backblasts list). Then, once you've stayed on a
+  screen for 4 seconds, the rest from Home: the main screens that work offline (Workouts,
+  Backblasts, Settings), your upcoming workouts and those from the last two weeks with their Run
+  workout screens, and your recent backblasts. A screen kept in the last 3 hours isn't kept again
+  unless it's changed; what's waiting is kept on the phone (`rocket-offline-queue`) so closing
+  Rocket picks it up next time (not in Data Saver; it waits for the service worker on a first
+  visit). Offline, a sign-in Supabase can't renew (they last an
   hour) still counts: the account and its access token are kept on the device
   (`rocket-offline-user`, `rocket-offline-token`). Offline, Supabase keeps trying to renew an
   expired sign-in for about half a minute; Rocket waits 3 seconds, then carries on as the kept

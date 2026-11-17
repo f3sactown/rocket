@@ -18,7 +18,7 @@ import {
 import { useConnection } from "@/lib/connection";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
 import {
-  keepForOffline,
+  keepLater,
   MAIN_SCREENS,
   offlineWorkoutIds,
   workoutScreens,
@@ -75,7 +75,7 @@ function HomePage({ user }: { user: CurrentUser }) {
         offlineWorkoutIds(user.id)
           .catch(() => [] as string[])
           .then((recent) =>
-            keepForOffline([
+            keepLater([
               ...MAIN_SCREENS,
               ...[
                 ...new Set([

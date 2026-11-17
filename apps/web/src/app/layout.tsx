@@ -5,7 +5,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { DeviceSetup } from "@/components/device-setup";
 import { AppTour } from "@/components/app-tour";
 import { OfflineGate } from "@/components/offline-gate";
-import { OfflineSupport } from "@/components/offline-support";
+import { KeepOnLeave, OfflineSupport } from "@/components/offline-support";
 import { FaviconSync } from "@/components/favicon-sync";
 import { LaunchSplash } from "@/components/launch-splash";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -54,6 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <LaunchSplash />
             <AppNav />
             <OfflineSupport />
+            <KeepOnLeave />
             <DeviceSetup />
             <AppTour />
             <OfflineGate>{children}</OfflineGate>
