@@ -231,7 +231,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   still shows unless it's private. **Archive** lists what you've archived, by workout date (newest first); **Search** finds workouts and backblasts by any word, with matches
   highlighted.
 - **Testing banner:** while the version is an alpha or beta (`0.1.0-alpha.7`), a slim bar across the
-  top of every screen says Rocket is being tested and things may change or not work as expected;
+  top of every screen says Rocket is being tested and things may change or not work as expected, and asks people to contact the developer with any issues;
   it goes away by itself with the first full release.
 - **Continue with Google:** the sign-in screen leads with Google: one **Continue with Google**
   button, with a small **Sign in or sign up with email** link under it that opens the email and
