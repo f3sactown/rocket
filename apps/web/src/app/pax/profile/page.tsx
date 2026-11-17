@@ -179,7 +179,11 @@ function PaxProfile({ user }: { user: CurrentUser }) {
               <p className="text-sm text-muted">Nothing trending lately.</p>
             )}
           </Group>
-          <Group title="All workouts" count={workouts.value.workouts.length}>
+          <Group
+            title="All workouts"
+            count={workouts.value.workouts.length}
+            href={`/pax/list?kind=workouts&name=${encodeURIComponent(name)}&org=${org}`}
+          >
             {workouts.value.workouts.length ? (
               <WorkoutCards
                 tiles
@@ -195,6 +199,7 @@ function PaxProfile({ user }: { user: CurrentUser }) {
           <Group
             title="All backblasts"
             count={workouts.value.backblasts.length}
+            href={`/pax/list?kind=backblasts&name=${encodeURIComponent(name)}&org=${org}`}
           >
             {workouts.value.backblasts.length ? (
               <BackblastTiles backblasts={workouts.value.backblasts} />
@@ -235,20 +240,30 @@ function BackblastTiles({ backblasts }: { backblasts: ListItem[] }) {
 function Group({
   title,
   count,
+  href,
   children,
 }: {
   title: string;
   count?: number;
+  /** The full list, opened by "See all" (when there's anything in it). */
+  href?: string;
   children: React.ReactNode;
 }) {
   return (
     <div data-tour="profile-section" className="flex flex-col gap-2">
-      <h2 className="px-1 text-lg font-semibold tracking-tight text-ink">
-        {title}
-        {count ? (
-          <span className="ml-2 text-sm font-normal text-muted">{count}</span>
-        ) : null}
-      </h2>
+      <div className="flex items-baseline justify-between px-1">
+        <h2 className="text-lg font-semibold tracking-tight text-ink">
+          {title}
+          {count ? (
+            <span className="ml-2 text-sm font-normal text-muted">{count}</span>
+          ) : null}
+        </h2>
+        {href && !!count && (
+          <Link href={href} className="link text-sm">
+            See all →
+          </Link>
+        )}
+      </div>
       {children}
     </div>
   );

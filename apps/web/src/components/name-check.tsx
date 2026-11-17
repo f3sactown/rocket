@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { loadRoster, type Region } from "@/lib/regions";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad, useUserRegion } from "@/lib/use-region";
@@ -22,13 +22,19 @@ export function useNameOnRoster(user: CurrentUser | null): {
     region?.id,
     user?.id,
   ]);
-  if (!user || !region || !roster.value?.length)
-    return { region, onRoster: undefined };
-  const name = user.name.trim().toLowerCase();
-  return {
-    region,
-    onRoster: roster.value.some((n) => n.toLowerCase() === name),
-  };
+  const name = user?.name.trim().toLowerCase();
+  const onRoster =
+    !user || !region || !roster.value?.length
+      ? undefined
+      : roster.value.some((n) => n.toLowerCase() === name);
+  // Found on the roster: remembered, so a name missing later was removed rather than not added yet.
+  useEffect(() => {
+    if (onRoster && user && !user.nameOnRoster)
+      createClient()
+        .auth.updateUser({ data: { name_on_roster: true } })
+        .then(() => {});
+  }, [onRoster, user]);
+  return { region, onRoster };
 }
 
 const DISMISSED = "rocket-name-check-dismissed";
@@ -53,6 +59,25 @@ export function NameCheck() {
     return null;
   // Settings shows it beside the name, where it's changed.
   if (pathname.replace(/\/$/, "") === "/settings") return null;
+  // Never on the roster (new, and not added yet): a note for later, not a warning.
+  if (!user.nameOnRoster)
+    return (
+      <div
+        role="status"
+        className="flex flex-col gap-2 rounded-2xl border border-line-strong bg-panel px-4 py-3 text-sm text-ink-soft"
+      >
+        <p>
+          Once your name is on the {region?.name} roster (ask your Site Q to add
+          you), choose it in Settings so your posts and Qs are matched to you.
+        </p>
+        <span className="flex items-center gap-4">
+          <Link href="/settings#profile" className="link font-medium text-ink">
+            Settings →
+          </Link>
+          <NotNow onDismiss={() => setDismissed(true)} />
+        </span>
+      </div>
+    );
   return (
     <div
       role="alert"
@@ -67,22 +92,29 @@ export function NameCheck() {
         <Link href="/settings#profile" className="link font-medium text-ink">
           Fix it in Settings →
         </Link>
-        <button
-          type="button"
-          onClick={() => {
-            try {
-              sessionStorage.setItem(DISMISSED, "1");
-            } catch {
-              // Hidden for now only.
-            }
-            setDismissed(true);
-          }}
-          className="link text-sm"
-        >
-          Not now
-        </button>
+        <NotNow onDismiss={() => setDismissed(true)} />
       </span>
     </div>
+  );
+}
+
+/** Hides the note until Rocket next opens. */
+function NotNow({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        try {
+          sessionStorage.setItem(DISMISSED, "1");
+        } catch {
+          // Hidden for now only.
+        }
+        onDismiss();
+      }}
+      className="link text-sm"
+    >
+      Not now
+    </button>
   );
 }
 
@@ -154,13 +186,22 @@ export function ProfileName({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <p
-        role="alert"
-        className="rounded-xl border border-accent/60 bg-accent-soft px-3 py-2.5 text-sm text-ink"
-      >
-        Your name <strong>{user.name}</strong> isn&apos;t on the {region?.name}{" "}
-        roster anymore. Choose your name as it&apos;s now written there.
-      </p>
+      {user.nameOnRoster ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-accent/60 bg-accent-soft px-3 py-2.5 text-sm text-ink"
+        >
+          Your name <strong>{user.name}</strong> isn&apos;t on the{" "}
+          {region?.name} roster anymore. Choose your name as it&apos;s now
+          written there.
+        </p>
+      ) : (
+        <p className="rounded-xl border border-line-strong bg-panel px-3 py-2.5 text-sm text-ink-soft">
+          <strong className="text-ink">{user.name}</strong> isn&apos;t on the{" "}
+          {region?.name} roster yet. Once your Site Q adds you, choose your name
+          here so your posts and Qs are matched to you.
+        </p>
+      )}
       <NameField
         region={region}
         userId={user.id}

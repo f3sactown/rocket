@@ -83,7 +83,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   total likes and reuses on their public Rocket workouts, with the same heart and reuse icons as
   workout tiles. A **From** picker of regions, in each
   region's color, narrows the list and the totals; the choice is saved to your account. A tile
-  opens the PAX's profile, marked **On Rocket** at the top right when they have a Rocket account (or a dimmer **Not on Rocket yet**): posts, Qs, likes and reuses in one row on top, their stats per region and their Trending workouts, then **All workouts** and **All backblasts** (every public one, newest first;
+  opens the PAX's profile, marked **On Rocket** at the top right when they have a Rocket account (or a dimmer **Not on Rocket yet**): posts, Qs, likes and reuses in one row on top, their stats per region and their Trending workouts, then **All workouts** and **All backblasts** (every public one, newest first, each with **See all →** opening the full list on its own page, `/pax/list`;
   archived ones included, private ones left out).
   At the top, a **New on Rocket** note names whoever has signed up for a Rocket account since you
   last dismissed it (the last two weeks, the first time), with their region, each linking to their
@@ -210,6 +210,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
   still shows unless it's private. **Archive** lists what you've archived, by workout date (newest first); **Search** finds workouts and backblasts by any word, with matches
   highlighted.
+- **Testing banner:** while the version is an alpha or beta (`0.1.0-alpha.7`), a slim bar across the
+  top of every screen says Rocket is being tested and things may change or not work as expected;
+  it goes away by itself with the first full release.
 - **Continue with Google:** the sign-in screen leads with Google: one **Continue with Google**
   button, with a small **Sign in or sign up with email** link under it that opens the email and
   password form (sign up and forgot password included), which has **Use Google instead** to go
@@ -222,9 +225,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   accepted unless **I'm not on the roster yet** is ticked. It comes with a warning that it must
   match the database (the roster) exactly and can't be changed once the account is set up, and the first tap shows it back ("You'll be …
   on Rocket, for good") to confirm with a second. Settings shows it but doesn't let it change, unless it's no longer on your region's roster
-  (renamed or corrected there): then a warning at the top of each screen says so, with **Fix it
+  (renamed or corrected there; `name_on_roster` in the account remembers it once was): then a warning at the top of each screen says so, with **Fix it
   in Settings** (and **Not now**, until Rocket next opens), and Settings → Profile lets you choose
-  your name again from the roster (not one taken on Rocket), confirmed the same way. The top bar and menu stay hidden until the Welcome step is done (it has **Not you? Sign out** instead). Signing in with
+  your name again from the roster (not one taken on Rocket), confirmed the same way. A name that's never been on the roster (someone new, not added yet) gets a
+  gentler note instead: once it's on the roster, choose it in Settings. The top bar and menu stay hidden until the Welcome step is done (it has **Not you? Sign out** instead). Signing in with
   Google using the same email as an existing account opens that account. The F3 name is also kept
   as `f3_name` in the account, since each Google sign-in overwrites `name` with the Google name.
   Setup: see "Google sign-in" below.
