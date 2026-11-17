@@ -4,6 +4,7 @@ import { AppNav } from "@/components/app-nav";
 import { AuthProvider } from "@/components/auth-provider";
 import { DeviceSetup } from "@/components/device-setup";
 import { AppTour } from "@/components/app-tour";
+import { DraftSender } from "@/components/local-drafts";
 import { NameCheck } from "@/components/name-check";
 import { OfflineGate } from "@/components/offline-gate";
 import { TestingBanner } from "@/components/testing-banner";
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <OfflineSupport />
             <NameCheck />
             <KeepOnLeave />
+            <DraftSender />
             <DeviceSetup />
             <AppTour />
             <OfflineGate>{children}</OfflineGate>

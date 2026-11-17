@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { loadLists, type ItemKind, type ListItem } from "@/lib/backblast-list";
 import type { CurrentUser } from "./auth-provider";
 import { BackblastList } from "./backblast-list";
+import { LocalDraftList, useOnDraftsSent } from "./local-drafts";
 import { PlusIcon } from "./icons";
 
 const WORDS = {
@@ -40,9 +41,12 @@ export function ItemDashboard({
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Bumped when drafts kept on the phone reach Rocket, to show them here.
+  const [reloads, setReloads] = useState(0);
+  useOnDraftsSent(useCallback(() => setReloads((n) => n + 1), []));
   useEffect(() => {
     loadLists(kind, user.id).then(setLists, (e: Error) => setError(e.message));
-  }, [user.id, kind]);
+  }, [user.id, kind, reloads]);
 
   return (
     <section className="card">
@@ -50,6 +54,7 @@ export function ItemDashboard({
         <h1 className="card-title">{words.title}</h1>
       </header>
 
+      <LocalDraftList kind={kind} />
       {error ? (
         <p className="panel px-3 py-8 text-center text-accent">{error}</p>
       ) : !lists ? (

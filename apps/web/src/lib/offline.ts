@@ -35,7 +35,18 @@ const MOST_MS = 15000;
 const IDLE_MS = 4000;
 
 /** The main screens that work offline (the others need a connection), kept whatever's on Home. */
-export const MAIN_SCREENS = ["/workouts/", "/backblasts/", "/settings/"];
+export const MAIN_SCREENS = [
+  "/workouts/",
+  "/backblasts/",
+  "/settings/",
+  // Writing one offline: the forms, with their templates, AOs and the workouts to choose from.
+  "/workouts/new/",
+  "/backblasts/new/",
+];
+
+/** Writing a workout's backblast (its copy of the workout, the roster and regulars), offline too. */
+export const backblastForScreen = (workoutId: string) =>
+  `/backblasts/new/?workout=${workoutId}`;
 
 /** A workout's page and its Run workout screen. */
 export const workoutScreens = (id: string) => [
@@ -287,14 +298,16 @@ function open(frame: HTMLIFrameElement, path: string) {
  * Your finished workouts worth having offline: every one from the last two weeks and all those
  * coming up (the most recent 20), newest first.
  */
-export async function offlineWorkoutIds(userId: string): Promise<string[]> {
+export async function offlineWorkoutIds(
+  userId: string,
+): Promise<{ id: string; date: string | null }[]> {
   const { data } = await createClient()
     .from("workouts")
-    .select("id")
+    .select("id, date")
     .eq("author_id", userId)
     .eq("status", "published")
     .gte("date", addDays(localToday(), -14))
     .order("date", { ascending: false, nullsFirst: false })
     .limit(20);
-  return (data ?? []).map((w) => w.id);
+  return data ?? [];
 }
