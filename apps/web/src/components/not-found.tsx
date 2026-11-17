@@ -1,15 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-
-function subscribe(onChange: () => void) {
-  window.addEventListener("online", onChange);
-  window.addEventListener("offline", onChange);
-  return () => {
-    window.removeEventListener("online", onChange);
-    window.removeEventListener("offline", onChange);
-  };
-}
+import { useConnection } from "@/lib/connection";
 
 /** Whether an error is the connection failing, not the thing being missing. */
 const isConnectionError = (error?: string) =>
@@ -26,12 +17,8 @@ export function NotFound({
   what: "workout" | "backblast";
   error?: string;
 }) {
-  const online = useSyncExternalStore(
-    subscribe,
-    () => navigator.onLine,
-    () => true,
-  );
-  if (!online || isConnectionError(error))
+  const { offline } = useConnection();
+  if (offline || isConnectionError(error))
     return (
       <section className="card">
         <h1 className="card-title">Not kept on this phone</h1>
@@ -49,5 +36,24 @@ export function NotFound({
       </h1>
       {error && <p className="text-accent">{error}</p>}
     </section>
+  );
+}
+
+/**
+ * A workout or backblast loading. While the connection is being checked, it says so: the copy
+ * kept on this phone shows in a moment if there's no connection.
+ */
+export function Loading() {
+  const { checking, offline } = useConnection();
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="card h-96 animate-pulse" />
+      {checking && !offline && (
+        <p className="text-center text-sm text-ink-soft">
+          Waiting for a connection… the copy saved on this phone shows in a
+          moment.
+        </p>
+      )}
+    </div>
   );
 }

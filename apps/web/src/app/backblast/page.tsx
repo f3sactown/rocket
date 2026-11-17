@@ -1,6 +1,6 @@
 "use client";
 
-import { NotFound } from "@/components/not-found";
+import { Loading, NotFound } from "@/components/not-found";
 import {
   copyText,
   formatBackblast,
@@ -103,7 +103,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     }
   }
 
-  if (id && !result) return <div className="card h-96 animate-pulse" />;
+  if (id && !result) return <Loading />;
   if (!result?.backblast)
     return <NotFound what="backblast" error={result?.error} />;
 

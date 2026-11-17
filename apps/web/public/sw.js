@@ -87,27 +87,112 @@ async function keptCopy(cache, request, match) {
   return cache.match(url.href, match);
 }
 
+/** How long a request with no kept copy waits for the network before giving up (not pages). */
+const GIVE_UP_MS = 15000;
+/** How long a request waits before the app says it's checking the connection. */
+const CHECKING_MS = 1500;
+/**
+ * Whether the last request had to use a kept copy (no connection, or too slow). While it does,
+ * kept copies answer at once, with a fresh copy fetched alongside; the first request that gets
+ * through ends it.
+ */
+let offline = null; // Unknown until the first request (the worker may have just started).
+let nextId = 0;
+
+/**
+ * Tells the app's windows how the connection is doing: a request is still waiting ("checking"),
+ * or one has settled from the network or a kept copy. The app shows "Checking connection…" and
+ * the Offline banner from these.
+ */
+async function tell(message) {
+  const windows = await self.clients.matchAll({
+    type: "window",
+    includeUncontrolled: true,
+  });
+  for (const client of windows)
+    client.postMessage({ type: "rocket-connection", ...message });
+}
+
+function wentOnline() {
+  if (offline === false) return;
+  offline = false;
+  tell({ state: "online" });
+}
+
+function wentOffline() {
+  if (offline === true) return;
+  offline = true;
+  tell({ state: "offline" });
+}
+
 /**
  * Network first: a fresh copy when there's a connection (kept for later), the kept copy when
- * there isn't one or it's too slow.
+ * there isn't one or it's too slow. Once offline, the kept copy straight away.
  */
 async function networkFirst(request, cacheName, match) {
   const cache = await caches.open(cacheName);
   const network = fetch(request).then(async (response) => {
     if (response.ok) await cache.put(request, response.clone());
+    // Any answer from the server, even an error page, means the connection is back.
+    wentOnline();
     return response;
   });
   // If the kept copy answers first, a later network failure isn't an error.
   network.catch(() => {});
+
+  // Without a kept copy, a page (a navigation) waits for the network; anything else gives up,
+  // at once when already offline, so the app can move on (Next.js opens the page in full, from
+  // its kept copy; a screen says what isn't kept on this phone).
+  const page = request.mode === "navigate";
+  if (offline) {
+    const kept = await keptCopy(cache, request, match);
+    if (kept) return kept;
+    if (!page) throw new Error("Offline, and not kept on this phone");
+  }
+
+  const id = ++nextId;
+  let checking = false;
+  const checkingTimer = setTimeout(() => {
+    checking = true;
+    tell({ state: "checking", id });
+  }, CHECKING_MS);
+  const settle = () => {
+    clearTimeout(checkingTimer);
+    if (checking) tell({ state: "settled", id });
+  };
+
   const slow = new Promise((resolve) =>
     setTimeout(() => resolve(undefined), SLOW_MS),
   );
   try {
     const first = await Promise.race([network, slow]);
-    if (first) return first;
+    if (first) {
+      settle();
+      return first;
+    }
     // Slow: the kept copy if there is one, otherwise keep waiting.
-    return (await keptCopy(cache, request, match)) ?? (await network);
+    const kept = await keptCopy(cache, request, match);
+    if (kept) {
+      wentOffline();
+      settle();
+      return kept;
+    }
+    const late = await (page
+      ? network
+      : Promise.race([
+          network,
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error("No connection")),
+              GIVE_UP_MS - SLOW_MS,
+            ),
+          ),
+        ]));
+    settle();
+    return late;
   } catch (error) {
+    wentOffline();
+    settle();
     const kept = await keptCopy(cache, request, match);
     if (kept) return kept;
     throw error;
@@ -144,6 +229,15 @@ self.addEventListener("fetch", (event) => {
     return event.respondWith(
       networkFirst(request, DATA_CACHE, { ignoreVary: true }),
     );
+});
+
+// A window asking how the connection is (when it opens).
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "rocket-connection?")
+    event.source?.postMessage({
+      type: "rocket-connection",
+      state: offline ? "offline" : offline === false ? "online" : "unknown",
+    });
 });
 
 self.addEventListener("push", (event) => {

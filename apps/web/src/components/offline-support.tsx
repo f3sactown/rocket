@@ -1,28 +1,16 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
+import { useConnection } from "@/lib/connection";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
-function subscribe(onChange: () => void) {
-  window.addEventListener("online", onChange);
-  window.addEventListener("offline", onChange);
-  return () => {
-    window.removeEventListener("online", onChange);
-    window.removeEventListener("offline", onChange);
-  };
-}
-
 /**
  * Lets Rocket work without a signal: registers the service worker that keeps the app's pages and
- * the data you've looked at, and says so when the phone is offline.
+ * the data you've looked at, and says so when it's offline (or still checking the connection).
  */
 export function OfflineSupport() {
-  const online = useSyncExternalStore(
-    subscribe,
-    () => navigator.onLine,
-    () => true,
-  );
+  const { offline, checking } = useConnection();
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -33,7 +21,22 @@ export function OfflineSupport() {
       });
   }, []);
 
-  if (online) return null;
+  // A request has been waiting a while: say so, before it gives up and uses a kept copy.
+  if (!offline && checking)
+    return (
+      <div
+        role="status"
+        // Over the top of the page, so nothing moves when it comes and goes.
+        className="fixed top-3 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-line-strong bg-surface-raised/95 px-3 py-1.5 text-xs whitespace-nowrap text-ink-soft shadow-lg backdrop-blur"
+      >
+        <span
+          className="size-2 shrink-0 animate-pulse rounded-full bg-accent"
+          aria-hidden
+        />
+        Checking connection…
+      </div>
+    );
+  if (!offline) return null;
   return (
     <div
       role="status"
