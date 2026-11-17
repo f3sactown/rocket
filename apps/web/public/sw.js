@@ -73,6 +73,21 @@ self.addEventListener("activate", (event) =>
 );
 
 /**
+ * The kept copy of a request. A page asked for without its trailing slash (/workout?id=… rather
+ * than /workout/?id=…, which the site redirects to) is kept under the address with the slash.
+ */
+async function keptCopy(cache, request, match) {
+  const kept = await cache.match(request, match);
+  if (kept) return kept;
+  const url = new URL(request.url);
+  const last = url.pathname.split("/").pop();
+  if (url.origin !== self.location.origin || !last || last.includes("."))
+    return undefined;
+  url.pathname += "/";
+  return cache.match(url.href, match);
+}
+
+/**
  * Network first: a fresh copy when there's a connection (kept for later), the kept copy when
  * there isn't one or it's too slow.
  */
@@ -91,9 +106,9 @@ async function networkFirst(request, cacheName, match) {
     const first = await Promise.race([network, slow]);
     if (first) return first;
     // Slow: the kept copy if there is one, otherwise keep waiting.
-    return (await cache.match(request, match)) ?? (await network);
+    return (await keptCopy(cache, request, match)) ?? (await network);
   } catch (error) {
-    const kept = await cache.match(request, match);
+    const kept = await keptCopy(cache, request, match);
     if (kept) return kept;
     throw error;
   }

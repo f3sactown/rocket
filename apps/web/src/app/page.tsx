@@ -16,7 +16,12 @@ import {
   type ListItem,
 } from "@/lib/backblast-list";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
-import { keepForOffline, MAIN_SCREENS, workoutScreens } from "@/lib/offline";
+import {
+  keepForOffline,
+  MAIN_SCREENS,
+  offlineWorkoutIds,
+  workoutScreens,
+} from "@/lib/offline";
 import { loadMyTotals, type WorkoutStats } from "@/lib/workout-social";
 import {
   endMinutes,
@@ -64,15 +69,23 @@ function HomePage({ user }: { user: CurrentUser }) {
     ]).then(
       ([workouts, backblasts, future]) => {
         // Copies for offline use: the main screens, and these workouts with their Run screens.
-        keepForOffline([
-          ...MAIN_SCREENS,
-          ...[...future, ...workouts.published]
-            .slice(0, 2 * RECENT)
-            .flatMap((w) => workoutScreens(w.id)),
-          ...backblasts.published
-            .slice(0, RECENT)
-            .map((b) => `/backblast/?id=${b.id}`),
-        ]);
+        // (Home's own, and every one from the last two weeks and coming up.)
+        offlineWorkoutIds(user.id)
+          .catch(() => [] as string[])
+          .then((recent) =>
+            keepForOffline([
+              ...MAIN_SCREENS,
+              ...[
+                ...new Set([
+                  ...[...future, ...workouts.published].map((w) => w.id),
+                  ...recent,
+                ]),
+              ].flatMap(workoutScreens),
+              ...backblasts.published
+                .slice(0, RECENT)
+                .map((b) => `/backblast/?id=${b.id}`),
+            ]),
+          );
         setLists({
           drafts: [...workouts.drafts, ...backblasts.drafts].sort(
             byWorkoutDate,

@@ -1,5 +1,6 @@
 "use client";
 
+import { NotFound } from "@/components/not-found";
 import {
   copyText,
   formatBackblast,
@@ -104,12 +105,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
 
   if (id && !result) return <div className="card h-96 animate-pulse" />;
   if (!result?.backblast)
-    return (
-      <section className="card">
-        <h1 className="card-title">Backblast not found</h1>
-        {result?.error && <p className="text-accent">{result.error}</p>}
-      </section>
-    );
+    return <NotFound what="backblast" error={result?.error} />;
 
   const { backblast } = result;
   const mine = result.authorId === user.id;
