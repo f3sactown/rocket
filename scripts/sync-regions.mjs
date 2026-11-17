@@ -13,11 +13,12 @@
 const REGULARS_MONTHS = 3;
 
 /**
- * A placeholder in the PAX column rather than a PAX, e.g. "Site Closed (Archived)" marking when an
- * AO stopped meeting (the same rule as isPlaceholderPax in @rocket/core).
+ * A name in the PAX column left out rather than synced as a PAX: a placeholder such as "Site Closed
+ * (Archived)" marking when an AO stopped meeting, or a PAX marked retired, e.g. "007 (Retired)"
+ * (the same rule as isPlaceholderPax in @rocket/core).
  */
 function isPlaceholderPax(name) {
-  return /\bsite\s*closed\b/i.test(name);
+  return /\bsite\s*closed\b/i.test(name) || /\(\s*retired\s*\)/i.test(name);
 }
 const SHEETS_BASE = process.env.SHEETS_BASE || "https://docs.google.com";
 const SUPABASE_URL = process.env.SUPABASE_URL

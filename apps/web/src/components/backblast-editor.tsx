@@ -12,6 +12,7 @@ import {
   localBackblastFor,
   newBackupKey,
   openKeys,
+  ownedBy,
   readBackup,
   writeBackup,
 } from "@/lib/local-drafts";
@@ -223,7 +224,7 @@ export function BackblastEditor({
     () =>
       localIdProp ??
       (mode === "backblast" && initial.workoutId
-        ? localBackblastFor(initial.workoutId)
+        ? localBackblastFor(initial.workoutId, user.id)
         : null) ??
       crypto.randomUUID(),
   );
@@ -269,7 +270,9 @@ export function BackblastEditor({
             ? loaded
             : { ...loaded, q: user.name };
         // Changes kept on the phone that never reached Rocket (newer than its last save) come back.
-        const backup = readBackup(draftId ? backupKey(mode, draftId) : newKey);
+        const found = readBackup(draftId ? backupKey(mode, draftId) : newKey);
+        // Another account's copy (signed in on this phone) isn't brought back here.
+        const backup = found && ownedBy(found, user.id) ? found : null;
         const kept =
           backup &&
           (!savedAt || backup.at > Date.parse(savedAt)) &&
@@ -369,21 +372,21 @@ export function BackblastEditor({
         setSaveState((state) => (timer.current ? state : "saved"));
         // Saved: the phone's copy isn't needed, unless more was typed meanwhile.
         if (latest.current === saving) dropBackup(keyFor(), newKey);
-        else writeBackup(keyFor(), latest.current);
+        else writeBackup(keyFor(), latest.current, user.id);
       },
       () => {
         failed.current = true;
         setSaveState("error");
       },
     );
-  }, [persist, keyFor, newKey]);
+  }, [persist, keyFor, newKey, user.id]);
 
   const onChange = useCallback(
     (backblast: Backblast) => {
       if (inFrame) return;
       latest.current = backblast;
       // Kept on the phone first, so a dropped connection or a closed app loses nothing.
-      writeBackup(keyFor(), backblast);
+      writeBackup(keyFor(), backblast, user.id);
       // A new one: its address names the phone's copy, so a reload (or the lists) bring it back.
       if (!id.current && !window.location.search.includes("local="))
         window.history.replaceState(
@@ -395,7 +398,7 @@ export function BackblastEditor({
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(saveNow, AUTOSAVE_DELAY_MS);
     },
-    [saveNow, keyFor, inFrame, localId, mode],
+    [saveNow, keyFor, inFrame, localId, mode, user.id],
   );
 
   // While open, this editor saves its own copy; the background sender leaves it alone.
@@ -493,7 +496,7 @@ export function BackblastEditor({
           } catch (error) {
             if (!navigator.onLine || isConnectionError(error)) {
               // Kept on the phone as finished: it's sent and finished once there's a connection.
-              writeBackup(keyFor(), backblast, true);
+              writeBackup(keyFor(), backblast, user.id, true);
               finishPending.current = true;
               return "You're offline. It's kept on this phone and will be finished as soon as you're back online.";
             }

@@ -208,7 +208,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   Run workout, where you'd lose your place (they save once they can). A request waiting more than 1.5 seconds shows **Checking connection…** at the top,
   and the workout, Run workout and backblast screens say "Waiting for a connection… the copy
   saved on this phone shows in a moment". A request with no kept copy gives up after 15 seconds
-  (at once when already offline), except a page itself; signing out drops the kept data. An **Offline** banner says what still works, and the accent color (buttons, outlines, the rocket) turns grey until the connection's back (`<html data-connection>`). The workout and
+  (at once when already offline), except a page itself; signing out drops the kept data. **Signing out offline** first says what it means (`SignOutOffline`): you can't sign back in until you're online, the copies kept for offline use are removed, anything written offline that hasn't reached Rocket stays on the phone and is saved once you're back in that account with a connection, and everything is fetched fresh after. It signs out on the phone only (Supabase can't be told offline). What's kept on the phone notes whose it is, and is only sent, listed or reopened for that account. An **Offline** banner says what still works, and the accent color (buttons, outlines, the rocket) turns grey until the connection's back (`<html data-connection>`). The workout and
   backblast forms keep a copy of what's typed on the phone (`rocket-unsaved:*` in local storage)
   until it's saved, so a dropped connection or a closed app loses nothing: the status shows "Not
   saved yet · kept on this phone", it saves again when the connection returns, and opening the
@@ -534,9 +534,11 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
   AOs, roster, regulars per AO (last 3 months), all-time totals per PAX and the newest post date
   into Supabase, and the app reads those. A region that hasn't synced yet is read from its sheet live. A failed sync keeps
   the previous copy and shows the error in Settings.
-- **Placeholders:** a name like "Site Closed (Archived)" that a sheet puts in the PAX column to mark a
-  closed AO isn't a PAX, so it's left out of rosters, regulars and PAX totals (`isPlaceholderPax`
-  in `@rocket/core`; the sync does the same).
+- **Placeholders and retired PAX:** a name like "Site Closed (Archived)" that a sheet puts in the
+  PAX column to mark a closed AO isn't a PAX, and a PAX marked retired ("007 (Retired)") is hidden
+  too: both are left out of rosters, the PAX page, Name-o-rama suggestions, regulars, PAX totals
+  and the names to choose at sign-up (`isPlaceholderPax` in `@rocket/core`; the sync does the
+  same).
 - The sync needs the repository **secret** `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project
   Settings → API Keys → secret key) alongside the `SUPABASE_URL` variable.
 - Sheets are read with Google's Visualization API (`apps/web/src/lib/sheets.ts` in the app,
