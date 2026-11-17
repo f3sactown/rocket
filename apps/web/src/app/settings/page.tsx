@@ -11,6 +11,7 @@ import {
   type SwipeAction,
 } from "@/components/auth-provider";
 import { AccountData } from "@/components/account-data";
+import { ProfileName } from "@/components/name-check";
 import { NOTICES } from "@/components/notice-dialog";
 import { PushSettings } from "@/components/push-settings";
 import { startTour } from "@/components/app-tour";
@@ -60,7 +61,9 @@ function Section({
 
   return (
     <Container
-      className="panel flex flex-col gap-4"
+      // Linked to as #profile, #region…
+      id={title.toLowerCase().replace(/[^a-z]+/g, "-")}
+      className="panel flex scroll-mt-20 flex-col gap-4"
       onSubmit={async (event: React.FormEvent) => {
         event.preventDefault();
         if (!save) return;
@@ -145,16 +148,7 @@ function Settings({ user }: { user: CurrentUser }) {
         title="Profile"
         description={`Your ${terms.org} name is shown on the workouts and backblasts you write.`}
       >
-        <div className="flex flex-col gap-1.5">
-          <span className="label">{terms.org} name</span>
-          {/* Set at sign-up for good: the roster, backblasts and stats all find you by it. */}
-          <p className="input cursor-default text-ink" aria-readonly="true">
-            {user.name}
-          </p>
-          <span className="text-xs text-muted">
-            Your name was set when you signed up and can&apos;t be changed.
-          </span>
-        </div>
+        <ProfileName user={user} label={`${terms.org} name`} />
       </Section>
 
       <Section

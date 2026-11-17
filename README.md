@@ -221,7 +221,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   already taken by a Rocket account are left out after Google), and only a roster name is
   accepted unless **I'm not on the roster yet** is ticked. It comes with a warning that it must
   match the database (the roster) exactly and can't be changed once the account is set up, and the first tap shows it back ("You'll be …
-  on Rocket, for good") to confirm with a second. Settings shows it but doesn't let it change. The top bar and menu stay hidden until the Welcome step is done (it has **Not you? Sign out** instead). Signing in with
+  on Rocket, for good") to confirm with a second. Settings shows it but doesn't let it change, unless it's no longer on your region's roster
+  (renamed or corrected there): then a warning at the top of each screen says so, with **Fix it
+  in Settings** (and **Not now**, until Rocket next opens), and Settings → Profile lets you choose
+  your name again from the roster (not one taken on Rocket), confirmed the same way. The top bar and menu stay hidden until the Welcome step is done (it has **Not you? Sign out** instead). Signing in with
   Google using the same email as an existing account opens that account. The F3 name is also kept
   as `f3_name` in the account, since each Google sign-in overwrites `name` with the Google name.
   Setup: see "Google sign-in" below.
