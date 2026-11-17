@@ -273,13 +273,8 @@ function Row({
       draggable={false}
       className="group flex items-center gap-4 rounded-xl px-3 py-3.5 transition-colors hover:bg-hover"
     >
-      <span
-        className={
-          draft
-            ? "h-8 w-0.5 shrink-0 rounded-full bg-accent shadow-[0_0_8px_var(--color-accent)]"
-            : "h-8 w-0.5 shrink-0 rounded-full bg-line-strong transition-colors group-hover:bg-accent group-hover:shadow-[0_0_8px_var(--color-accent)]"
-        }
-      />
+      {/* The same for every row, drafts included; it lights up on hover. */}
+      <span className="h-8 w-0.5 shrink-0 rounded-full bg-line-strong transition-colors group-hover:bg-accent group-hover:shadow-[0_0_8px_var(--color-accent)]" />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium text-ink">
           <Highlight text={item.title || untitled(item)} words={highlight} />

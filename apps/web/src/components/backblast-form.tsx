@@ -645,6 +645,7 @@ export function BackblastForm({
                     }
                     onChange={setThangs}
                     placeholder="The actual workout"
+                    minBoxHeight={320}
                   />
                 </div>
               ) : (
@@ -653,7 +654,10 @@ export function BackblastForm({
                   <textarea
                     value={backblast[name] ?? ""}
                     onChange={(e) => set(name, e.target.value)}
-                    className="input min-h-56 resize-y text-base leading-relaxed"
+                    // Room to write: Introduction and Warm-o-rama run long.
+                    className={`input resize-y text-base leading-relaxed ${
+                      name === "wordsOfWisdom" ? "min-h-56" : "min-h-80"
+                    }`}
                   />
                 </label>
               ),

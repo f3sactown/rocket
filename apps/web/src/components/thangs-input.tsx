@@ -27,10 +27,13 @@ export function ThangsInput({
   value,
   onChange,
   placeholder,
+  minBoxHeight = 96,
 }: {
   value: Thang[];
   onChange: (thangs: Thang[]) => void;
   placeholder: string;
+  /** The least height for each box (down a long page, the screen leaves little room). */
+  minBoxHeight?: number;
 }) {
   const rows = value.length > 0 ? value : [{ text: "" }];
   const firstBox = useRef<HTMLTextAreaElement>(null);
@@ -52,7 +55,7 @@ export function ThangsInput({
         box.getBoundingClientRect().bottom;
       const add = end.current ? end.current.offsetHeight + 16 : 0;
       const room = window.innerHeight - top - rest - add - 12;
-      setBoxHeight(Math.max(96, Math.min(room, 640)));
+      setBoxHeight(Math.max(minBoxHeight, Math.min(room, 640)));
     };
     const frame = requestAnimationFrame(fit);
     window.addEventListener("resize", fit);
@@ -60,7 +63,7 @@ export function ThangsInput({
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", fit);
     };
-  }, []);
+  }, [minBoxHeight]);
   const update = (index: number, patch: Partial<Thang>) =>
     onChange(rows.map((t, i) => (i === index ? { ...t, ...patch } : t)));
 
