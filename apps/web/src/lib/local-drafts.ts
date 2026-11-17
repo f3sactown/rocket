@@ -20,6 +20,8 @@ export interface Backup {
   content: Backblast;
   /** Done was tapped offline: it's finished once it's sent, not left a draft. */
   publish?: boolean;
+  /** Whose it is: only sent, listed or reopened while that account is signed in. */
+  userId?: string;
 }
 
 const PREFIX = "rocket-unsaved:";
@@ -43,11 +45,21 @@ export function readBackup(key: string): Backup | null {
   }
 }
 
-export function writeBackup(key: string, content: Backblast, publish = false) {
+export function writeBackup(
+  key: string,
+  content: Backblast,
+  userId: string,
+  publish = false,
+) {
   try {
     localStorage.setItem(
       key,
-      JSON.stringify({ at: Date.now(), content, publish } satisfies Backup),
+      JSON.stringify({
+        at: Date.now(),
+        content,
+        publish,
+        userId,
+      } satisfies Backup),
     );
   } catch {
     // No room or no storage: it still saves to Rocket as usual.
@@ -79,8 +91,12 @@ export interface LocalDraft {
   backup: Backup;
 }
 
-/** Everything kept on the phone, newest first. */
-export function localDrafts(kind?: DraftKind): LocalDraft[] {
+/** Whether a kept copy is this account's (one kept before accounts were noted counts as anyone's). */
+export const ownedBy = (backup: Backup, userId: string) =>
+  !backup.userId || backup.userId === userId;
+
+/** Everything kept on the phone (for one account, given its ID), newest first. */
+export function localDrafts(kind?: DraftKind, userId?: string): LocalDraft[] {
   const found: LocalDraft[] = [];
   try {
     for (let i = 0; i < localStorage.length; i++) {
@@ -94,6 +110,7 @@ export function localDrafts(kind?: DraftKind): LocalDraft[] {
       if (kind && k !== kind) continue;
       const backup = readBackup(key);
       if (!backup || !id) continue;
+      if (userId && !ownedBy(backup, userId)) continue;
       const isNew = id.startsWith(NEW);
       found.push({
         key,
@@ -110,9 +127,12 @@ export function localDrafts(kind?: DraftKind): LocalDraft[] {
 }
 
 /** A new backblast for this workout already started on the phone, so it's carried on, not doubled. */
-export function localBackblastFor(workoutId: string): string | null {
+export function localBackblastFor(
+  workoutId: string,
+  userId: string,
+): string | null {
   return (
-    localDrafts("backblast").find(
+    localDrafts("backblast", userId).find(
       (d) => d.localId && d.backup.content.workoutId === workoutId,
     )?.localId ?? null
   );
@@ -144,7 +164,8 @@ export function sendLocalDrafts(user: {
   if (!navigator.onLine) return Promise.resolve(0);
   sending ??= (async () => {
     let sent = 0;
-    for (const draft of localDrafts()) {
+    // Only this account's: another account's wait for it to sign in again.
+    for (const draft of localDrafts(undefined, user.id)) {
       if (openKeys.has(draft.key)) continue;
       try {
         if (await send(draft, user)) sent++;

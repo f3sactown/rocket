@@ -31,10 +31,13 @@ export function DraftSender() {
 }
 
 /** What's kept on the phone, kept up to date. */
-export function useLocalDrafts(kind?: DraftKind): LocalDraft[] {
+export function useLocalDrafts(
+  kind?: DraftKind,
+  userId?: string,
+): LocalDraft[] {
   const [drafts, setDrafts] = useState<LocalDraft[]>([]);
   useEffect(() => {
-    const read = () => setDrafts(localDrafts(kind));
+    const read = () => setDrafts(localDrafts(kind, userId));
     read();
     window.addEventListener(LOCAL_DRAFTS_EVENT, read);
     window.addEventListener("storage", read);
@@ -42,7 +45,7 @@ export function useLocalDrafts(kind?: DraftKind): LocalDraft[] {
       window.removeEventListener(LOCAL_DRAFTS_EVENT, read);
       window.removeEventListener("storage", read);
     };
-  }, [kind]);
+  }, [kind, userId]);
   return drafts;
 }
 
@@ -65,7 +68,8 @@ export function LocalDraftList({
   kind?: DraftKind;
   title?: string;
 }) {
-  const drafts = useLocalDrafts(kind).filter((d) => !d.id);
+  const { user } = useAuth();
+  const drafts = useLocalDrafts(kind, user?.id).filter((d) => !d.id);
   const { offline } = useConnection();
   if (!drafts.length) return null;
   return (
