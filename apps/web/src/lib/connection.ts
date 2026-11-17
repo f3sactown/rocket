@@ -37,6 +37,10 @@ function update() {
   if (next.offline === snapshot.offline && next.checking === snapshot.checking)
     return;
   snapshot = next;
+  // The accent turns grey while offline (globals.css).
+  document.documentElement.dataset.connection = next.offline
+    ? "offline"
+    : "online";
   // While offline, look now and then for the connection coming back.
   if (next.offline && !ping) {
     ping = setInterval(lookForConnection, PING_MS);
