@@ -219,22 +219,49 @@ export function loadRoster(region: Region): Promise<string[]> {
         .map((r) => r.name)
         .filter((name) => !isPlaceholderPax(name)),
     );
+  return cached(`roster:${region.id}`, () => rosterFromSheet(region));
+}
+
+/** Every PAX name on the region's roster, read from its Google Sheet itself, sorted. */
+async function rosterFromSheet(region: Region): Promise<string[]> {
   const { sheet, name } = region.config.roster;
-  return cached(`roster:${region.id}`, async () => {
-    const cols = await columns(region.sheet_id, sheet, { name });
-    const table = await querySheet(
-      region.sheet_id,
-      sheet,
-      `select ${cols.name}`,
-    );
-    return [
-      ...new Set(
-        rows(table)
-          .map((row) => row[0])
-          .filter((name) => name && !isPlaceholderPax(name)),
-      ),
-    ].sort((a, b) => a.localeCompare(b));
-  });
+  const cols = await columns(region.sheet_id, sheet, { name });
+  const table = await querySheet(region.sheet_id, sheet, `select ${cols.name}`);
+  return [
+    ...new Set(
+      rows(table)
+        .map((row) => row[0])
+        .filter((name) => name && !isPlaceholderPax(name)),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * The region's roster for choosing your name at sign-up. Before signing in (signing up with
+ * email), the synced copy can't be read, so it comes from the region's sheet, which is public.
+ */
+export function loadRosterForSignUp(
+  region: Region,
+  signedIn: boolean,
+): Promise<string[]> {
+  if (signedIn) return loadRoster(region);
+  return cached(`roster-sheet:${region.id}`, () => rosterFromSheet(region));
+}
+
+/**
+ * Names in a region already taken by Rocket accounts (other than yours), to leave out of the
+ * choice at sign-up. Only readable signed in; before that, none are known.
+ */
+export async function takenNames(
+  region: Region,
+  exceptUserId: string,
+): Promise<Set<string>> {
+  const { data } = await createClient()
+    .from("profiles")
+    .select("name")
+    .eq("region_id", region.id)
+    .neq("id", exceptUserId);
+  return new Set((data ?? []).map((p) => p.name.trim().toLowerCase()));
 }
 
 /** Who has posted at an AO in the last few months, most posts first. */

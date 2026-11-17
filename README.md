@@ -216,8 +216,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   back. Google signs in or signs up with no password. The
   first time, a **Welcome** step asks for your region and then your F3 name (Google gives your
   real name and no region, and Rocket matches PAX to their roster by F3 name), then you're in.
-  Signing up with email asks for the same two first. Either way the name comes with a warning that
-  it can't be changed once the account is set up, and the first tap shows it back ("You'll be …
+  Signing up with email asks for the same two first. Either way the name is picked from the chosen region's roster (suggested as you type; read
+  from the region's sheet when signing up with email, as the synced roster needs a sign-in; names
+  already taken by a Rocket account are left out after Google), and only a roster name is
+  accepted unless **I'm not on the roster yet** is ticked. It comes with a warning that it must
+  match the database (the roster) exactly and can't be changed once the account is set up, and the first tap shows it back ("You'll be …
   on Rocket, for good") to confirm with a second. Settings shows it but doesn't let it change. Signing in with
   Google using the same email as an existing account opens that account. The F3 name is also kept
   as `f3_name` in the account, since each Google sign-in overwrites `name` with the Google name.
