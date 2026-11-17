@@ -196,7 +196,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   service worker. A request waiting more than 1.5 seconds shows **Checking connection…** at the top,
   and the workout, Run workout and backblast screens say "Waiting for a connection… the copy
   saved on this phone shows in a moment". A request with no kept copy gives up after 15 seconds
-  (at once when already offline), except a page itself; signing out drops the kept data. An **Offline** banner says what still works. The workout and
+  (at once when already offline), except a page itself; signing out drops the kept data. An **Offline** banner says what still works, and the accent color (buttons, outlines, the rocket) turns grey until the connection's back (`<html data-connection>`). The workout and
   backblast forms keep a copy of what's typed on the phone (`rocket-unsaved:*` in local storage)
   until it's saved, so a dropped connection or a closed app loses nothing: the status shows "Not
   saved yet · kept on this phone", it saves again when the connection returns, and opening the
