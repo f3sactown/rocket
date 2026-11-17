@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useConnection } from "@/lib/connection";
-import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "./auth-provider";
 import { needsConnection } from "./offline-gate";
+import { SignOutOffline, signOut } from "./sign-out";
 import {
   ArchiveIcon,
   BookIcon,
@@ -21,6 +21,7 @@ import {
   PeopleIcon,
   PlusIcon,
   SearchIcon,
+  SparkleIcon,
 } from "./icons";
 import { RocketArt } from "./rocket-art";
 import { Wordmark } from "./wordmark";
@@ -55,6 +56,13 @@ const LINKS: {
     icon: <PlusIcon />,
     sub: true,
     match: (path) => path.startsWith("/workouts/new"),
+  },
+  {
+    href: "/workouts/generate",
+    label: "Generate workout",
+    icon: <SparkleIcon />,
+    sub: true,
+    match: (path) => path.startsWith("/workouts/generate"),
   },
   {
     href: "/backblasts",
@@ -121,6 +129,7 @@ export function AppNav() {
   const pathname = usePathname();
   const { offline } = useConnection();
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
 
   // Close the menu on Escape or a tap outside it.
@@ -224,13 +233,21 @@ export function AppNav() {
             type="button"
             onClick={() => {
               setOpen(false);
-              createClient().auth.signOut();
+              // Offline, it first says what signing out means.
+              if (offline) setSigningOut(true);
+              else void signOut(false);
             }}
             className="mt-1 rounded-xl border-t border-line px-3 py-2.5 text-left text-sm text-muted transition-colors hover:text-accent"
           >
             Sign out
           </button>
         </div>
+      )}
+      {signingOut && (
+        <SignOutOffline
+          userId={user.id}
+          onCancel={() => setSigningOut(false)}
+        />
       )}
     </nav>
   );

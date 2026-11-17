@@ -34,8 +34,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     when scrolled away, and the screen stays awake. A stopwatch shows hundredths of a second. On the
     workout's day, five minutes before the end of its time (or 45 minutes after a start with no
     end), a **5 minutes left** banner with a beep says it's time to wrap up for COT. At the bottom, a **Close** button back to the workout's page sits to the left of
-    Create backblast (or Continue or Open backblast). Leaving a private workout of yours that way
-    first asks whether to make it public (Make public / Keep private). Tabata and EMOM timers take 1 to 99 rounds.
+    Create backblast (or Continue or Open backblast). Leaving the run of a finished private workout of
+    yours any way (those buttons, the menu, the Rocket logo, any link, or back) first asks whether
+    to make it public (Make public / Keep private), then goes on; closing the app can't be asked
+    about. Tabata and EMOM timers take 1 to 99 rounds.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
     choose again. Each workout shows how many times it's been reused by other Qs (counting archived copies; reusing your own doesn't count, just as you can't like your own).
     A reused workout credits the Q who wrote the first one (`workouts.original_author_id`), even
@@ -57,12 +59,20 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     you type" on a new one, "Saving…" while it saves, then how long ago it was saved ("Saved just
     now", then in steps that grow as it sits: 5, 10 and 15 sec; every 10 sec to a minute; every
     15 sec to 2 min ("1 min 15 sec ago"); every 30 sec to 3 min; then every minute, then hours and
-    days. One just opened shows "Saved" until it saves again). Scrolled down, past that header, a bar pinned to the top shows the title (or "New
+    days. One just opened shows "Saved" until it saves again). Scrolled down, past that header, a bar pinned to the top of what's visible (keyboard up too: it follows the visible area, `lib/visible-top.ts`) shows the title (or "New
     workout" until one is set), the same save status with its dot, and the page being edited
     ("Step 4 of 7 · The Thang"). The last page's button
     is **Done**, which finishes it. The Thang's boxes are all as tall as the screen allows for
     the first while its timer, music and Exicon buttons and "Add another thang" stay in view
     (worked out once, so adding a thang doesn't shrink the first).
+- **Generate workout** (in the menu under New workout, and from the Workouts page): choose 2 to 5
+  of the Exicon's tags, with the same From, All / Exercises / Routines and tag chips as the Exicon,
+  and **Generate** puts a workout together at random from them (`generateWorkout` in
+  `packages/core`): a Warm-o-rama of five warm-up exercises (those tagged Warm-Up and one of the
+  tags first), then three thangs, each a routine or three or four exercises done as an AMRAP,
+  EMOM, Tabata or rounds for time, with the timer for Run workout. Entries with more of the tags
+  come up more often, and nothing repeats. **Generate again** makes another; **Create workout from
+  these** opens New workout with the Warm-o-rama and The Thang filled in. It needs a connection.
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
   F3's, FiA's or both (the default), going by each author's region (authors with no region always
   show), and **Include my workouts** (off by default) adds yours; both are saved to your account.
@@ -198,7 +208,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   Run workout, where you'd lose your place (they save once they can). A request waiting more than 1.5 seconds shows **Checking connection…** at the top,
   and the workout, Run workout and backblast screens say "Waiting for a connection… the copy
   saved on this phone shows in a moment". A request with no kept copy gives up after 15 seconds
-  (at once when already offline), except a page itself; signing out drops the kept data. An **Offline** banner says what still works, and the accent color (buttons, outlines, the rocket) turns grey until the connection's back (`<html data-connection>`). The workout and
+  (at once when already offline), except a page itself; signing out drops the kept data. **Signing out offline** first says what it means (`SignOutOffline`): you can't sign back in until you're online, the copies kept for offline use are removed, anything written offline that hasn't reached Rocket stays on the phone and is saved once you're back in that account with a connection, and everything is fetched fresh after. It signs out on the phone only (Supabase can't be told offline). What's kept on the phone notes whose it is, and is only sent, listed or reopened for that account. An **Offline** banner says what still works, and the accent color (buttons, outlines, the rocket) turns grey until the connection's back (`<html data-connection>`). The workout and
   backblast forms keep a copy of what's typed on the phone (`rocket-unsaved:*` in local storage)
   until it's saved, so a dropped connection or a closed app loses nothing: the status shows "Not
   saved yet · kept on this phone", it saves again when the connection returns, and opening the
@@ -223,7 +233,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   still shows unless it's private. **Archive** lists what you've archived, by workout date (newest first); **Search** finds workouts and backblasts by any word, with matches
   highlighted.
 - **Testing banner:** while the version is an alpha or beta (`0.1.0-alpha.7`), a slim bar across the
-  top of every screen says Rocket is being tested and things may change or not work as expected;
+  top of every screen says Rocket is being tested and things may change or not work as expected, and asks people to contact the developer with any issues;
   it goes away by itself with the first full release.
 - **Continue with Google:** the sign-in screen leads with Google: one **Continue with Google**
   button, with a small **Sign in or sign up with email** link under it that opens the email and
@@ -524,9 +534,11 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
   AOs, roster, regulars per AO (last 3 months), all-time totals per PAX and the newest post date
   into Supabase, and the app reads those. A region that hasn't synced yet is read from its sheet live. A failed sync keeps
   the previous copy and shows the error in Settings.
-- **Placeholders:** a name like "Site Closed (Archived)" that a sheet puts in the PAX column to mark a
-  closed AO isn't a PAX, so it's left out of rosters, regulars and PAX totals (`isPlaceholderPax`
-  in `@rocket/core`; the sync does the same).
+- **Placeholders and retired PAX:** a name like "Site Closed (Archived)" that a sheet puts in the
+  PAX column to mark a closed AO isn't a PAX, and a PAX marked retired ("007 (Retired)") is hidden
+  too: both are left out of rosters, the PAX page, Name-o-rama suggestions, regulars, PAX totals
+  and the names to choose at sign-up (`isPlaceholderPax` in `@rocket/core`; the sync does the
+  same).
 - The sync needs the repository **secret** `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project
   Settings → API Keys → secret key) alongside the `SUPABASE_URL` variable.
 - Sheets are read with Google's Visualization API (`apps/web/src/lib/sheets.ts` in the app,

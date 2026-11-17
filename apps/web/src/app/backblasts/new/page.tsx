@@ -73,7 +73,7 @@ function NewBackblast({ user }: { user: CurrentUser }) {
   if (from === null) return <div className="card h-96 animate-pulse" />;
   // The workout can't be loaded (offline, not kept), but this backblast was started on the
   // phone: carry on from what's kept.
-  const keptLocal = localId ?? localBackblastFor(workoutId);
+  const keptLocal = localId ?? localBackblastFor(workoutId, user.id);
   const kept =
     typeof from === "string" && keptLocal
       ? readBackup(newBackupKey("backblast", keptLocal))

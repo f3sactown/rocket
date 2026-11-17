@@ -246,58 +246,11 @@ export function LibraryBrowser({
 }) {
   const library = useLoad(loadLibrary, []);
   const [query, setQuery] = useState("");
-  const [kind, setKind] = useState<Kind>("all");
-  const [tags, setTags] = useState<string[]>(initialTags);
-  // Every source is on to start (F3, FiA and each configured region), so this tracks the ones
-  // turned off; at least one stays on.
-  const [off, setOff] = useState<string[]>([]);
-  const regions = useLoad(() => loadRegions(), []);
   const [shown, setShown] = useState(PAGE);
   const [open, setOpen] = useState<string | null>(null);
-
   const entries = useMemo(() => library.value ?? [], [library.value]);
-  // Each region's color, the same for every user.
-  const colors = useMemo(
-    () => regionColors(regions.value ?? []),
-    [regions.value],
-  );
-  // The chips: F3, FiA, then every configured region (whether or not it has entries yet).
-  const chips = useMemo(() => {
-    const region = SOURCES.find((s) => s.value === "region")!;
-    return [
-      ...SOURCES.filter((s) => s.value !== "region").map((s) => ({
-        key: s.value as string,
-        label: s.label,
-        color: s.color,
-      })),
-      ...(regions.value ?? []).map((r) => ({
-        key: r.id,
-        label: r.name,
-        color: colors.get(r.id) ?? region.color,
-      })),
-    ];
-  }, [regions.value, colors]);
-  // Every tag but "Routine" (that's the Exercises / Routines switch), in alphabetical order. Tags
-  // that differ only in case ("Warm-Up", "Warm-up") are one tag, shown as its most used spelling.
-  const allTags = useMemo(() => {
-    const spellings = new Map<string, Map<string, number>>();
-    for (const entry of entries)
-      for (const tag of entry.tags) {
-        const key = tag.toLowerCase();
-        if (key === "routine") continue;
-        const counts = spellings.get(key) ?? new Map<string, number>();
-        counts.set(tag, (counts.get(tag) ?? 0) + 1);
-        spellings.set(key, counts);
-      }
-    return [...spellings.values()]
-      .map((counts) => [...counts].sort((a, b) => b[1] - a[1])[0]![0])
-      .sort((a, b) =>
-        a.localeCompare(b, undefined, { sensitivity: "base", numeric: true }),
-      );
-  }, [entries]);
-  /** Whether a tag is chosen, ignoring case. */
-  const chosen = (tag: string) =>
-    tags.some((t) => t.toLowerCase() === tag.toLowerCase());
+  const filters = useExiconFilters(entries, { initialTags });
+  const { kind, tags, off, colors } = filters;
 
   const results = useMemo(() => {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
@@ -315,16 +268,6 @@ export function LibraryBrowser({
       return words.every((word) => text.includes(word));
     });
   }, [entries, kind, tags, query, off]);
-
-  function toggleTag(tag: string) {
-    setShown(PAGE);
-    const key = tag.toLowerCase();
-    setTags((current) =>
-      current.some((t) => t.toLowerCase() === key)
-        ? current.filter((t) => t.toLowerCase() !== key)
-        : [...current, tag],
-    );
-  }
 
   return (
     <div
@@ -345,81 +288,7 @@ export function LibraryBrowser({
         }}
         className="input text-base"
       />
-      <SourceChips
-        chips={chips}
-        off={off}
-        onChange={(next) => {
-          setShown(PAGE);
-          setOff(next);
-        }}
-      />
-      <div
-        role="radiogroup"
-        aria-label="Exercises or routines"
-        className="grid grid-cols-3 gap-1 rounded-full border border-line bg-panel p-1"
-      >
-        {KINDS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={kind === option.value}
-            onClick={() => {
-              setKind(option.value);
-              setShown(PAGE);
-            }}
-            className={`rounded-full px-2 py-1.5 text-sm font-medium transition-colors ${
-              kind === option.value
-                ? "bg-surface-raised text-ink shadow-sm"
-                : "text-muted hover:text-ink"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-      {allTags.length > 0 && (
-        <>
-          {/* On a phone: two rows that scroll sideways together, the first half of the tags in
-              the top row, so the list keeps the room. */}
-          <div
-            aria-label="Tags"
-            className="scroll-row -mx-4 shrink-0 overflow-x-auto px-4 pb-1 sm:hidden"
-          >
-            <div className="flex w-max flex-col gap-1.5">
-              {[
-                allTags.slice(0, Math.ceil(allTags.length / 2)),
-                allTags.slice(Math.ceil(allTags.length / 2)),
-              ].map((row, index) => (
-                <div key={index} className="flex gap-1.5">
-                  {row.map((tag) => (
-                    <TagChip
-                      key={tag}
-                      tag={tag}
-                      on={chosen(tag)}
-                      onToggle={toggleTag}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* On a wider screen: every tag, wrapping onto as many rows as it takes. */}
-          <div
-            aria-label="Tags"
-            className="hidden shrink-0 flex-wrap gap-1.5 sm:flex"
-          >
-            {allTags.map((tag) => (
-              <TagChip
-                key={tag}
-                tag={tag}
-                on={chosen(tag)}
-                onToggle={toggleTag}
-              />
-            ))}
-          </div>
-        </>
-      )}
+      <ExiconFilterControls filters={filters} onChange={() => setShown(PAGE)} />
 
       <div
         className={
@@ -446,7 +315,7 @@ export function LibraryBrowser({
               {tags.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setTags([])}
+                  onClick={() => filters.clearTags()}
                   className="ml-2 underline"
                 >
                   Clear tags
@@ -590,5 +459,200 @@ function Entry({
         </div>
       )}
     </li>
+  );
+}
+
+/** The Exicon's filters: which sources, exercises or routines, and which tags. */
+export interface ExiconFilters {
+  kind: Kind;
+  setKind: (kind: Kind) => void;
+  tags: string[];
+  toggleTag: (tag: string) => void;
+  clearTags: () => void;
+  /** Sources turned off (F3, FiA, or a region's ID); at least one stays on. */
+  off: string[];
+  setOff: (off: string[]) => void;
+  /** The From chips: F3, FiA, then every configured region. */
+  chips: { key: string; label: string; color: string }[];
+  colors: Map<string, string>;
+  /** Every tag but "Routine", one spelling each, in alphabetical order. */
+  allTags: string[];
+  chosen: (tag: string) => boolean;
+  /** Whether an entry is from a source that's on, and of the kind chosen (tags aside). */
+  inScope: (entry: LibraryEntry) => boolean;
+}
+
+/** The Exicon's filters and what they're built from (the Exicon page and Generate workout). */
+export function useExiconFilters(
+  entries: LibraryEntry[],
+  {
+    initialTags = [],
+    maxTags,
+  }: { initialTags?: string[]; maxTags?: number } = {},
+): ExiconFilters {
+  const [kind, setKind] = useState<Kind>("all");
+  const [tags, setTags] = useState<string[]>(initialTags);
+  // Every source is on to start (F3, FiA and each configured region), so this tracks the ones
+  // turned off; at least one stays on.
+  const [off, setOff] = useState<string[]>([]);
+  const regions = useLoad(() => loadRegions(), []);
+  // Each region's color, the same for every user.
+  const colors = useMemo(
+    () => regionColors(regions.value ?? []),
+    [regions.value],
+  );
+  const chips = useMemo(() => {
+    const region = SOURCES.find((s) => s.value === "region")!;
+    return [
+      ...SOURCES.filter((s) => s.value !== "region").map((s) => ({
+        key: s.value as string,
+        label: s.label,
+        color: s.color,
+      })),
+      ...(regions.value ?? []).map((r) => ({
+        key: r.id,
+        label: r.name,
+        color: colors.get(r.id) ?? region.color,
+      })),
+    ];
+  }, [regions.value, colors]);
+  // Tags that differ only in case ("Warm-Up", "Warm-up") are one tag, shown as its most used
+  // spelling. "Routine" is the Exercises / Routines switch instead.
+  const allTags = useMemo(() => {
+    const spellings = new Map<string, Map<string, number>>();
+    for (const entry of entries)
+      for (const tag of entry.tags) {
+        const key = tag.toLowerCase();
+        if (key === "routine") continue;
+        const counts = spellings.get(key) ?? new Map<string, number>();
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+        spellings.set(key, counts);
+      }
+    return [...spellings.values()]
+      .map((counts) => [...counts].sort((a, b) => b[1] - a[1])[0]![0])
+      .sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base", numeric: true }),
+      );
+  }, [entries]);
+  const chosen = (tag: string) =>
+    tags.some((t) => t.toLowerCase() === tag.toLowerCase());
+  const toggleTag = (tag: string) => {
+    const key = tag.toLowerCase();
+    setTags((current) =>
+      current.some((t) => t.toLowerCase() === key)
+        ? current.filter((t) => t.toLowerCase() !== key)
+        : maxTags !== undefined && current.length >= maxTags
+          ? current
+          : [...current, tag],
+    );
+  };
+  const inScope = (entry: LibraryEntry) =>
+    !off.includes(sourceKey(entry)) &&
+    !(kind === "routine" && !entry.isRoutine) &&
+    !(kind === "exercise" && entry.isRoutine);
+  return {
+    kind,
+    setKind,
+    tags,
+    toggleTag,
+    clearTags: () => setTags([]),
+    off,
+    setOff,
+    chips,
+    colors,
+    allTags,
+    chosen,
+    inScope,
+  };
+}
+
+/** The Exicon's From chips, Exercises / Routines switch and tag chips. */
+export function ExiconFilterControls({
+  filters,
+  onChange,
+}: {
+  filters: ExiconFilters;
+  /** After any change (e.g. to show the first page of results again). */
+  onChange?: () => void;
+}) {
+  const { kind, setKind, chips, off, setOff, allTags, chosen, toggleTag } =
+    filters;
+  const toggle = (tag: string) => {
+    toggleTag(tag);
+    onChange?.();
+  };
+  return (
+    <>
+      <SourceChips
+        chips={chips}
+        off={off}
+        onChange={(next) => {
+          setOff(next);
+          onChange?.();
+        }}
+      />
+      <div
+        role="radiogroup"
+        aria-label="Exercises or routines"
+        className="grid grid-cols-3 gap-1 rounded-full border border-line bg-panel p-1"
+      >
+        {KINDS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={kind === option.value}
+            onClick={() => {
+              setKind(option.value);
+              onChange?.();
+            }}
+            className={`rounded-full px-2 py-1.5 text-sm font-medium transition-colors ${
+              kind === option.value
+                ? "bg-surface-raised text-ink shadow-sm"
+                : "text-muted hover:text-ink"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      {allTags.length > 0 && (
+        <>
+          {/* On a phone: two rows that scroll sideways together, the first half of the tags in
+              the top row, so the list keeps the room. */}
+          <div
+            aria-label="Tags"
+            className="scroll-row -mx-4 shrink-0 overflow-x-auto px-4 pb-1 sm:hidden"
+          >
+            <div className="flex w-max flex-col gap-1.5">
+              {[
+                allTags.slice(0, Math.ceil(allTags.length / 2)),
+                allTags.slice(Math.ceil(allTags.length / 2)),
+              ].map((row, index) => (
+                <div key={index} className="flex gap-1.5">
+                  {row.map((tag) => (
+                    <TagChip
+                      key={tag}
+                      tag={tag}
+                      on={chosen(tag)}
+                      onToggle={toggle}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* On a wider screen: every tag, wrapping onto as many rows as it takes. */}
+          <div
+            aria-label="Tags"
+            className="hidden shrink-0 flex-wrap gap-1.5 sm:flex"
+          >
+            {allTags.map((tag) => (
+              <TagChip key={tag} tag={tag} on={chosen(tag)} onToggle={toggle} />
+            ))}
+          </div>
+        </>
+      )}
+    </>
   );
 }

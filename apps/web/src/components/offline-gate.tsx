@@ -12,6 +12,7 @@ export const ONLINE_ONLY = [
   "/archive",
   "/search",
   "/pax",
+  "/workouts/generate",
 ];
 
 /** Screens that aren't started over when the connection's back: forms and running a workout. */
