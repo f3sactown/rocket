@@ -34,8 +34,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     when scrolled away, and the screen stays awake. A stopwatch shows hundredths of a second. On the
     workout's day, five minutes before the end of its time (or 45 minutes after a start with no
     end), a **5 minutes left** banner with a beep says it's time to wrap up for COT. At the bottom, a **Close** button back to the workout's page sits to the left of
-    Create backblast (or Continue or Open backblast). Leaving a private workout of yours that way
-    first asks whether to make it public (Make public / Keep private). Tabata and EMOM timers take 1 to 99 rounds.
+    Create backblast (or Continue or Open backblast). Leaving the run of a finished private workout of
+    yours any way (those buttons, the menu, the Rocket logo, any link, or back) first asks whether
+    to make it public (Make public / Keep private), then goes on; closing the app can't be asked
+    about. Tabata and EMOM timers take 1 to 99 rounds.
   - **Reuse** starts a new workout from an existing one, leaving the AO, location, date and time to
     choose again. Each workout shows how many times it's been reused by other Qs (counting archived copies; reusing your own doesn't count, just as you can't like your own).
     A reused workout credits the Q who wrote the first one (`workouts.original_author_id`), even
