@@ -261,7 +261,11 @@ self.addEventListener("fetch", (event) => {
 // A window asking how the connection is (when it opens).
 self.addEventListener("message", (event) => {
   // The app reached the internet itself: back online.
-  if (event.data?.type === "rocket-online") wentOnline();
+  if (event.data?.type === "rocket-online") {
+    wentOnline();
+    // Done: the app loads its screens again now, fresh.
+    event.ports[0]?.postMessage("ok");
+  }
   if (event.data?.type === "rocket-connection?")
     event.source?.postMessage({
       type: "rocket-connection",
