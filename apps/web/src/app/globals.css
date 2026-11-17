@@ -178,6 +178,22 @@
   --accent-soft: rgb(124 58 237 / 0.12);
 }
 
+/*
+ * Offline: the accent turns grey, whichever was chosen, so the whole app shows the state it's in
+ * (<html data-connection="offline">, set by lib/connection.ts).
+ */
+:root[data-connection="offline"] {
+  --accent: #9ca3af !important;
+  --accent-soft: rgb(156 163 175 / 0.14) !important;
+  --rocket-light: #d1d5db !important;
+  --rocket-mid: #6b7280 !important;
+  --rocket-dark: #4b5563 !important;
+}
+:root[data-connection="offline"][data-theme="light"] {
+  --accent: #6b7280 !important;
+  --accent-soft: rgb(107 114 128 / 0.12) !important;
+}
+
 @theme inline {
   --color-night: var(--night);
   --color-surface: var(--surface);

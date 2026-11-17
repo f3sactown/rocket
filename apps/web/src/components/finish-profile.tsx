@@ -5,7 +5,7 @@ import { loadRegions } from "@/lib/regions";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/use-region";
 import type { CurrentUser } from "./auth-provider";
-import { RegionSelect } from "./auth-form";
+import { ConfirmName, NameField, RegionSelect } from "./auth-form";
 import { ArrowIcon } from "./icons";
 import { chooseRegion } from "./region-settings";
 import { Wordmark } from "./wordmark";
@@ -30,6 +30,10 @@ export function FinishProfile({ user }: { user: CurrentUser }) {
   const regions = useLoad(() => loadRegions(), []);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The name about to be set for good, once it's been shown back to confirm.
+  const [confirming, setConfirming] = useState<string | null>(null);
+  // The region chosen (until then, the profile's), whose roster the name is picked from.
+  const [regionId, setRegionId] = useState<string | null>(null);
   const hadPassword = user.providers.includes("email");
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -37,6 +41,8 @@ export function FinishProfile({ user }: { user: CurrentUser }) {
     const form = new FormData(event.currentTarget);
     const name = String(form.get("name")).trim();
     if (!name) return;
+    // It can't be changed later: show it back once before it's set.
+    if (confirming !== name) return setConfirming(name);
     const region = regions.value?.find((r) => r.id === form.get("region"));
     setPending(true);
     setError(null);
@@ -87,33 +93,32 @@ export function FinishProfile({ user }: { user: CurrentUser }) {
       </header>
       <p className="text-sm text-ink-soft">
         You&apos;re signed in with Google as {user.email}. One more step: your
-        F3 name and region, so Rocket can match you to your region&apos;s roster
+        region and F3 name, so Rocket can match you to your region&apos;s roster
         and show your posts and Qs.
       </p>
       {!profile.value ? (
         <div className="panel h-40 animate-pulse" />
       ) : (
         <div className="panel flex flex-col gap-4">
-          <label className="label flex flex-col gap-1.5">
-            F3 name
-            <input
-              name="name"
-              required
-              // A new Google account's profile holds its real name, so it starts blank; an account
-              // that had a password already has its F3 name.
-              defaultValue={hadPassword ? profile.value.name : ""}
-              autoComplete="off"
-              className="input"
-            />
-            <span className="text-xs font-normal text-muted">
-              As it&apos;s written on your region&apos;s roster. It&apos;s the
-              name others see on your workouts and backblasts.
-            </span>
-          </label>
           <RegionSelect
             regions={regions.value}
             defaultValue={profile.value.region_id ?? ""}
+            onChange={(id) => {
+              setRegionId(id);
+              setConfirming(null);
+            }}
           />
+          <NameField
+            region={regions.value?.find(
+              (r) => r.id === (regionId ?? profile.value?.region_id),
+            )}
+            userId={user.id}
+            // A new Google account's profile holds its real name, so it starts blank; an account
+            // that had a password already has its F3 name.
+            defaultValue={hadPassword ? profile.value.name : ""}
+            onChange={() => setConfirming(null)}
+          />
+          {confirming && <ConfirmName name={confirming} />}
           {error && <p className="text-sm text-accent">{error}</p>}
         </div>
       )}
@@ -123,7 +128,19 @@ export function FinishProfile({ user }: { user: CurrentUser }) {
         className="btn w-full"
       >
         <ArrowIcon />
-        {pending ? "…" : "Continue"}
+        {pending
+          ? "…"
+          : confirming
+            ? `Yes, I'm ${confirming}: continue`
+            : "Continue"}
+      </button>
+      {/* No menu while signing up, so the way out is here. */}
+      <button
+        type="button"
+        onClick={() => createClient().auth.signOut()}
+        className="link -mt-2 self-center text-sm"
+      >
+        Not you? Sign out
       </button>
     </form>
   );

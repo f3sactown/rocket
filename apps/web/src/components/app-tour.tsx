@@ -8,16 +8,18 @@ import { DEVICE_SETUP_DONE_EVENT, deviceSetupFinished } from "./device-setup";
 
 /**
  * The app tour: a step-by-step walk through Rocket that spotlights one part of a page at a time,
- * moving between pages as it goes. The main tour runs once per account (after the device setup);
- * the backblast tour runs once, the first time Home shows a workout that needs its backblast.
- * Settings → Tutorial runs them again.
+ * moving between pages as it goes. Along the way the user writes a workout, page by page, taps
+ * Done, then writes that workout's backblast. It runs once per account (after the device setup);
+ * Settings → Tutorial runs it again.
  */
-
-type TourName = "main" | "backblast";
 
 interface Step {
   /** The page the step is on (the tour goes there first); none to stay where the last step left. */
   route?: string;
+  /** Added to the route when the tour opens it. */
+  query?: string;
+  /** Other pages that count as being there (a new workout's address changes once it's saved). */
+  alsoAt?: string[];
   /** The `data-tour` name of what to spotlight; none for a card in the middle of the screen. */
   target?: string;
   title: string;
@@ -26,27 +28,45 @@ interface Step {
   before?: () => void;
   /** Leave the step out when its target isn't on the page (e.g. a Home section that's hidden). */
   optional?: boolean;
+  /** With `optional`: when its target isn't there, leave out the steps of this group after it too. */
+  group?: string;
+  /** The user fills in what's spotlighted: the page stays usable around the tour's card. */
+  interactive?: boolean;
+  /** The step ends when this page opens (the user taps Done), not with Next. */
+  until?: string;
+  /** No Back from here (the step before it can't be returned to, e.g. a finished form). */
+  noBack?: boolean;
 }
 
 const TOUR_EVENT = "rocket-tour";
 /** Asks the PAX page to show tiles down to the PAX the tour opens (it may be far down the list). */
 export const TOUR_SHOW_PAX_EVENT = "rocket-tour-show-pax";
 
-/** Starts a tour now (from Settings). */
-export function startTour(name: TourName = "main") {
-  window.dispatchEvent(new CustomEvent(TOUR_EVENT, { detail: name }));
+/** Starts the tour now (from Settings). */
+export function startTour() {
+  window.dispatchEvent(new Event(TOUR_EVENT));
+}
+
+/** Whether the tour is running (notices wait, so they don't cover it). */
+export function tourRunning(): boolean {
+  return document.documentElement.dataset.tour === "on";
 }
 
 const find = (target: string) =>
   document.querySelector<HTMLElement>(`[data-tour="${target}"]`);
 const click = (selector: string) => () =>
   document.querySelector<HTMLElement>(selector)?.click();
+/** Opens a page of the workout or backblast form. */
+const openPage = (name: string) => click(`[data-step="${name}"]`);
 
-const MAIN: Step[] = [
+/** The page a path is, without a trailing slash. */
+const pageOf = (path: string) => path.replace(/\/$/, "") || "/";
+
+const STEPS: Step[] = [
   {
     route: "/",
     title: "Welcome to Rocket",
-    body: "A quick tour of how to plan a workout, run it at the AO, and write the backblast. It takes about a minute; skip it any time.",
+    body: "A walk through Rocket. You'll write a workout, page by page, then its backblast, and see Discover, the Exicon and PAX. Skip it any time.",
   },
   {
     route: "/",
@@ -106,50 +126,154 @@ const MAIN: Step[] = [
   {
     route: "/",
     target: "home-new-workout",
-    title: "Create your first workout",
-    body: "New workout starts one. Let's look inside.",
+    title: "Write a workout",
+    body: "New workout starts one. Let's write one together: tap Next.",
   },
   {
     route: "/workouts/new",
+    query: "?tour=1",
+    alsoAt: ["/workouts/edit"],
     target: "editor-steps",
     title: "A workout, page by page",
-    body: "Basics, Introduction, Warm-o-rama, The Thang, Notes, Words of Wisdom, then Review. Tap a dash or use Next to move between them.",
+    body: "Basics, Introduction, Warm-o-rama, The Thang, Notes, Words of Wisdom, then Review. It saves as you type. The tour opens each page for you.",
   },
   {
-    route: "/workouts/new",
     target: "editor-page",
-    before: click('[aria-label="Go to Basics"]'),
+    before: openPage("basics"),
+    interactive: true,
     title: "Basics",
-    body: "The title, the AO (from your region's list, which fills in the address and time), the date and the time. The start time is when your reminders count from.",
-  },
-  {
-    target: "templates",
-    before: click('[aria-label="Go to Introduction"]'),
-    optional: true,
-    title: "Templates",
-    body: "Save any section as a template and load it next time. Star one, like the built-in F3 standard introduction, to fill it in on every new workout.",
+    body: "Give it a title and choose the AO (that fills in the address and time). It's dated today, so you can write its backblast next. Then tap Next.",
   },
   {
     target: "editor-page",
-    before: click('[aria-label="Go to The Thang"]'),
+    before: openPage("introduction"),
+    interactive: true,
+    title: "Introduction",
+    body: "What you say to open. Templates loads the standard one; star a template to fill it in on every new workout. Then tap Next.",
+  },
+  {
+    target: "editor-page",
+    before: openPage("warmup"),
+    interactive: true,
+    title: "Warm-up",
+    body: "The warm-up exercises. The Exicon button adds them from F3's and FiA's lists. Then tap Next.",
+  },
+  {
+    target: "editor-page",
+    before: openPage("thang"),
+    interactive: true,
     title: "The Thang",
-    body: "Add each thang, with a timer if you like (Countdown, Stopwatch, AMRAP, Tabata or EMOM) and a song. The Exicon button adds exercises from F3's and FiA's lists.",
+    body: "The workout itself. Add each thang, with a timer if you like (Countdown, Stopwatch, AMRAP, Tabata or EMOM), a song, and exercises from the Exicon. Then tap Next.",
   },
   {
     target: "editor-page",
-    before: click('[aria-label="Go to Notes"]'),
+    before: openPage("notes"),
+    interactive: true,
     title: "Notes",
-    body: "Notes for you as the Q only. They're never shown to anyone or copied.",
+    body: "Notes for you as the Q only. They're never shown to anyone or copied. Then tap Next.",
+  },
+  {
+    target: "editor-page",
+    before: openPage("wordsOfWisdom"),
+    interactive: true,
+    title: "Words of wisdom",
+    body: "Something to leave the PAX with. Then tap Next.",
   },
   {
     target: "editor-save",
-    before: click('[data-tour="editor-skip"]'),
-    title: "Review and save",
-    body: "Check it over, then Save workout. From its page you can Copy or Share it to Band or Slack, Run it at the AO with its timers, and make it public or private.",
+    before: openPage("review"),
+    interactive: true,
+    until: "/workout",
+    title: "Review and Done",
+    body: "Check it over (tap a section to change it), then tap Done to finish it.",
+  },
+  {
+    target: "workout-share",
+    noBack: true,
+    title: "Your workout",
+    body: "Run workout takes you through it at the AO, with its timers and music. Copy or Share it to Band or Slack, and choose who sees it with Public / Private.",
+  },
+  {
+    target: "backblast-not-yet",
+    optional: true,
+    title: "Its backblast",
+    body: "This workout is after today, so its backblast comes once it has happened: tap Create backblast here then. On with the tour.",
+  },
+  {
+    target: "create-backblast",
+    optional: true,
+    group: "backblast",
+    title: "Write its backblast",
+    body: "After the workout, Create backblast starts its backblast with the workout copied in. Let's write it: tap Next.",
+  },
+  {
+    target: "editor-steps",
+    group: "backblast",
+    before: click('[data-tour="create-backblast"]'),
+    noBack: true,
+    title: "A backblast, page by page",
+    body: "Workout, Notes, Name-o-rama, Announcements, Coffeeteria, then Review. It saves as you type, too.",
+  },
+  {
+    target: "editor-page",
+    group: "backblast",
+    before: openPage("workout"),
+    interactive: true,
+    title: "The workout",
+    body: "Copied from your workout. Tap Edit to change anything that went differently; Rocket asks at the end whether to update the workout too. Then tap Next.",
+  },
+  {
+    target: "editor-page",
+    group: "backblast",
+    before: openPage("notes"),
+    interactive: true,
+    title: "Notes",
+    body: "Anything else about how it went. Then tap Next.",
+  },
+  {
+    target: "editor-page",
+    group: "backblast",
+    before: openPage("attendance"),
+    interactive: true,
+    title: "Name-o-rama",
+    body: "The Q and every PAX who posted, with suggestions from your region's roster and the AO's regulars. Mark FNGs with who invited them. Naming an FNG? The PAX page shows names already taken. Then tap Next.",
+  },
+  {
+    target: "editor-page",
+    group: "backblast",
+    before: openPage("announcements"),
+    interactive: true,
+    title: "Announcements",
+    body: "Anything beyond the site Q's usual announcements. Optional. Then tap Next.",
+  },
+  {
+    target: "editor-page",
+    group: "backblast",
+    before: openPage("secondF"),
+    interactive: true,
+    title: "Coffeeteria",
+    body: "Where the PAX went after, usually coffee. Then tap Next.",
+  },
+  {
+    target: "editor-save",
+    group: "backblast",
+    before: openPage("review"),
+    interactive: true,
+    until: "/backblast",
+    title: "Review and Done",
+    body: "Check it over, then tap Done to finish it.",
+  },
+  {
+    target: "backblast-share",
+    group: "backblast",
+    noBack: true,
+    title: "Share it",
+    body: "Copy or Share the backblast to Band or Slack. Edit changes it later.",
   },
   {
     route: "/discover",
     target: "source-chips",
+    noBack: true,
     title: "Discover",
     body: "Public workouts from other Qs. From chooses F3's, FiA's or both.",
   },
@@ -222,48 +346,9 @@ const MAIN: Step[] = [
     route: "/",
     target: "menu",
     title: "That's the tour",
-    body: "Everything's in the menu. Once a workout of yours has happened, Rocket shows you how to write its backblast. See the tour again any time from Settings → Tutorial.",
+    body: "Everything's in the menu. See the tour again any time from Settings → Tutorial.",
   },
 ];
-
-const BACKBLAST: Step[] = [
-  {
-    route: "/",
-    target: "needs-backblast",
-    title: "Time for a backblast",
-    body: "This workout has happened, so it's ready for its backblast. Let's write it.",
-  },
-  {
-    target: "create-backblast",
-    before: () => find("needs-backblast")?.closest<HTMLElement>("a")?.click(),
-    title: "Create backblast",
-    body: "On the workout's page, Create backblast starts one with the workout's sections already in it.",
-  },
-  {
-    target: "editor-steps",
-    before: click('[data-tour="create-backblast"]'),
-    title: "A backblast, page by page",
-    body: "Workout (copied in, so you can change what you actually did), Notes, Name-o-rama, Announcements, Coffeeteria, then Review.",
-  },
-  {
-    target: "editor-page",
-    before: click('[aria-label="Go to Name-o-rama"]'),
-    title: "Name-o-rama",
-    body: "The Q and every PAX who posted, with suggestions from your region's roster and the AO's regulars; the count adds up as you go. Naming an FNG? Check the PAX page for names already taken.",
-  },
-  {
-    target: "editor-save",
-    before: click('[data-tour="editor-skip"]'),
-    title: "Finish and share",
-    body: "Check it over and finish it. Then Copy or Share it to Band or Slack from its page.",
-  },
-];
-
-const TOURS: Record<TourName, Step[]> = { main: MAIN, backblast: BACKBLAST };
-const DONE_KEY: Record<TourName, string> = {
-  main: "tutorial_done",
-  backblast: "tutorial_backblast_done",
-};
 
 /** How long to wait for a step's target after a page opens (pages load their data first). */
 const WAIT_MS = 4000;
@@ -275,7 +360,7 @@ export function AppTour() {
   const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [tour, setTour] = useState<TourName | null>(null);
+  const [running, setRunning] = useState(false);
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [ready, setReady] = useState(false);
@@ -286,8 +371,8 @@ export function AppTour() {
   const arrived = useRef({ path: "", at: 0 });
   const offered = useRef(false);
 
-  const steps = tour ? TOURS[tour] : [];
-  const step = steps[index];
+  const steps = STEPS;
+  const step = running ? steps[index] : undefined;
 
   /** Shows another step: hidden until its page is there and its target found. */
   const moveTo = useCallback((next: number) => {
@@ -296,78 +381,67 @@ export function AppTour() {
     setIndex(next);
   }, []);
 
+  const begin = useCallback(() => {
+    direction.current = 1;
+    setSkipped([]);
+    moveTo(0);
+    setRunning(true);
+  }, [moveTo]);
+
   const finish = useCallback(() => {
-    if (tour)
+    if (running)
       createClient()
-        .auth.updateUser({ data: { [DONE_KEY[tour]]: true } })
+        .auth.updateUser({ data: { tutorial_done: true } })
         .then(() => {});
-    setTour(null);
+    setRunning(false);
     setRect(null);
-  }, [tour]);
+  }, [running]);
+
+  // Let the rest of the app know, so its notices wait.
+  useEffect(() => {
+    document.documentElement.dataset.tour = running ? "on" : "off";
+  }, [running]);
 
   // Settings → Tutorial.
   useEffect(() => {
-    const start = (event: Event) => {
-      direction.current = 1;
-      setSkipped([]);
-      moveTo(0);
-      setTour((event as CustomEvent<TourName>).detail);
-    };
-    window.addEventListener(TOUR_EVENT, start);
-    return () => window.removeEventListener(TOUR_EVENT, start);
-  }, [moveTo]);
+    window.addEventListener(TOUR_EVENT, begin);
+    return () => window.removeEventListener(TOUR_EVENT, begin);
+  }, [begin]);
 
-  // The main tour, once per account, after this device's setup is out of the way.
+  // Once per account, after this device's setup is out of the way.
   useEffect(() => {
     // Only from Home, so opening a shared link isn't interrupted.
-    if (!user || user.needsProfile || user.tutorialDone || tour) return;
+    if (!user || user.needsProfile || user.tutorialDone || running) return;
     if (pathname !== "/") return;
-    const begin = () => {
+    const offer = () => {
       if (offered.current || !deviceSetupFinished()) return;
       offered.current = true;
-      direction.current = 1;
-      setSkipped([]);
-      moveTo(0);
-      setTour("main");
+      begin();
     };
-    const timer = setTimeout(begin, 2500);
-    window.addEventListener(DEVICE_SETUP_DONE_EVENT, begin);
+    const timer = setTimeout(offer, 2500);
+    window.addEventListener(DEVICE_SETUP_DONE_EVENT, offer);
     return () => {
       clearTimeout(timer);
-      window.removeEventListener(DEVICE_SETUP_DONE_EVENT, begin);
+      window.removeEventListener(DEVICE_SETUP_DONE_EVENT, offer);
     };
-  }, [user, tour, moveTo, pathname]);
-
-  // The backblast tour, the first time Home shows a workout that needs its backblast.
-  useEffect(() => {
-    if (
-      !user ||
-      !user.tutorialDone ||
-      user.tutorialBackblastDone ||
-      tour ||
-      offered.current ||
-      pathname !== "/"
-    )
-      return;
-    const timer = setTimeout(() => {
-      if (!find("needs-backblast") || offered.current || !deviceSetupFinished())
-        return;
-      offered.current = true;
-      direction.current = 1;
-      setSkipped([]);
-      moveTo(0);
-      setTour("backblast");
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [user, tour, pathname, moveTo]);
+  }, [user, running, begin, pathname]);
 
   // Go to the step's page, run its action, then find what it spotlights.
   useEffect(() => {
     if (!step) return;
     let cancelled = false;
-    const here = (pathname.replace(/\/$/, "") || "/") === step.route;
-    if (step.route && !here) {
-      router.push(step.route);
+    const page = pageOf(pathname);
+    // The user tapped Done and the finished page opened: on to the next step.
+    if (step.until && page === step.until) {
+      const timer = setTimeout(() => {
+        direction.current = 1;
+        if (index + 1 >= steps.length) finish();
+        else moveTo(index + 1);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+    if (step.route && page !== step.route && !step.alsoAt?.includes(page)) {
+      router.push(step.route + (step.query ?? ""));
       return;
     }
     if (arrived.current.path !== pathname)
@@ -382,15 +456,23 @@ export function AppTour() {
       const el = find(step.target);
       if (el && el.getBoundingClientRect().height > 0) {
         setSkipped((list) => list.filter((i) => i !== index));
-        el.scrollIntoView({ block: "center", behavior: "smooth" });
+        if (step.interactive) {
+          // Its top in view, below the bar pinned to the top while a form is scrolled.
+          const top = el.getBoundingClientRect().top + window.scrollY - 80;
+          window.scrollTo({ top: Math.max(0, top) });
+        } else el.scrollIntoView({ block: "center", behavior: "smooth" });
         setReady(true);
         return;
       }
       if (Date.now() < deadline) return void setTimeout(look, 150);
       // Not on this page: leave optional steps out, and show the others without a spotlight.
       if (step.optional) {
-        setSkipped((list) => (list.includes(index) ? list : [...list, index]));
-        const next = index + direction.current;
+        // A group's first step missing means the whole group is: leave the rest out too.
+        let next = index + direction.current;
+        const gone = [index];
+        if (step.group && direction.current === 1)
+          while (steps[next]?.group === step.group) gone.push(next++);
+        setSkipped((list) => [...new Set([...list, ...gone])]);
         if (next < 0 || next >= steps.length) finish();
         else moveTo(next);
       } else setReady(true);
@@ -402,7 +484,7 @@ export function AppTour() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [step, index, pathname, router, steps.length, finish, moveTo]);
+  }, [step, index, pathname, router, steps, finish, moveTo]);
 
   // Keep the spotlight on its target as the page scrolls or settles.
   useEffect(() => {
@@ -420,7 +502,7 @@ export function AppTour() {
     };
   }, [ready, step]);
 
-  if (!tour || !step || !ready) return null;
+  if (!running || !step || !ready) return null;
 
   const go = (by: 1 | -1) => {
     direction.current = by;
@@ -428,17 +510,32 @@ export function AppTour() {
     if (next >= steps.length) return finish();
     if (next >= 0) moveTo(next);
   };
-  // The card sits on the half of the screen away from what's spotlighted.
+  const interactive = step.interactive === true;
+  // Another dialog over the page (asking whether to update the workout, say): out of its way.
+  const otherDialog =
+    interactive &&
+    document.querySelector(
+      '[role="dialog"][aria-modal="true"]:not([data-app-tour])',
+    );
+  if (otherDialog) return null;
+  // The card sits on the half of the screen away from what's spotlighted; while filling in a
+  // page, at the bottom, out of the way of the page's top.
   const cardAtTop =
+    !interactive &&
     rect !== null &&
-    rect.top + rect.height / 2 >
-      (typeof window === "undefined" ? 0 : window.innerHeight / 2);
+    rect.top + rect.height / 2 > window.innerHeight / 2;
+  const canGoBack =
+    index > 0 &&
+    !step.noBack &&
+    steps.slice(0, index).some((_, i) => !skipped.includes(i));
 
   return (
     <div
-      className="fixed inset-0 z-[60]"
+      data-app-tour
+      className={`fixed inset-0 z-[60] ${interactive ? "pointer-events-none" : ""}`}
       role="dialog"
-      aria-modal="true"
+      // While filling in a page, the page stays usable around the card.
+      aria-modal={!interactive}
       aria-labelledby="tour-title"
     >
       {rect ? (
@@ -449,14 +546,16 @@ export function AppTour() {
             left: rect.left - PAD,
             width: rect.width + PAD * 2,
             height: rect.height + PAD * 2,
-            boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.62)",
+            boxShadow: `0 0 0 9999px rgba(0, 0, 0, ${interactive ? 0.4 : 0.62})`,
           }}
         />
       ) : (
         <div className="fixed inset-0 bg-black/60" />
       )}
       <div
-        className={`fixed inset-x-3 mx-auto flex max-w-md flex-col gap-3 rounded-3xl border border-line-strong bg-surface-raised p-5 shadow-2xl ${
+        className={`pointer-events-auto fixed inset-x-3 mx-auto flex max-w-md flex-col rounded-3xl border border-line-strong bg-surface-raised shadow-2xl ${
+          interactive ? "gap-2 p-4" : "gap-3 p-5"
+        } ${
           rect === null
             ? "top-1/2 -translate-y-1/2"
             : cardAtTop
@@ -465,11 +564,13 @@ export function AppTour() {
         }`}
       >
         <span className="font-mono text-xs text-muted">
-          {tour === "main" ? "Tour" : "Your first backblast"} ·{" "}
-          {index + 1 - skipped.filter((i) => i < index).length} of{" "}
+          Tour · {index + 1 - skipped.filter((i) => i < index).length} of{" "}
           {steps.length - skipped.length}
         </span>
-        <h2 id="tour-title" className="text-lg font-semibold text-ink">
+        <h2
+          id="tour-title"
+          className={`font-semibold text-ink ${interactive ? "text-base" : "text-lg"}`}
+        >
           {step.title}
         </h2>
         <p className="text-sm text-ink-soft">{step.body}</p>
@@ -478,7 +579,7 @@ export function AppTour() {
             Skip tour
           </button>
           <span className="flex gap-2">
-            {index > 0 && (
+            {canGoBack && (
               <button
                 type="button"
                 onClick={() => go(-1)}
@@ -487,14 +588,17 @@ export function AppTour() {
                 Back
               </button>
             )}
-            <button
-              type="button"
-              autoFocus
-              onClick={() => go(1)}
-              className="rounded-full border border-accent/60 bg-accent-soft px-5 py-1.5 text-sm font-medium text-ink transition hover:border-accent"
-            >
-              {index === steps.length - 1 ? "Done" : "Next"}
-            </button>
+            {!step.until && (
+              <button
+                type="button"
+                // Not while filling in a page: the cursor stays in its field.
+                autoFocus={!interactive}
+                onClick={() => go(1)}
+                className="rounded-full border border-accent/60 bg-accent-soft px-5 py-1.5 text-sm font-medium text-ink transition hover:border-accent"
+              >
+                {index === steps.length - 1 ? "Done" : "Next"}
+              </button>
+            )}
           </span>
         </div>
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Loading, NotFound } from "@/components/not-found";
 import {
   copyText,
   formatBackblast,
@@ -21,7 +22,12 @@ import {
   VisibilitySwitch,
   type Visibility,
 } from "@/components/visibility-switch";
-import { ArchiveIcon, PencilIcon, TrashIcon } from "@/components/icons";
+import {
+  ArchiveIcon,
+  ArrowIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@/components/icons";
 import { fromRow } from "@/lib/backblast";
 import { useWorkoutLinkState } from "@/lib/workout-link";
 import { archive, unarchive } from "@/lib/backblast-list";
@@ -97,14 +103,9 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     }
   }
 
-  if (id && !result) return <div className="card h-96 animate-pulse" />;
+  if (id && !result) return <Loading />;
   if (!result?.backblast)
-    return (
-      <section className="card">
-        <h1 className="card-title">Backblast not found</h1>
-        {result?.error && <p className="text-accent">{result.error}</p>}
-      </section>
-    );
+    return <NotFound what="backblast" error={result?.error} />;
 
   const { backblast } = result;
   const mine = result.authorId === user.id;
@@ -191,7 +192,10 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         {text}
       </ProtectedText>
 
-      <div className={`grid gap-3 ${mine ? "grid-cols-3" : "grid-cols-2"}`}>
+      <div
+        data-tour="backblast-share"
+        className={`grid gap-3 ${mine ? "grid-cols-3" : "grid-cols-2"}`}
+      >
         <CopyButton text={shared} disabled={!ready} />
         <ShareButton text={shared} disabled={!ready} />
         {mine && (
@@ -201,10 +205,24 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
           </Link>
         )}
       </div>
-      {/* Done with it: back to Home. */}
-      <Link href="/" className="btn -mt-2 w-full">
-        Close
-      </Link>
+      {/* Done with it: back to Home; or on to the workout it's from. */}
+      <div className="-mt-2 flex gap-2">
+        <Link
+          href="/"
+          className={`btn ${backblast.workoutId ? "shrink-0 px-7" : "w-full"}`}
+        >
+          Close
+        </Link>
+        {backblast.workoutId && (
+          <Link
+            href={`/workout?id=${backblast.workoutId}`}
+            className="btn flex-1"
+          >
+            <ArrowIcon />
+            Open workout
+          </Link>
+        )}
+      </div>
       <div className="-mt-1 flex flex-wrap justify-center gap-x-6 gap-y-2">
         <ShareLinkButton
           path={`/backblast/?id=${id}`}

@@ -5,6 +5,7 @@ import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
 import {
   asItems,
+  byWorkoutDate,
   listColumns,
   loadArchivedIds,
   tableFor,
@@ -17,7 +18,7 @@ export default function ArchivePage() {
   return <SignedIn>{(user) => <Archive user={user} />}</SignedIn>;
 }
 
-/** What the user archived of one kind, most recently archived first. */
+/** What the user archived of one kind, by workout date, the most recent first. */
 async function loadArchived(kind: ItemKind): Promise<ListItem[]> {
   const ids = await loadArchivedIds(kind);
   if (ids.length === 0) return [];
@@ -26,8 +27,7 @@ async function loadArchived(kind: ItemKind): Promise<ListItem[]> {
     .select(listColumns(kind))
     .in("id", ids);
   if (error) throw new Error(error.message);
-  const rows = asItems(kind, data);
-  return ids.flatMap((id) => rows.find((row) => row.id === id) ?? []);
+  return asItems(kind, data).sort(byWorkoutDate);
 }
 
 /** Everything the user archived: workouts, then backblasts. */

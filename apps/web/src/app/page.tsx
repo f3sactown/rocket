@@ -2,19 +2,30 @@
 
 import { formatDate, type Language } from "@rocket/core";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
 import { HeartIcon, PlayIcon, PlusIcon, ReuseIcon } from "@/components/icons";
+import { LocalDraftList, useOnDraftsSent } from "@/components/local-drafts";
 import { WhatsNew } from "@/components/whats-new";
 import { WorkoutCards } from "@/components/workout-card";
 import {
+  byWorkoutDate,
+  isUpcoming,
   loadFutureWorkouts,
   loadLists,
   loadTodaysWorkouts,
   type ListItem,
 } from "@/lib/backblast-list";
+import { useConnection } from "@/lib/connection";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
+import {
+  backblastForScreen,
+  keepLater,
+  MAIN_SCREENS,
+  offlineWorkoutIds,
+  workoutScreens,
+} from "@/lib/offline";
 import { loadMyTotals, type WorkoutStats } from "@/lib/workout-social";
 import {
   endMinutes,
@@ -38,6 +49,7 @@ const RECENT = 5;
  */
 function HomePage({ user }: { user: CurrentUser }) {
   const show = new Set(user.homeSections);
+  const { offline } = useConnection();
   const [lists, setLists] = useState<{
     drafts: ListItem[];
     future: ListItem[];
@@ -53,6 +65,7 @@ function HomePage({ user }: { user: CurrentUser }) {
   // With Future workouts shown, Recent workouts keeps to ones dated today or earlier.
   const wantsFuture = show.has("upcoming");
   const sources = user.publicSources.join();
+  const [reloads, setReloads] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -60,16 +73,44 @@ function HomePage({ user }: { user: CurrentUser }) {
       loadLists("backblast", user.id, RECENT),
       wantsFuture ? loadFutureWorkouts(user.id, RECENT) : [],
     ]).then(
-      ([workouts, backblasts, future]) =>
+      ([workouts, backblasts, future]) => {
+        // Copies for offline use: the main screens, and these workouts with their Run screens.
+        // (Home's own, and every one from the last two weeks and coming up.)
+        // Those that have happened bring their new backblast, to write it at the AO with no signal.
+        offlineWorkoutIds(user.id)
+          .catch(() => [] as { id: string; date: string | null }[])
+          .then((recent) => {
+            const all = [...future, ...workouts.published, ...recent];
+            const ids = [...new Set(all.map((w) => w.id))];
+            const happened = [
+              ...new Set(
+                all.filter((w) => !isUpcoming(w.date)).map((w) => w.id),
+              ),
+            ];
+            keepLater([
+              ...MAIN_SCREENS,
+              ...ids.flatMap(workoutScreens),
+              ...happened.map(backblastForScreen),
+              ...backblasts.published
+                .slice(0, RECENT)
+                .map((b) => `/backblast/?id=${b.id}`),
+            ]);
+          });
         setLists({
-          drafts: [...workouts.drafts, ...backblasts.drafts],
+          drafts: [...workouts.drafts, ...backblasts.drafts].sort(
+            byWorkoutDate,
+          ),
           future,
           workouts: workouts.published,
           backblasts: backblasts.published,
-        }),
+        });
+      },
       (e: Error) => setError(e.message),
     );
-  }, [user.id, wantsFuture]);
+  }, [user.id, wantsFuture, reloads]);
+
+  // Drafts kept on the phone reached Rocket: load the lists again to show them.
+  useOnDraftsSent(useCallback(() => setReloads((n) => n + 1), []));
 
   useEffect(() => {
     if (!wantsTrending) return;
@@ -96,9 +137,14 @@ function HomePage({ user }: { user: CurrentUser }) {
       <WhatsNew user={user} />
       {show.has("totals") && <Totals user={user} />}
       {show.has("today") && <TodaysWorkouts user={user} />}
+      <LocalDraftList />
 
       {error ? (
-        <p className="panel px-3 py-8 text-center text-accent">{error}</p>
+        <p className="panel px-3 py-8 text-center text-accent">
+          {offline || /fetch|network|load failed/i.test(error)
+            ? "Your workouts and backblasts aren't kept on this phone yet. They will be once Home opens with a connection."
+            : error}
+        </p>
       ) : !lists ? (
         <p className="panel px-3 py-8 text-center text-muted">Loading…</p>
       ) : (
@@ -272,13 +318,21 @@ function Totals({ user }: { user: CurrentUser }) {
   // Your region, or (with "all F3 or FiA regions") every one of them added up.
   const scope = useRegionScope();
   const key = scope?.regions.map((r) => r.id).join() ?? "";
+  // Kept on this device too, so they still show offline.
+  const kept = `rocket-totals:${user.id}:${key}`;
   const stats = useLoad(
-    scope ? () => loadPaxStatsIn(scope.regions, user.name) : null,
+    scope
+      ? () => remembered(kept, () => loadPaxStatsIn(scope.regions, user.name))
+      : null,
     [key, user.name],
   );
-  const latest = useLoad(scope ? () => loadLatestPostIn(scope.regions) : null, [
-    key,
-  ]);
+  const latest = useLoad(
+    scope
+      ? () =>
+          remembered(`${kept}:latest`, () => loadLatestPostIn(scope.regions))
+      : null,
+    [key],
+  );
   if (scope === null)
     return (
       <Link href="/settings" className="link">
@@ -311,6 +365,9 @@ function Totals({ user }: { user: CurrentUser }) {
         {stats.error
           ? `Totals unavailable: ${stats.error}`
           : (scope?.label ?? "")}
+        {stats.value?.kept && (
+          <span className="block">Offline: as last seen on this phone</span>
+        )}
         {latest.value && (
           <span className="block">Updated {formatDate(latest.value)}</span>
         )}
@@ -325,6 +382,19 @@ function Totals({ user }: { user: CurrentUser }) {
  */
 function MyTotals({ userId }: { userId: string }) {
   const totals = useLoad(() => loadMyTotals(userId), [userId]);
+  const { offline } = useConnection();
+  // Counted fresh only: offline, it says so where they'd be.
+  if (offline || (totals.error && !totals.value))
+    return (
+      <span
+        data-tour="home-stats"
+        className="mt-2 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3 py-1 text-sm text-muted"
+        title="Likes and reuses show once you're back online"
+      >
+        <span className="size-2 rounded-full bg-muted" aria-hidden />
+        Offline
+      </span>
+    );
   if (!totals.value) return null;
   const { likes, reuses } = totals.value;
   return (
@@ -353,4 +423,34 @@ function MyTotals({ userId }: { userId: string }) {
       </span>
     </div>
   );
+}
+
+/**
+ * Loads something and keeps it on this device; when it can't be loaded (offline), the kept copy
+ * instead, marked `kept`.
+ */
+async function remembered<T>(
+  key: string,
+  load: () => Promise<T>,
+): Promise<T & { kept?: boolean }> {
+  try {
+    const value = await load();
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // Not kept; it loads fresh next time.
+    }
+    return value as T & { kept?: boolean };
+  } catch (error) {
+    let kept: T | null = null;
+    try {
+      kept = JSON.parse(localStorage.getItem(key) ?? "null") as T | null;
+    } catch {
+      kept = null;
+    }
+    if (kept === null) throw error;
+    return typeof kept === "object"
+      ? { ...kept, kept: true }
+      : (kept as T & { kept?: boolean });
+  }
 }

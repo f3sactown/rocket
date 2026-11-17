@@ -1,9 +1,14 @@
 "use client";
 
 import { termsFor, type Language } from "@rocket/core";
-import type { User } from "@supabase/supabase-js";
+import { isAuthRetryableFetchError, type User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import {
+  createClient,
+  keepSession,
+  keptUser,
+  SIGN_IN_WAIT_MS,
+} from "@/lib/supabase/client";
 import { AuthForm } from "./auth-form";
 import { FinishProfile } from "./finish-profile";
 import { syncAccent } from "./theme-switcher";
@@ -49,8 +54,8 @@ export interface CurrentUser {
   noticesOff: string[];
   /** Whether the app tour has been finished or skipped (Settings → Tutorial shows it again). */
   tutorialDone: boolean;
-  /** Whether the "write your first backblast" tour has been finished or skipped. */
-  tutorialBackblastDone: boolean;
+  /** Whether the name has ever been found on the region's roster (so one missing was removed). */
+  nameOnRoster: boolean;
   /** Built-in templates (by name) chosen as a section's default, by section. */
   builtInDefaults: Record<string, string>;
 }
@@ -194,7 +199,7 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
       : [],
     builtInDefaults: builtInDefaultsFrom(user.user_metadata?.builtin_defaults),
     tutorialDone: user.user_metadata?.tutorial_done === true,
-    tutorialBackblastDone: user.user_metadata?.tutorial_backblast_done === true,
+    nameOnRoster: user.user_metadata?.name_on_roster === true,
     regionId:
       typeof user.user_metadata?.region_id === "string"
         ? user.user_metadata.region_id
@@ -214,16 +219,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data }) => {
-      setState({ user: toCurrentUser(data.session?.user), loading: false });
+    let settled = false;
+    // Offline, renewing an expired sign-in (they last an hour) takes Supabase about half a
+    // minute to give up on: after a few seconds, carry on as the account kept on this device.
+    const wait = setTimeout(() => {
+      const kept = keptUser();
+      if (settled || !kept) return;
+      setState({ user: toCurrentUser(kept), loading: false });
+    }, SIGN_IN_WAIT_MS);
+    supabase.auth.getSession().then(({ data, error }) => {
+      settled = true;
+      clearTimeout(wait);
+      // Offline with a sign-in that needs renewing: still you, until the connection's back.
+      const offline =
+        !data.session && error && isAuthRetryableFetchError(error);
+      const user = offline ? keptUser() : data.session?.user;
+      if (!offline) keepSession(data.session);
+      setState({ user: toCurrentUser(user), loading: false });
       if (data.session) syncAccent(data.session.user.user_metadata?.accent);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      // Signing out drops the data kept for offline use, so the next person doesn't see it.
+      if (event === "SIGNED_OUT") {
+        keepSession(null);
+        if ("caches" in window) caches.delete("rocket-data-v1").catch(() => {});
+      }
+      // No session but not signed out: the sign-in couldn't be renewed (offline). The check
+      // above decides who's signed in.
+      if (!session && event !== "SIGNED_OUT") return;
+      keepSession(session);
       setState({ user: toCurrentUser(session?.user), loading: false });
       // The accent color follows the account to every device.
       if (session) syncAccent(session.user.user_metadata?.accent);
     });
-    return () => data.subscription.unsubscribe();
+    return () => {
+      clearTimeout(wait);
+      data.subscription.unsubscribe();
+    };
   }, []);
 
   return <AuthContext value={state}>{children}</AuthContext>;

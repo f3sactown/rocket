@@ -23,6 +23,7 @@ export const DEVICE_KEYS = [
 const ACCOUNT_KEYS = [
   "name",
   "f3_name",
+  "name_on_roster",
   "language",
   "swipe_left",
   "home_sections",

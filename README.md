@@ -13,7 +13,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   updated), **Today's workouts** (your finished workouts dated today, by start time; tap one to
   run it; each drops off an hour after its end time, and the section hides when none are left), your drafts, **Future workouts** (your finished workouts dated after today, soonest
   first; Recent workouts then keeps to today and earlier), trending workouts, and your most recent
-  workouts and backblasts. Which of
+  workouts and backblasts. Drafts and your workouts and backblasts are listed by workout date, the
+  most recent on top (undated ones last), here and on the Workouts and Backblasts pages, as are the Archive, Search results, PAX profiles, Discover's Newest and New backblast's choice of workout. Which of
   these show is chosen in Settings → Home screen (all but trending, to start).
   At the top right, next to "Hey, …", a heart and a reuse icon show the likes and reuses your
   finished workouts have had from others (private ones included).
@@ -47,11 +48,21 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - A public workout dated **after today** isn't listed for anyone else (Discover, Trending, PAX
     profiles, likes) until its day, in Pacific time. Its Q sees it as usual, and its link (Share
     link) opens it for anyone signed in, with Run workout and Reuse; likes open on the day. Saving
-    one (the **Save workout** button on the review step) says so in a notice, and the workout's page
+    one (**Done** on the review step) says so in a notice, and the workout's page
     then explains its Public / Private switch in another. Each notice closes with **OK**; ticking
     its **Don't show again** box first silences it (Settings → Notifications brings it back).
   - **Editing** a finished workout or backblast puts it back to a draft as soon as something
-    changes (others stop seeing it), until it's saved again with Save workout or Save backblast.
+    changes (others stop seeing it), until **Done** finishes it again.
+  - **Saving:** the workout and backblast forms save as you type. The top right shows "Saves as
+    you type" on a new one, "Saving…" while it saves, then how long ago it was saved ("Saved just
+    now", then in steps that grow as it sits: 5, 10 and 15 sec; every 10 sec to a minute; every
+    15 sec to 2 min ("1 min 15 sec ago"); every 30 sec to 3 min; then every minute, then hours and
+    days. One just opened shows "Saved" until it saves again). Scrolled down, past that header, a bar pinned to the top shows the title (or "New
+    workout" until one is set), the same save status with its dot, and the page being edited
+    ("Step 4 of 7 · The Thang"). The last page's button
+    is **Done**, which finishes it. The Thang's boxes are all as tall as the screen allows for
+    the first while its timer, music and Exicon buttons and "Add another thang" stay in view
+    (worked out once, so adding a thang doesn't shrink the first).
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
   F3's, FiA's or both (the default), going by each author's region (authors with no region always
   show), and **Include my workouts** (off by default) adds yours; both are saved to your account.
@@ -72,7 +83,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   total likes and reuses on their public Rocket workouts, with the same heart and reuse icons as
   workout tiles. A **From** picker of regions, in each
   region's color, narrows the list and the totals; the choice is saved to your account. A tile
-  opens the PAX's profile, marked **On Rocket** at the top right when they have a Rocket account (or a dimmer **Not on Rocket yet**): posts, Qs, likes and reuses in one row on top, their stats per region and their Trending workouts, then **All workouts** and **All backblasts** (every public one, newest first;
+  opens the PAX's profile, marked **On Rocket** at the top right when they have a Rocket account (or a dimmer **Not on Rocket yet**): posts, Qs, likes and reuses in one row on top, their stats per region and their Trending workouts, then **All workouts** and **All backblasts** (every public one, newest first, each with **See all →** opening the full list on its own page, `/pax/list`;
   archived ones included, private ones left out).
   At the top, a **New on Rocket** note names whoever has signed up for a Rocket account since you
   last dismissed it (the last two weeks, the first time), with their region, each linking to their
@@ -90,25 +101,27 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   pick from, or starts one without a workout. Only a workout's Q writes its backblast, so other
   people's workouts have no Create backblast button. A finished backblast is **public** by default
   (Settings → Sharing can make new ones start private): anyone signed in can read it, and it shows on
-  its Q's PAX profile. Its Q can switch it to **private** on its page. The backblast holds
-  its own copy of the workout's sections, which can be edited without changing the workout
-  (**Update from workout** copies it again). Finishing a backblast whose Introduction,
-  Warm-o-rama, The Thang or Words of Wisdom now differ from its own workout asks **Update the
-  workout too?**: Update workout copies those sections back (The Thang becomes one thang with the
-  backblast's text, replacing its timers and music), or keep the workout as it is. Its pages are Workout, Notes, Name-o-rama (Qs and
+  its Q's PAX profile. Its Q can switch it to **private** on its page. A backblast linked to
+  its workout **shares** it: the title, basics (date, AO, address, time) and sections
+  (Introduction, Warm-o-rama, The Thang with its timers and music, Words of Wisdom) are the same
+  in both, and a change to either is made to the other (the backblast's Workout page says so). Its pages are Workout, Notes, Name-o-rama (Qs and
   PAX, with roster suggestions and the AO's regulars), Announcements (optional; the backblast's own, not
   copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
   and Share are on the finished backblast's page). On a finished backblast's page, **From a
   workout →** sits left of the Public / Private switch (where a workout shows its likes and
-  reuses); Copy, Share and Edit share one row, with a **Close** button back to Home below.
-  - **Linking to a workout:** a backblast and its Q's workout stay linked while they're at the same
-    AO on the same date (ignoring case and spaces). The database keeps it so (triggers in
-    `20261110010000_backblast_workout_links.sql`): when either one's AO or date changes, or a
-    workout is finished, a pair that no longer matches is unlinked, and one with no partner links
-    to the single match that has none. With two matches it doesn't guess. A backblast started
-    from a workout keeps its link while its AO and date are blank. One without a workout shows
-    **Link to a workout** on its page (matches first); a link made there stays until its AO or
-    date is edited.
+  reuses); Copy, Share and Edit share one row, with **Close** (back to Home) below, and beside it
+  **Open workout** when the backblast has a workout.
+  - **Linking to a workout:** a backblast without a workout links on its own to its Q's one
+    finished workout at the same AO on the same date (ignoring case and spaces) that has no
+    backblast, and a workout that's finished links its Q's one such backblast (triggers in
+    `20261110010000_backblast_workout_links.sql`, changed by
+    `20261117000000_backblast_shares_workout.sql`). With two matches it doesn't guess. One
+    without a workout shows **Link to a workout** on its page (matches first). Once linked, they
+    stay linked: changing the AO or date of either changes both. The sharing is done by the
+    database too (`backblasts_share_workout` and `workouts_share_backblasts`): on linking, what the
+    backblast has goes to the workout and what it hasn't is filled from the workout; after that,
+    each change to the shared parts is made to the other. A backblast keeps the Thang's thangs
+    (`thangs`) like a workout.
   - A backblast waits for its workout: until the workout's date, **Create backblast** is greyed
     out with the reason, and New backblast shows that workout greyed out with the date it opens.
   - **Copy** and **Share** produce Band- and Slack-ready text (Event Data, Workout Details, COT), ending with a
@@ -133,27 +146,101 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   metadata); starring one clears the section's other default.
 - **From pickers** (Exicon, PAX, Discover): on a phone, one line of chips that scrolls sideways.
 - **Tutorial:** a step-by-step tour that spotlights one part of the screen at a time, moving
-  between pages as it goes: Home's stats and sections, writing a first workout (each page of the
-  form, templates, The Thang's timers, music and Exicon, Notes, Review), Discover, the Exicon, and
-  PAX (searching names, e.g. before naming an FNG, and the profile of a PAX with at least one
-  public workout and backblast, so it has something to show). It starts once per
-  account, after the device setup (`tutorial_done` in the account's metadata). The first time Home
-  shows a workout that needs its backblast, a short second tour walks through writing it
-  (`tutorial_backblast_done`). Each can be skipped; **Settings → Tutorial** shows them again.
+  between pages as it goes. After Home's stats and sections, it walks the user through writing a
+  real workout, dated today (the date can't be changed, so its backblast can follow): it opens
+  each page of the form in turn (Basics, Introduction, warm-up, The Thang, Notes, words of
+  wisdom) while they fill it in, then they tap **Done** on Review. On to that workout's page
+  (Run workout, Copy and Share), then **Create backblast**, and the same for its backblast (the
+  copied workout, Notes, Name-o-rama, Announcements, Coffeeteria, Review and **Done**), ending on
+  Copy and Share.
+  Then Discover, the Exicon and PAX (searching names, e.g. before naming an FNG, and the profile
+  of a PAX with at least one public workout and backblast). While the user fills in a page, the
+  page stays usable around the tour's card, and notices wait until the tour is over. It starts
+  once per account, after the device setup (`tutorial_done` in the account's metadata), can be
+  skipped, and **Settings → Tutorial** shows it again.
+- **Offline:** the service worker (`apps/web/public/sw.js`, registered on every visit) keeps the
+  app's pages and code, so Rocket opens with no signal, and keeps the data you've looked at, so a
+  workout you've opened before can be read and run offline. Rocket also keeps copies of screens
+  by opening them in turn in a hidden frame (`lib/offline.ts`), in order: first the screen you've
+  just left (a workout's page brings its Run workout screen, and the other way round), including
+  on putting Rocket away; and, forced even if kept recently, any workout or backblast saved since
+  (its pages, its workout's, and the Workouts or Backblasts list). Then, once you've stayed on a
+  screen for 4 seconds, the rest from Home: the main screens that work offline (Workouts,
+  Backblasts, Settings), your upcoming workouts and those from the last two weeks with their Run
+  workout screens, and your recent backblasts. A screen kept in the last 3 hours isn't kept again
+  unless it's changed; what's waiting is kept on the phone (`rocket-offline-queue`) so closing
+  Rocket picks it up next time (not in Data Saver; it waits for the service worker on a first
+  visit). Offline, a sign-in Supabase can't renew (they last an
+  hour) still counts: the account and its access token are kept on the device
+  (`rocket-offline-user`, `rocket-offline-token`). Offline, Supabase keeps trying to renew an
+  expired sign-in for about half a minute; Rocket waits 3 seconds, then carries on as the kept
+  account, and data requests go ahead with the kept token (`lib/supabase/client.ts`: sign-in is
+  Supabase's own client, data requests a second one that asks it for the token), so kept copies
+  answer at once. Data requests aren't retried when they can't reach the server (Supabase would
+  wait 1, 2 then 4 seconds more). Home's posts and Qs are kept on the device too (`rocket-totals:*`) and show
+  offline as last seen; the likes and reuses top right say **Offline** instead, as they're only
+  counted fresh. Discover, Exicon, Archive, Search and PAX need a connection: offline, the menu shows them greyed
+  out ("Offline") and opening one says **Needs a connection** (`components/offline-gate.tsx`).
+  Data asked for with today's date (Home's "up to today" and "after today" lists, Today's
+  workouts) is also kept under its address with the dates taken out, so offline on a later day
+  the latest kept answer still shows. A page asked for without its trailing slash (`/workout?id=…`, which the site
+  redirects to `/workout/?id=…`) is found under the address with it. A workout or backblast that
+  isn't kept says so offline ("Not kept on this phone") rather than "not found". Pages and data
+  are fetched fresh when there's a connection (a kept copy is used offline, or after 5 seconds on a
+  slow one). Rocket doesn't wait for the phone to say it's offline (with a weak or dead signal
+  that can take a long while): once a request has to use a kept copy, the service worker tells
+  the app (`lib/connection.ts`) and the **Offline** banner shows; from then on kept copies answer
+  at once, with fresh ones fetched alongside (the worker is kept running until they answer), until
+  one gets through. To notice the connection coming back, the app also asks Supabase's server
+  directly (bypassing the service worker): straight away, every 5 seconds while offline, when the
+  phone says it's online, and on returning to the app; any answer tells the service worker first (so what loads next is fresh, not a kept copy), then
+  clears **Offline**, and the screen loads its data again; not the workout and backblast forms or
+  Run workout, where you'd lose your place (they save once they can). A request waiting more than 1.5 seconds shows **Checking connection…** at the top,
+  and the workout, Run workout and backblast screens say "Waiting for a connection… the copy
+  saved on this phone shows in a moment". A request with no kept copy gives up after 15 seconds
+  (at once when already offline), except a page itself; signing out drops the kept data. An **Offline** banner says what still works, and the accent color (buttons, outlines, the rocket) turns grey until the connection's back (`<html data-connection>`). The workout and
+  backblast forms keep a copy of what's typed on the phone (`rocket-unsaved:*` in local storage)
+  until it's saved, so a dropped connection or a closed app loses nothing: the status shows "Not
+  saved yet · kept on this phone", it saves again when the connection returns, and opening the
+  same one later brings the kept copy back and saves it. **Drafts offline:** workouts and
+  backblasts can be written with no connection at all (`lib/local-drafts.ts`). A new one gets an
+  ID on the phone (its address becomes `/workouts/new?local=…`), is listed on Home and on the
+  Workouts or Backblasts page under **On this phone** ("Saves once online"), and is sent to Rocket
+  as a draft as soon as there's a connection (`DraftSender`: on opening, on reconnecting, and
+  every minute), then joins the lists. **Done** offline keeps it as finished ("Finishes once
+  online"): it's finished when it's sent, and an editor still open goes on to its page. Changes
+  to one already in Rocket are sent the same way, unless it's been saved since from somewhere
+  else. An open editor sends its own; the hidden frames that keep copies never save. To write a
+  backblast offline, the new-backblast form is kept for each of your workouts that has happened
+  (with the workout's copy, the roster and the AO's regulars), along with the new workout and
+  new backblast forms.
 - **About** (last in the menu): what Rocket is and does, the running version and build, and the
   **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
   open, the rest folded; commit links and repeated lines are left out.
 - **Lists:** swipe to archive or delete (directions set in Settings), with Undo. Archiving hides a
   workout or backblast only from your own Workouts and Backblasts lists (and Home's Recent lists);
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
-  still shows unless it's private. **Archive** lists what you've archived; **Search** finds workouts and backblasts by any word, with matches
+  still shows unless it's private. **Archive** lists what you've archived, by workout date (newest first); **Search** finds workouts and backblasts by any word, with matches
   highlighted.
+- **Testing banner:** while the version is an alpha or beta (`0.1.0-alpha.7`), a slim bar across the
+  top of every screen says Rocket is being tested and things may change or not work as expected;
+  it goes away by itself with the first full release.
 - **Continue with Google:** the sign-in screen leads with Google: one **Continue with Google**
   button, with a small **Sign in or sign up with email** link under it that opens the email and
   password form (sign up and forgot password included), which has **Use Google instead** to go
   back. Google signs in or signs up with no password. The
-  first time, a **Welcome** step asks for your F3 name and region (Google gives your real name and
-  no region, and Rocket matches PAX to their roster by F3 name), then you're in. Signing in with
+  first time, a **Welcome** step asks for your region and then your F3 name (Google gives your
+  real name and no region, and Rocket matches PAX to their roster by F3 name), then you're in.
+  Signing up with email asks for the same two first. Either way the name is picked from the chosen region's roster (suggested as you type; read
+  from the region's sheet when signing up with email, as the synced roster needs a sign-in; names
+  already taken by a Rocket account are left out after Google), and only a roster name is
+  accepted unless **I'm not on the roster yet** is ticked. It comes with a warning that it must
+  match the database (the roster) exactly and can't be changed once the account is set up, and the first tap shows it back ("You'll be …
+  on Rocket, for good") to confirm with a second. Settings shows it but doesn't let it change, unless it's no longer on your region's roster
+  (renamed or corrected there; `name_on_roster` in the account remembers it once was): then a warning at the top of each screen says so, with **Fix it
+  in Settings** (and **Not now**, until Rocket next opens), and Settings → Profile lets you choose
+  your name again from the roster (not one taken on Rocket), confirmed the same way. A name that's never been on the roster (someone new, not added yet) gets a
+  gentler note instead: once it's on the roster, choose it in Settings. The top bar and menu stay hidden until the Welcome step is done (it has **Not you? Sign out** instead). Signing in with
   Google using the same email as an existing account opens that account. The F3 name is also kept
   as `f3_name` in the account, since each Google sign-in overwrites `name` with the Google name.
   Setup: see "Google sign-in" below.
@@ -161,7 +248,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   mailer and standard template, no custom SMTP needed). The link opens `/reset-password` on any
   device, signed in for the reset, where you choose a new password. Supabase → Authentication →
   URL Configuration must have the site as the Site URL and under Redirect URLs.
-- **Settings:** name, region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
+- **Settings:** name (shown, not changeable: it's set at sign-up), region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
   locked while you have one, and free to choose with no region or one you added), theme, accent color (Red, Teal, Blue, Green, Orange or Violet; saved to the account as `accent`, so it follows you to every device; the first region you choose sets Red for F3 or Teal for FiA, and later region changes leave it alone), the launch
   animation, what Home shows,
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,

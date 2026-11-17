@@ -8,6 +8,11 @@ import { BackblastEditor } from "@/components/backblast-editor";
 import { PlusIcon } from "@/components/icons";
 import { loadWorkout } from "@/lib/backblast";
 import { isUpcoming, loadWorkoutsNeedingBackblast } from "@/lib/backblast-list";
+import {
+  localBackblastFor,
+  newBackupKey,
+  readBackup,
+} from "@/lib/local-drafts";
 import { useLoad } from "@/lib/use-region";
 
 export default function NewBackblastPage() {
@@ -29,7 +34,11 @@ function NewBackblast({ user }: { user: CurrentUser }) {
   const [workoutId, setWorkoutId] = useState<string | null>(
     params.get("workout"),
   );
-  const [withoutWorkout, setWithoutWorkout] = useState(false);
+  // One started on the phone (offline, say), to carry on with; without a workout, if it had none.
+  const [localId] = useState(params.get("local") ?? undefined);
+  const [withoutWorkout, setWithoutWorkout] = useState(
+    !!params.get("local") && !params.get("workout"),
+  );
   const blank: Backblast = {
     title: "",
     date: "",
@@ -43,7 +52,8 @@ function NewBackblast({ user }: { user: CurrentUser }) {
     if (workoutId) loadWorkout(workoutId, user.id).then(setFrom);
   }, [workoutId, user.id]);
 
-  if (withoutWorkout) return <BackblastEditor user={user} initial={blank} />;
+  if (withoutWorkout)
+    return <BackblastEditor user={user} initial={blank} localId={localId} />;
   if (!workoutId)
     return (
       <ChooseWorkout
@@ -61,6 +71,21 @@ function NewBackblast({ user }: { user: CurrentUser }) {
       />
     );
   if (from === null) return <div className="card h-96 animate-pulse" />;
+  // The workout can't be loaded (offline, not kept), but this backblast was started on the
+  // phone: carry on from what's kept.
+  const keptLocal = localId ?? localBackblastFor(workoutId);
+  const kept =
+    typeof from === "string" && keptLocal
+      ? readBackup(newBackupKey("backblast", keptLocal))
+      : null;
+  if (kept)
+    return (
+      <BackblastEditor
+        user={user}
+        initial={kept.content}
+        localId={keptLocal!}
+      />
+    );
   if (typeof from === "string")
     return (
       <section className="card">
@@ -84,6 +109,7 @@ function NewBackblast({ user }: { user: CurrentUser }) {
       key={workoutId}
       user={user}
       initial={copyWorkout({ ...blank, workoutId }, from)}
+      localId={localId}
     />
   );
 }

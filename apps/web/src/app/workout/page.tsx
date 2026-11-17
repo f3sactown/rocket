@@ -1,5 +1,6 @@
 "use client";
 
+import { Loading, NotFound } from "@/components/not-found";
 import { BackblastNotYet } from "@/components/backblast-not-yet";
 
 import {
@@ -152,14 +153,9 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     }
   }
 
-  if (id && !result) return <div className="card h-96 animate-pulse" />;
+  if (id && !result) return <Loading />;
   if (!result?.workout)
-    return (
-      <section className="card">
-        <h1 className="card-title">Workout not found</h1>
-        {result?.error && <p className="text-accent">{result.error}</p>}
-      </section>
-    );
+    return <NotFound what="workout" error={result?.error} />;
 
   const { workout } = result;
   const mine = result.authorId === user.id;
@@ -239,13 +235,15 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         {shown}
       </ProtectedText>
 
-      <Link href={`/workout/run?id=${id}`} className="btn w-full">
-        <PlayIcon />
-        Run workout
-      </Link>
-      <div className="grid grid-cols-2 gap-3">
-        <CopyButton text={text} />
-        <ShareButton title={workout.title} text={text} />
+      <div data-tour="workout-share" className="flex flex-col gap-3">
+        <Link href={`/workout/run?id=${id}`} className="btn w-full">
+          <PlayIcon />
+          Run workout
+        </Link>
+        <div className="grid grid-cols-2 gap-3">
+          <CopyButton text={text} />
+          <ShareButton title={workout.title} text={text} />
+        </div>
       </div>
       <div
         className={`-mt-2 grid gap-3 ${mine ? "grid-cols-2" : "grid-cols-1"}`}

@@ -7,6 +7,7 @@ import { BackblastList } from "@/components/backblast-list";
 import { parseAttendees } from "@/lib/backblast";
 import {
   asItems,
+  byWorkoutDate,
   listColumns,
   tableFor,
   type ItemKind,
@@ -59,7 +60,7 @@ async function loadSearchable(kind: ItemKind): Promise<Searchable[]> {
     .select(
       `${listColumns(kind)}, ${kind === "backblast" ? "attendees, " : ""}${columns.join(", ")}`,
     )
-    .order("date", { ascending: false, nullsFirst: true })
+    .order("date", { ascending: false, nullsFirst: false })
     .limit(1000);
   if (error) throw new Error(error.message);
   return (asItems(kind, data) as (ListItem & Record<string, unknown>)[]).map(
@@ -116,7 +117,11 @@ function Search({ user }: { user: CurrentUser }) {
     ]).then(
       ([workouts, backblasts, archivedWorkouts, archivedBackblasts]) =>
         setData({
-          entries: [...workouts, ...backblasts],
+          // Each kind by workout date, the most recent first.
+          entries: [
+            ...workouts.sort((a, b) => byWorkoutDate(a.item, b.item)),
+            ...backblasts.sort((a, b) => byWorkoutDate(a.item, b.item)),
+          ],
           archived: new Set([...archivedWorkouts, ...archivedBackblasts]),
         }),
       (e: Error) => setError(e.message),

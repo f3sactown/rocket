@@ -105,6 +105,8 @@ export const WORKOUT_SECTIONS = [
 export function copyWorkout(backblast: Backblast, workout: Workout): Backblast {
   const copied = { ...backblast };
   for (const key of WORKOUT_SECTIONS) copied[key] = workout[key] ?? "";
+  // The Thang's thangs too (timers and music), as the backblast shares them with its workout.
+  copied.thangs = workout.thangs?.map((thang) => ({ ...thang }));
   return copied;
 }
 

@@ -8,7 +8,7 @@ import {
   type Thang,
   type Timer,
 } from "@rocket/core";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LibraryButton } from "./library-picker";
 
 /** Reads a time typed as minutes ("5") or m:ss ("4:30"); null if it isn't one. */
@@ -27,12 +27,43 @@ export function ThangsInput({
   value,
   onChange,
   placeholder,
+  minBoxHeight = 96,
 }: {
   value: Thang[];
   onChange: (thangs: Thang[]) => void;
   placeholder: string;
+  /** The least height for each box (down a long page, the screen leaves little room). */
+  minBoxHeight?: number;
 }) {
   const rows = value.length > 0 ? value : [{ text: "" }];
+  const firstBox = useRef<HTMLTextAreaElement>(null);
+  const end = useRef<HTMLButtonElement>(null);
+  // Every thang's box is this tall: as tall as the screen allows for the first while its timer,
+  // music and Exicon buttons and "Add another thang" stay in view on a phone. Worked out once
+  // (and again if the screen turns), so adding a thang doesn't shrink the first.
+  const [boxHeight, setBoxHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fit = () => {
+      const box = firstBox.current;
+      const card = box?.parentElement;
+      if (!box || !card) return;
+      const top = box.getBoundingClientRect().top + window.scrollY;
+      // Below the box: the rest of its thang (the buttons), the gap, and "Add another thang".
+      const rest =
+        card.getBoundingClientRect().bottom -
+        box.getBoundingClientRect().bottom;
+      const add = end.current ? end.current.offsetHeight + 16 : 0;
+      const room = window.innerHeight - top - rest - add - 12;
+      setBoxHeight(Math.max(minBoxHeight, Math.min(room, 640)));
+    };
+    const frame = requestAnimationFrame(fit);
+    window.addEventListener("resize", fit);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", fit);
+    };
+  }, [minBoxHeight]);
   const update = (index: number, patch: Partial<Thang>) =>
     onChange(rows.map((t, i) => (i === index ? { ...t, ...patch } : t)));
 
@@ -63,7 +94,9 @@ export function ThangsInput({
             placeholder={placeholder}
             value={thang.text}
             onChange={(e) => update(index, { text: e.target.value })}
-            className="input min-h-36 resize-y text-base leading-relaxed"
+            ref={index === 0 ? firstBox : undefined}
+            style={boxHeight ? { minHeight: boxHeight } : undefined}
+            className="input min-h-24 resize-y text-base leading-relaxed"
           />
           <TimerInput
             timer={thang.timer}
@@ -101,6 +134,7 @@ export function ThangsInput({
         </div>
       ))}
       <button
+        ref={end}
         type="button"
         onClick={() => onChange([...rows, { text: "" }])}
         className="link self-start py-1"

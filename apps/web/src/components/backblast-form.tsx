@@ -6,11 +6,9 @@ import {
   qNames,
   backblastParts,
   copyText,
-  copyWorkout,
   formatDate,
   thangText,
   type Thang,
-  WORKOUT_SECTIONS,
   formatBackblast,
   termsFor,
   titleCase,
@@ -33,7 +31,7 @@ import { QPicker } from "./q-picker";
 import { ThangsInput } from "./thangs-input";
 import { Regulars } from "./regulars";
 import { useAuth } from "./auth-provider";
-import { ArrowIcon, PencilIcon, SkipIcon, TrashIcon } from "./icons";
+import { ArrowIcon, SkipIcon, TrashIcon } from "./icons";
 import { ProtectedText } from "./protected-text";
 import {
   SectionTemplates,
@@ -121,7 +119,7 @@ function allSteps(language: Language): Step[] {
     {
       kind: "workout",
       title: "Workout",
-      hint: "This backblast's copy of the workout. Edit it here for anything that went differently; when you finish, Rocket asks whether to update the workout to match.",
+      hint: "The workout this backblast is for: its title, AO, date and time, and its sections. Change anything that went differently.",
     },
     {
       kind: "attendance",
@@ -197,19 +195,6 @@ function localToday(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-/** The workout's part of a backblast as text: where and when, then its sections (not the notes). */
-function workoutText(backblast: Backblast, language: Language): string {
-  const workout: Backblast = {
-    title: "",
-    date: "",
-    ao: "",
-    q: "",
-    attendees: [],
-  };
-  for (const key of WORKOUT_SECTIONS) workout[key] = backblast[key] ?? "";
-  return formatBackblast(workout, language);
-}
-
 /** The title for each text section, for the Workout page's fields. */
 function textTitle(steps: Step[], name: TextKey): string {
   const step = steps.find((s) => s.kind === "text" && s.name === name);
@@ -238,7 +223,6 @@ const OTHER_AO = "__other";
 
 export function BackblastForm({
   mode = "backblast",
-  onCopyWorkout,
   heading,
   status,
   saveLabel,
@@ -248,13 +232,9 @@ export function BackblastForm({
   onDiscard,
   userId,
   initialTemplates,
+  fixedDate,
 }: {
   mode?: FormMode;
-  /**
-   * For a backblast made from a workout: fetches the workout's sections again, returning the
-   * workout (or an error message).
-   */
-  onCopyWorkout?: () => Promise<Backblast | string>;
   heading: string;
   /** Short save state shown in the header, e.g. "Draft saved". */
   status: string;
@@ -268,8 +248,12 @@ export function BackblastForm({
   onDiscard?: () => void;
   userId: string;
   initialTemplates: SectionTemplate[];
+  /** A date it keeps, shown but not changeable (the app tour's workout is today's). */
+  fixedDate?: string;
 }) {
-  const [backblast, setBackblast] = useState<Backblast>(initial);
+  const [backblast, setBackblast] = useState<Backblast>(
+    fixedDate ? { ...initial, date: fixedDate } : initial,
+  );
   const [templates, setTemplates] = useState(initialTemplates);
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -310,13 +294,22 @@ export function BackblastForm({
       ? formatBackblast({ ...backblast, notes: "" }, language)
       : copyText(backblast, language, workoutLink);
   const step = steps[stepIndex]!;
+  // Whether the header (with the save status) has scrolled out of view.
+  const header = useRef<HTMLElement>(null);
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    const el = header.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) =>
+      setPinned(!entry!.isIntersecting),
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const allText = useMemo(() => stepsFor(language, "workout"), [language]);
   // A backblast is written after its workout, so it can't be finished before the workout's date.
   const tooEarly =
     mode === "backblast" && !!backblast.date && backblast.date > localToday();
-  const [copying, setCopying] = useState(false);
-  // Whether the backblast's copy of its workout is open for editing.
-  const [editingCopy, setEditingCopy] = useState(false);
 
   // Report edits (not the initial render) so the draft can be saved.
   useEffect(() => {
@@ -388,19 +381,6 @@ export function BackblastForm({
       return setThangs([...current, { text: body }]);
     }
     set(name, body);
-  }
-
-  /** Replaces the Workout page's sections with the workout's current ones. */
-  async function copyAgain() {
-    if (!onCopyWorkout) return;
-    setCopying(true);
-    setError(null);
-    const workout = await onCopyWorkout();
-    setCopying(false);
-    if (typeof workout === "string") return setError(workout);
-    edited.current = true;
-    setBackblast((current) => copyWorkout(current, workout));
-    setEditingCopy(false);
   }
 
   /**
@@ -484,9 +464,15 @@ export function BackblastForm({
         <input
           type="date"
           value={backblast.date}
+          disabled={!!fixedDate}
           onChange={(e) => set("date", e.target.value)}
-          className="input text-base"
+          className="input text-base disabled:opacity-70"
         />
+        {fixedDate && (
+          <span className="text-xs font-normal text-muted">
+            Today, for the tutorial, so you can write its backblast next.
+          </span>
+        )}
       </label>
       <label className="label flex flex-col gap-1.5">
         Time
@@ -510,12 +496,30 @@ export function BackblastForm({
       }}
       className="card"
     >
-      <header className="flex items-start justify-between gap-4">
+      <header ref={header} className="flex items-start justify-between gap-4">
         <h1 className="text-lg font-semibold tracking-tight text-ink-soft">
           {heading}
         </h1>
         <span className="status shrink-0">{status}</span>
       </header>
+      {/* Once the header scrolls away: the title, the save status and the page you're on. */}
+      {pinned && (
+        <div
+          role="status"
+          aria-label="Editing"
+          className="fixed inset-x-3 top-3 z-30 mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-line-strong bg-surface-raised/95 px-4 py-2.5 shadow-xl backdrop-blur"
+        >
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate font-semibold text-ink">
+              {backblast.title.trim() || heading}
+            </span>
+            <span className="truncate text-xs text-muted">
+              Step {stepIndex + 1} of {steps.length} · {step.title}
+            </span>
+          </span>
+          <span className="status shrink-0 text-sm">{status}</span>
+        </div>
+      )}
 
       <nav
         data-tour="editor-steps"
@@ -530,6 +534,8 @@ export function BackblastForm({
               key={s.title}
               type="button"
               aria-label={`Go to ${s.title}`}
+              // Which page, whatever its title (the app tour opens pages by this).
+              data-step={s.kind === "text" ? s.name : s.kind}
               aria-current={index === stepIndex ? "step" : undefined}
               onClick={() => goTo(index)}
               className="group relative flex-1 py-2"
@@ -619,70 +625,45 @@ export function BackblastForm({
           <div className="flex flex-col gap-4">{basicsFields}</div>
         )}
 
-        {step.kind === "workout" &&
-          (backblast.workoutId && !editingCopy ? (
-            <div className="flex flex-col gap-3">
-              <pre className="rounded-xl border border-line p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink-soft">
-                {workoutText(backblast, language) || "The workout is empty."}
-              </pre>
-              <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-                <button
-                  type="button"
-                  onClick={() => setEditingCopy(true)}
-                  className="link inline-flex items-center gap-1.5"
-                >
-                  <PencilIcon />
-                  Edit
-                </button>
-                <a
-                  href={`${process.env.NEXT_PUBLIC_BASE_PATH}/workout/?id=${backblast.workoutId}`}
-                  className="link"
-                >
-                  Open workout
-                </a>
-                {onCopyWorkout && (
-                  <button
-                    type="button"
-                    disabled={copying}
-                    onClick={copyAgain}
-                    className="link"
-                  >
-                    {copying ? "Updating…" : "Update from workout"}
-                  </button>
-                )}
-              </div>
-            </div>
-          ) : (
-            // The backblast's own copy of the workout. Editing it never changes the workout.
-            <div className="flex flex-col gap-4">
-              {backblast.workoutId && (
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-line px-3 py-2 text-sm text-ink-soft">
-                  <span>
-                    Changes here are only for this backblast. The workout stays
-                    as it is.
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setEditingCopy(false)}
-                    className="link shrink-0 font-medium text-ink"
-                  >
-                    Done
-                  </button>
+        {step.kind === "workout" && (
+          <div className="flex flex-col gap-4">
+            {backblast.workoutId && (
+              // One and the same: Rocket keeps the workout and its backblast alike.
+              <p className="rounded-xl border border-line px-3 py-2 text-sm text-ink-soft">
+                Shared with its workout: a change here is made to the workout
+                too, and the other way round.
+              </p>
+            )}
+            {basicsFields}
+            {WORKOUT_TEXT.map((name) =>
+              name === "thang" ? (
+                <div key={name} className="flex flex-col gap-1.5">
+                  <span className="label">{textTitle(allText, name)}</span>
+                  <ThangsInput
+                    value={
+                      backblast.thangs ?? [{ text: backblast.thang ?? "" }]
+                    }
+                    onChange={setThangs}
+                    placeholder="The actual workout"
+                    minBoxHeight={320}
+                  />
                 </div>
-              )}
-              {basicsFields}
-              {WORKOUT_TEXT.map((name) => (
+              ) : (
                 <label key={name} className="label flex flex-col gap-1.5">
                   {textTitle(allText, name)}
                   <textarea
                     value={backblast[name] ?? ""}
                     onChange={(e) => set(name, e.target.value)}
-                    className="input min-h-56 resize-y text-base leading-relaxed"
+                    // Room to write: Introduction and Warm-o-rama run long.
+                    className={`input resize-y text-base leading-relaxed ${
+                      name === "wordsOfWisdom" ? "min-h-56" : "min-h-80"
+                    }`}
                   />
                 </label>
-              ))}
-            </div>
-          ))}
+              ),
+            )}
+          </div>
+        )}
 
         {step.kind === "text" &&
           mode === "workout" &&

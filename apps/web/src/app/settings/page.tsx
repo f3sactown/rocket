@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { LANGUAGES, type Language } from "@rocket/core";
 import {
   SignedIn,
@@ -11,6 +11,7 @@ import {
   type SwipeAction,
 } from "@/components/auth-provider";
 import { AccountData } from "@/components/account-data";
+import { ProfileName } from "@/components/name-check";
 import { NOTICES } from "@/components/notice-dialog";
 import { PushSettings } from "@/components/push-settings";
 import { startTour } from "@/components/app-tour";
@@ -60,7 +61,9 @@ function Section({
 
   return (
     <Container
-      className="panel flex flex-col gap-4"
+      // Linked to as #profile, #region…
+      id={title.toLowerCase().replace(/[^a-z]+/g, "-")}
+      className="panel flex scroll-mt-20 flex-col gap-4"
       onSubmit={async (event: React.FormEvent) => {
         event.preventDefault();
         if (!save) return;
@@ -101,43 +104,9 @@ function Section({
 
 function Settings({ user }: { user: CurrentUser }) {
   const terms = useTerms();
-  const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
-  const [nameResult, setNameResult] = useState<Result>(null);
-  const nameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  /** Saves the name shortly after the last keystroke. */
-  function changeName(value: string) {
-    setName(value);
-    setNameResult({ text: "Saving…", error: false });
-    if (nameTimer.current) clearTimeout(nameTimer.current);
-    nameTimer.current = setTimeout(
-      async () => setNameResult(await saveName(value)),
-      800,
-    );
-  }
-
-  async function saveName(value: string): Promise<Result> {
-    const trimmed = value.trim();
-    if (!trimmed)
-      return { text: `Your ${terms.org} name can't be empty.`, error: true };
-    const supabase = createClient();
-    // The profile name is what others see on your backblasts; the account copy is shown to you.
-    const { error } = await supabase
-      .from("profiles")
-      .update({ name: trimmed })
-      .eq("id", user.id);
-    if (error) return { text: error.message, error: true };
-    const { error: authError } = await supabase.auth.updateUser({
-      // f3_name too, since signing in with Google overwrites `name`.
-      data: { name: trimmed, f3_name: trimmed },
-    });
-    if (authError) return { text: authError.message, error: true };
-    return { text: "Name saved.", error: false };
-  }
 
   async function saveEmail(): Promise<Result> {
     const trimmed = email.trim();
@@ -177,24 +146,9 @@ function Settings({ user }: { user: CurrentUser }) {
 
       <Section
         title="Profile"
-        description={`Your ${terms.org} name is shown on the backblasts you write. Changes save as you type.`}
+        description={`Your ${terms.org} name is shown on the workouts and backblasts you write.`}
       >
-        <label className="label flex flex-col gap-1.5">
-          {terms.org} name
-          <input
-            required
-            value={name}
-            onChange={(e) => changeName(e.target.value)}
-            className="input"
-          />
-        </label>
-        {nameResult && (
-          <p
-            className={`-mt-2 text-sm ${nameResult.error ? "text-accent" : "text-muted"}`}
-          >
-            {nameResult.text}
-          </p>
-        )}
+        <ProfileName user={user} label={`${terms.org} name`} />
       </Section>
 
       <Section
@@ -318,15 +272,15 @@ function Settings({ user }: { user: CurrentUser }) {
 
       <Section
         title="Tutorial"
-        description="A step-by-step tour of Rocket: Home, writing a workout, Discover, the Exicon and PAX. Once a workout of yours has happened, a short one shows how to write its backblast."
+        description="A step-by-step tour of Rocket: Home, then writing a workout and its backblast with you, page by page, then Discover, the Exicon and PAX."
       >
         <button
           type="button"
           onClick={async () => {
             await createClient().auth.updateUser({
-              data: { tutorial_done: false, tutorial_backblast_done: false },
+              data: { tutorial_done: false },
             });
-            startTour("main");
+            startTour();
           }}
           className="self-start rounded-full border border-line-strong px-4 py-2 text-sm font-medium text-ink transition hover:border-accent/60"
         >

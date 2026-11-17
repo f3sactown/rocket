@@ -124,8 +124,20 @@ export function isUpcoming(date: string | null | undefined): boolean {
 }
 
 /**
- * Your drafts of a kind, most recently edited first, and your finished ones, newest first. Others'
- * public workouts are on Discover, not here. What you've archived is left out.
+ * Newest workout date first, undated ones last; a stable sort, so ties keep their order. For
+ * lists put together from more than one query (Home's drafts).
+ */
+export function byWorkoutDate(a: ListItem, b: ListItem): number {
+  if (a.date === b.date) return 0;
+  if (!a.date) return 1;
+  if (!b.date) return -1;
+  return a.date < b.date ? 1 : -1;
+}
+
+/**
+ * Your drafts and your finished ones of a kind, each by workout date, the most recent on top
+ * (undated ones last). Others' public workouts are on Discover, not here. What you've archived is
+ * left out.
  */
 export async function loadLists(
   kind: ItemKind,
@@ -142,6 +154,7 @@ export async function loadLists(
     .select(listColumns(kind))
     .eq("status", "draft")
     .eq("author_id", userId)
+    .order("date", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false })
     .limit(limit);
   let published = supabase
@@ -149,7 +162,7 @@ export async function loadLists(
     .select(listColumns(kind))
     .eq("status", "published")
     .eq("author_id", userId)
-    .order("date", { ascending: false })
+    .order("date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .limit(limit);
   if (archived.length) {
@@ -160,7 +173,11 @@ export async function loadLists(
     published = published.or(`date.is.null,date.lte.${localToday()}`);
   const [d, p] = await Promise.all([drafts, published]);
   if (d.error || p.error) throw new Error((d.error ?? p.error)!.message);
-  return { drafts: asItems(kind, d.data), published: asItems(kind, p.data) };
+  // Sorted here too, so the order holds however the rows arrive.
+  return {
+    drafts: asItems(kind, d.data).sort(byWorkoutDate),
+    published: asItems(kind, p.data).sort(byWorkoutDate),
+  };
 }
 
 /**
@@ -219,7 +236,7 @@ export async function loadWorkoutsNeedingBackblast(
       .eq("status", "published")
       // Only your own: a backblast is written by the workout's Q.
       .eq("author_id", userId)
-      .order("date", { ascending: false })
+      .order("date", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(200),
   ]);
@@ -228,7 +245,9 @@ export async function loadWorkoutsNeedingBackblast(
   const skip = new Set(
     (written.data ?? []).map((row) => row.workout_id as string),
   );
-  return asItems("workout", workouts.data).filter((w) => !skip.has(w.id));
+  return asItems("workout", workouts.data)
+    .filter((w) => !skip.has(w.id))
+    .sort(byWorkoutDate);
 }
 
 /** Links one of your backblasts to one of your workouts. */

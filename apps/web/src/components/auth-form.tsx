@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { loadRegions, type Region } from "@/lib/regions";
+import { useEffect, useRef, useState } from "react";
+import {
+  loadRegions,
+  loadRosterForSignUp,
+  takenNames,
+  type Region,
+} from "@/lib/regions";
 import { createClient, createRecoveryClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/use-region";
 import { ArrowIcon, GoogleIcon } from "./icons";
@@ -16,6 +21,10 @@ export function AuthForm() {
     error: boolean;
   } | null>(null);
   const [pending, setPending] = useState(false);
+  // The name about to be set for good, once it's been shown back to confirm.
+  const [confirming, setConfirming] = useState<string | null>(null);
+  // The region chosen, whose roster the name is picked from.
+  const [regionId, setRegionId] = useState("");
   // Google is the way in; email and password sit behind a link for those without Google.
   const [useEmail, setUseEmail] = useState(false);
   const regions = useLoad(mode === "sign-up" ? () => loadRegions() : null, [
@@ -68,6 +77,12 @@ export function AuthForm() {
     }
 
     if (mode === "sign-up") {
+      // The name can't be changed later: show it back once before the account is made.
+      const name = String(form.get("name")).trim();
+      if (confirming !== name) {
+        setPending(false);
+        return setConfirming(name);
+      }
       const region = regions.value?.find((r) => r.id === form.get("region"));
       if (region) setAccent(region.language);
       const { data, error } = await supabase.auth.signUp({
@@ -173,11 +188,18 @@ export function AuthForm() {
       <div className="panel flex flex-col gap-4">
         {mode === "sign-up" && (
           <>
-            <label className="label flex flex-col gap-1.5">
-              F3 name
-              <input name="name" required className="input" />
-            </label>
-            <RegionSelect regions={regions.value} />
+            <RegionSelect
+              regions={regions.value}
+              onChange={(id) => {
+                setRegionId(id);
+                setConfirming(null);
+              }}
+            />
+            <NameField
+              region={regions.value?.find((r) => r.id === regionId)}
+              onChange={() => setConfirming(null)}
+            />
+            {confirming && <ConfirmName name={confirming} />}
           </>
         )}
         <label className="label flex flex-col gap-1.5">
@@ -238,7 +260,9 @@ export function AuthForm() {
           : mode === "sign-in"
             ? "Sign in"
             : mode === "sign-up"
-              ? "Create account"
+              ? confirming
+                ? `Yes, I'm ${confirming}: create account`
+                : "Create account"
               : "Send reset link"}
       </button>
       <button
@@ -271,13 +295,152 @@ export function AuthForm() {
   );
 }
 
+/**
+ * The F3 name at sign-up, chosen from the region's roster (the names in its database), with the
+ * warning that it's for good: it's how the roster, backblasts and stats find you, so it can't be
+ * changed once the account is made. Names already taken by a Rocket account are left out where
+ * that's known (signed in, after Google). Someone not on the roster yet can say so and type it.
+ */
+export function NameField({
+  region,
+  userId,
+  defaultValue = "",
+  onChange,
+  changing = false,
+}: {
+  /** Changing it in Settings (it's off the roster): a roster name only, and the warning says so. */
+  changing?: boolean;
+  /** The region chosen above, if any. */
+  region?: Region | null;
+  /** Signed in already (after Google): taken names are known then. */
+  userId?: string;
+  defaultValue?: string;
+  onChange?: () => void;
+}) {
+  const roster = useLoad(
+    region ? () => loadRosterForSignUp(region, !!userId) : null,
+    [region?.id, !!userId],
+  );
+  const taken = useLoad(
+    region && userId ? () => takenNames(region, userId) : null,
+    [region?.id, userId],
+  );
+  const [notListed, setNotListed] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const names = roster.value ?? [];
+  const takenSet = taken.value;
+  const available = names.filter((n) => !takenSet?.has(n.toLowerCase()));
+  const choosing = !!region && names.length > 0 && !notListed;
+
+  /** Why the name typed can't be used, if it can't. */
+  const problem = (value: string): string => {
+    const typed = value.trim().toLowerCase();
+    if (!typed || !choosing) return "";
+    if (takenSet?.has(typed))
+      return "That name is already taken by someone on Rocket.";
+    if (!names.some((n) => n.toLowerCase() === typed))
+      return "Choose your name from your region's roster, exactly as it's written there.";
+    return "";
+  };
+
+  // The browser won't submit the form while the name doesn't match.
+  useEffect(() => {
+    const el = input.current;
+    if (el) el.setCustomValidity(problem(el.value));
+  });
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="label flex flex-col gap-1.5">
+        F3 name
+        <input
+          ref={input}
+          name="name"
+          required
+          defaultValue={defaultValue}
+          autoComplete="off"
+          list={choosing ? "roster-names" : undefined}
+          placeholder={choosing ? "Start typing to find your name" : undefined}
+          onChange={(e) => {
+            e.currentTarget.setCustomValidity(problem(e.currentTarget.value));
+            onChange?.();
+          }}
+          // Written as the roster has it (its capitals), whatever was typed.
+          onBlur={(e) => {
+            const typed = e.currentTarget.value.trim().toLowerCase();
+            const match = names.find((n) => n.toLowerCase() === typed);
+            if (match && match !== e.currentTarget.value) {
+              e.currentTarget.value = match;
+              onChange?.();
+            }
+          }}
+          className="input"
+        />
+      </label>
+      {choosing && (
+        <datalist id="roster-names">
+          {available.map((name) => (
+            <option key={name} value={name} />
+          ))}
+        </datalist>
+      )}
+      <span className="text-xs text-muted">
+        {!region
+          ? "Choose your region first to pick your name from its roster."
+          : roster.loading
+            ? "Loading the roster…"
+            : roster.error || !names.length
+              ? "Couldn't load the roster: type your name exactly as it's written there."
+              : notListed
+                ? "Type your name as it will be on the roster."
+                : `${available.length} names on the ${region.name} roster. It's the name others see on your workouts and backblasts.`}
+      </span>
+      {!!region && names.length > 0 && !changing && (
+        <label className="flex items-center gap-2 text-xs text-ink-soft">
+          <input
+            type="checkbox"
+            checked={notListed}
+            onChange={(e) => {
+              setNotListed(e.target.checked);
+              onChange?.();
+            }}
+            className="size-4 accent-[var(--color-accent)]"
+          />
+          I&apos;m not on the roster yet (ask your Site Q to add you)
+        </label>
+      )}
+      <span className="rounded-xl border border-accent/40 bg-accent-soft px-3 py-2 text-xs text-ink">
+        <strong>Choose carefully:</strong> your name must match the database
+        (your region&apos;s roster) exactly, and it can&apos;t be changed{" "}
+        {changing ? "again once it's saved" : "once your account is set up"}.
+      </span>
+    </div>
+  );
+}
+
+/** The last check before the name is set for good. */
+export function ConfirmName({ name }: { name: string }) {
+  return (
+    <p
+      role="alert"
+      className="rounded-xl border border-accent/60 bg-accent-soft px-3 py-2.5 text-sm text-ink"
+    >
+      You&apos;ll be <strong>{name}</strong> on Rocket, for good: it can&apos;t
+      be changed later. Tap the button again to confirm, or fix the name above.
+    </p>
+  );
+}
+
 /** Region choice at sign-up; regions that aren't listed can be added in Settings afterwards. */
 export function RegionSelect({
   regions,
   defaultValue = "",
+  onChange,
 }: {
   regions?: Region[];
   defaultValue?: string;
+  /** The region's ID as it's chosen ("" for none). */
+  onChange?: (id: string) => void;
 }) {
   return (
     <label className="label flex flex-col gap-1.5">
@@ -286,6 +449,7 @@ export function RegionSelect({
         name="region"
         key={defaultValue}
         defaultValue={defaultValue}
+        onChange={(e) => onChange?.(e.target.value)}
         className="input"
       >
         <option value="">
