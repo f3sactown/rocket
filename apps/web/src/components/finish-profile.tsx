@@ -32,6 +32,8 @@ export function FinishProfile({ user }: { user: CurrentUser }) {
   const [error, setError] = useState<string | null>(null);
   // The name about to be set for good, once it's been shown back to confirm.
   const [confirming, setConfirming] = useState<string | null>(null);
+  // The region chosen (until then, the profile's), whose roster the name is picked from.
+  const [regionId, setRegionId] = useState<string | null>(null);
   const hadPassword = user.providers.includes("email");
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -101,8 +103,16 @@ export function FinishProfile({ user }: { user: CurrentUser }) {
           <RegionSelect
             regions={regions.value}
             defaultValue={profile.value.region_id ?? ""}
+            onChange={(id) => {
+              setRegionId(id);
+              setConfirming(null);
+            }}
           />
           <NameField
+            region={regions.value?.find(
+              (r) => r.id === (regionId ?? profile.value?.region_id),
+            )}
+            userId={user.id}
             // A new Google account's profile holds its real name, so it starts blank; an account
             // that had a password already has its F3 name.
             defaultValue={hadPassword ? profile.value.name : ""}
