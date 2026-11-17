@@ -57,6 +57,8 @@ function RunWorkout({ user }: { user: CurrentUser }) {
   const runningTimer = useRef<{ id: string; pause: () => void } | null>(null);
   // Where to go once the "make it public?" question is answered.
   const [leaving, setLeaving] = useState<string | null>(null);
+  // Answered (or leaving after answering): go without asking again.
+  const asked = useRef(false);
   const router = useRouter();
   // Your backblasts from this workout, to open the one for this run if it's started.
   const [backblasts, setBackblasts] = useState<
@@ -70,6 +72,46 @@ function RunWorkout({ user }: { user: CurrentUser }) {
     privateFinished?: boolean;
     error?: string;
   } | null>(null);
+
+  // Leaving the run of your finished private workout, any way (its buttons, the menu, any link,
+  // or back), first asks whether to make it public. Closing the app can't be asked about.
+  const privateFinished = !!result?.privateFinished;
+  useEffect(() => {
+    if (!privateFinished) return;
+    asked.current = false;
+    const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+    // A link to another page: held until the question's answered.
+    const onClick = (event: MouseEvent) => {
+      if (asked.current || event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+        return;
+      const link = (event.target as Element | null)?.closest?.("a[href]");
+      if (!(link instanceof HTMLAnchorElement) || link.target === "_blank")
+        return;
+      const url = new URL(link.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const path = url.pathname.startsWith(base)
+        ? url.pathname.slice(base.length) || "/"
+        : url.pathname;
+      setLeaving(path + url.search);
+    };
+    // Back: an extra step in the history (the same page) catches it, and asks.
+    window.history.pushState(window.history.state, "", window.location.href);
+    const onBack = () => {
+      if (asked.current) return;
+      window.history.pushState(window.history.state, "", window.location.href);
+      setLeaving(BACK);
+    };
+    document.addEventListener("click", onClick, true);
+    window.addEventListener("popstate", onBack);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      window.removeEventListener("popstate", onBack);
+    };
+  }, [privateFinished]);
 
   useEffect(() => {
     if (!id) return;
@@ -137,12 +179,6 @@ function RunWorkout({ user }: { user: CurrentUser }) {
     return <NotFound what="workout" error={result?.error} />;
 
   const { workout } = result;
-  /** Leaving the run: a private workout of yours first asks to be made public. */
-  const leave = (href: string) => (event: React.MouseEvent) => {
-    if (!result.privateFinished) return;
-    event.preventDefault();
-    setLeaving(href);
-  };
   const terms = termsFor(user.language);
   // Where and when, as at the top of the copied workout.
   const where = backblastParts(
@@ -265,11 +301,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
         </div>
         <div className="flex items-start gap-2">
           {/* Back to the workout's page, done running it. */}
-          <Link
-            href={`/workout?id=${id}`}
-            onClick={leave(`/workout?id=${id}`)}
-            className="btn shrink-0 px-7"
-          >
+          <Link href={`/workout?id=${id}`} className="btn shrink-0 px-7">
             Close
           </Link>
           {result.mine &&
@@ -287,7 +319,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
                   : `/backblast?id=${existing.id}`
                 : `/backblasts/new?workout=${id}`;
               return (
-                <Link href={href} onClick={leave(href)} className="btn flex-1">
+                <Link href={href} className="btn flex-1">
                   <ArrowIcon />
                   {existing
                     ? existing.status === "draft"
@@ -303,15 +335,21 @@ function RunWorkout({ user }: { user: CurrentUser }) {
         <MakePublic
           workoutId={id!}
           onDone={() => {
-            const href = leaving;
+            const where = leaving;
             setLeaving(null);
-            router.push(href);
+            asked.current = true;
+            // Back (button or gesture): past the extra step this page added, to where it was.
+            if (where === BACK) window.history.go(-2);
+            else router.push(where);
           }}
         />
       )}
     </ActiveTimer.Provider>
   );
 }
+
+/** Leaving by going back, rather than to a page. */
+const BACK = "back";
 
 /** After running a private workout: make it public so other PAX can see, like and reuse it? */
 function MakePublic({
