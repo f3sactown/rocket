@@ -129,7 +129,7 @@ function wentOffline() {
  * Network first: a fresh copy when there's a connection (kept for later), the kept copy when
  * there isn't one or it's too slow. Once offline, the kept copy straight away.
  */
-async function networkFirst(request, cacheName, match) {
+async function networkFirst(event, request, cacheName, match) {
   const cache = await caches.open(cacheName);
   const network = fetch(request).then(async (response) => {
     if (response.ok) await cache.put(request, response.clone());
@@ -139,6 +139,9 @@ async function networkFirst(request, cacheName, match) {
   });
   // If the kept copy answers first, a later network failure isn't an error.
   network.catch(() => {});
+  // Keep the worker running until the network answers too, even after a kept copy has: phones
+  // stop it as soon as they can, and it's this answer that says the connection is back.
+  event.waitUntil(network.catch(() => {}));
 
   // Without a kept copy, a page (a navigation) waits for the network; anything else gives up,
   // at once when already offline, so the app can move on (Next.js opens the page in full, from
@@ -218,7 +221,7 @@ self.addEventListener("fetch", (event) => {
       return event.respondWith(cacheFirst(request));
     // Pages (and their data files): one page serves every ?id=, so the query is ignored.
     return event.respondWith(
-      networkFirst(request, PAGES_CACHE, {
+      networkFirst(event, request, PAGES_CACHE, {
         ignoreSearch: true,
         ignoreVary: true,
       }),
@@ -227,12 +230,14 @@ self.addEventListener("fetch", (event) => {
   // Rocket's data from Supabase: workouts, backblasts, profiles and the rest.
   if (url.pathname.includes("/rest/v1/"))
     return event.respondWith(
-      networkFirst(request, DATA_CACHE, { ignoreVary: true }),
+      networkFirst(event, request, DATA_CACHE, { ignoreVary: true }),
     );
 });
 
 // A window asking how the connection is (when it opens).
 self.addEventListener("message", (event) => {
+  // The app reached the internet itself: back online.
+  if (event.data?.type === "rocket-online") wentOnline();
   if (event.data?.type === "rocket-connection?")
     event.source?.postMessage({
       type: "rocket-connection",

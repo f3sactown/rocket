@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { supabaseUrl } from "./supabase/env";
 
 /**
  * How the connection is doing, for the Offline banner and "Checking connection…". The phone's own
@@ -15,9 +16,8 @@ export interface Connection {
   checking: boolean;
 }
 
-const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 /** How often to look for the connection coming back, while offline. */
-const PING_MS = 10000;
+const PING_MS = 5000;
 /** The longest a waiting request counts, in case its answer never comes. */
 const PENDING_MS = 15000;
 
@@ -37,9 +37,12 @@ function update() {
   if (next.offline === snapshot.offline && next.checking === snapshot.checking)
     return;
   snapshot = next;
-  // While offline, look now and then for the connection coming back (through the service
-  // worker, which says so when a request gets through).
-  if (next.offline && !ping) ping = setInterval(lookForConnection, PING_MS);
+  // While offline, look now and then for the connection coming back.
+  if (next.offline && !ping) {
+    ping = setInterval(lookForConnection, PING_MS);
+    // Straight away too: a request that was only slow shouldn't leave it saying Offline.
+    lookForConnection();
+  }
   if (!next.offline && ping) {
     clearInterval(ping);
     ping = null;
@@ -47,10 +50,26 @@ function update() {
   for (const listener of listeners) listener();
 }
 
+/**
+ * Looks for the connection: asks Supabase's server directly (not through the service worker, so
+ * nothing kept can answer), and any answer at all means it's back. Then the service worker hears
+ * so too, and stops answering from its kept copies.
+ */
 function lookForConnection() {
-  fetch(`${BASE}/manifest.webmanifest?ping=${Date.now()}`, {
+  fetch(`${supabaseUrl}/auth/v1/health?ping=${Date.now()}`, {
+    mode: "no-cors",
     cache: "no-store",
-  }).catch(() => {});
+  }).then(
+    () => {
+      navigator.serviceWorker?.controller?.postMessage({
+        type: "rocket-online",
+      });
+      if (!workerOffline) return;
+      workerOffline = false;
+      update();
+    },
+    () => {},
+  );
 }
 
 function onMessage(event: MessageEvent) {
@@ -84,6 +103,11 @@ function start() {
     lookForConnection();
   });
   window.addEventListener("offline", update);
+  // Back to Rocket from another app (timers pause meanwhile): look again if it said Offline.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && snapshot.offline)
+      lookForConnection();
+  });
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.addEventListener("message", onMessage);
     // What the service worker already knows (e.g. offline when this page opened).
