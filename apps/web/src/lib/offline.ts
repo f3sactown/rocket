@@ -7,6 +7,10 @@
  * so the copies are exactly what those screens ask for.
  */
 
+import { addDays } from "../../../../supabase/functions/_shared/reminders";
+import { localToday } from "./backblast-list";
+import { createClient } from "./supabase/client";
+
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const KEY = "rocket-offline-kept";
 /** How often the same screens are fetched again, to keep their copies fresh. */
@@ -38,11 +42,24 @@ let running = false;
  * Opens each screen in turn in a hidden frame, unless the same ones were kept recently. Only on a
  * connection, not in Data Saver, and never from inside one of those frames.
  */
-export function keepForOffline(paths: string[]) {
+export async function keepForOffline(paths: string[]) {
   if (running || typeof window === "undefined") return;
   if (window.top !== window || !navigator.onLine) return;
-  if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller)
-    return;
+  if (!("serviceWorker" in navigator)) return;
+  // The first time Rocket opens on a device, its service worker takes over a moment later.
+  if (!navigator.serviceWorker.controller) {
+    await new Promise<void>((resolve) => {
+      navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        () => resolve(),
+        {
+          once: true,
+        },
+      );
+      setTimeout(resolve, 30000);
+    });
+    if (!navigator.serviceWorker.controller || running) return;
+  }
   const connection = (navigator as { connection?: { saveData?: boolean } })
     .connection;
   if (connection?.saveData) return;
@@ -92,4 +109,20 @@ export function keepForOffline(paths: string[]) {
       // Kept again next time.
     }
   })();
+}
+
+/**
+ * Your finished workouts worth having offline: every one from the last two weeks and all those
+ * coming up (the most recent 20), newest first.
+ */
+export async function offlineWorkoutIds(userId: string): Promise<string[]> {
+  const { data } = await createClient()
+    .from("workouts")
+    .select("id")
+    .eq("author_id", userId)
+    .eq("status", "published")
+    .gte("date", addDays(localToday(), -14))
+    .order("date", { ascending: false })
+    .limit(20);
+  return (data ?? []).map((w) => w.id);
 }

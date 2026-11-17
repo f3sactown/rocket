@@ -161,14 +161,17 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   app's pages and code, so Rocket opens with no signal, and keeps the data you've looked at, so a
   workout you've opened before can be read and run offline. When Home opens on a connection it
   also keeps copies of the main screens (Workouts, Backblasts, Discover, Exicon, PAX, Settings),
-  your upcoming and recent workouts with their Run workout screens, and your recent backblasts,
+  your upcoming workouts and those from the last two weeks (plus Home's lists) with their Run
+  workout screens, and your recent backblasts (waiting for the service worker on a first visit),
   by opening each one in turn in a hidden frame (`lib/offline.ts`; again when that list changes,
   or every 3 hours; not in Data Saver). Offline, a sign-in Supabase can't renew (they last an
   hour) still counts: the account is kept on the device (`rocket-offline-user`) until the
   connection's back. Home's posts and Qs are kept on the device too (`rocket-totals:*`) and show
   offline as last seen; the likes and reuses top right say **Offline** instead, as they're only
-  counted fresh. Pages and data are fetched fresh
-  when there's a connection (a kept copy is used offline, or after 5 seconds on a slow one);
+  counted fresh. A page asked for without its trailing slash (`/workout?id=…`, which the site
+  redirects to `/workout/?id=…`) is found under the address with it. A workout or backblast that
+  isn't kept says so offline ("Not kept on this phone") rather than "not found". Pages and data
+  are fetched fresh when there's a connection (a kept copy is used offline, or after 5 seconds on a slow one);
   signing out drops the kept data. An **Offline** banner says what still works. The workout and
   backblast forms keep a copy of what's typed on the phone (`rocket-unsaved:*` in local storage)
   until it's saved, so a dropped connection or a closed app loses nothing: the status shows "Not

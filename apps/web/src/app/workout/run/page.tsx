@@ -1,5 +1,6 @@
 "use client";
 
+import { NotFound } from "@/components/not-found";
 import { BackblastNotYet } from "@/components/backblast-not-yet";
 import { isUpcoming } from "@/lib/backblast-list";
 
@@ -133,12 +134,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
 
   if (id && !result) return <div className="card h-96 animate-pulse" />;
   if (!result?.workout)
-    return (
-      <section className="card">
-        <h1 className="card-title">Workout not found</h1>
-        {result?.error && <p className="text-accent">{result.error}</p>}
-      </section>
-    );
+    return <NotFound what="workout" error={result?.error} />;
 
   const { workout } = result;
   /** Leaving the run: a private workout of yours first asks to be made public. */
