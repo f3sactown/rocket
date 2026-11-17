@@ -16,6 +16,8 @@ export function AuthForm() {
     error: boolean;
   } | null>(null);
   const [pending, setPending] = useState(false);
+  // The name about to be set for good, once it's been shown back to confirm.
+  const [confirming, setConfirming] = useState<string | null>(null);
   // Google is the way in; email and password sit behind a link for those without Google.
   const [useEmail, setUseEmail] = useState(false);
   const regions = useLoad(mode === "sign-up" ? () => loadRegions() : null, [
@@ -68,6 +70,12 @@ export function AuthForm() {
     }
 
     if (mode === "sign-up") {
+      // The name can't be changed later: show it back once before the account is made.
+      const name = String(form.get("name")).trim();
+      if (confirming !== name) {
+        setPending(false);
+        return setConfirming(name);
+      }
       const region = regions.value?.find((r) => r.id === form.get("region"));
       if (region) setAccent(region.language);
       const { data, error } = await supabase.auth.signUp({
@@ -173,11 +181,9 @@ export function AuthForm() {
       <div className="panel flex flex-col gap-4">
         {mode === "sign-up" && (
           <>
-            <label className="label flex flex-col gap-1.5">
-              F3 name
-              <input name="name" required className="input" />
-            </label>
             <RegionSelect regions={regions.value} />
+            <NameField onChange={() => setConfirming(null)} />
+            {confirming && <ConfirmName name={confirming} />}
           </>
         )}
         <label className="label flex flex-col gap-1.5">
@@ -238,7 +244,9 @@ export function AuthForm() {
           : mode === "sign-in"
             ? "Sign in"
             : mode === "sign-up"
-              ? "Create account"
+              ? confirming
+                ? `Yes, I'm ${confirming}: create account`
+                : "Create account"
               : "Send reset link"}
       </button>
       <button
@@ -268,6 +276,53 @@ export function AuthForm() {
         Use Google instead
       </button>
     </form>
+  );
+}
+
+/**
+ * The F3 name at sign-up, with the warning that it's for good: it's how the region's roster,
+ * backblasts and stats find you, so it can't be changed once the account is made.
+ */
+export function NameField({
+  defaultValue = "",
+  onChange,
+}: {
+  defaultValue?: string;
+  onChange?: () => void;
+}) {
+  return (
+    <label className="label flex flex-col gap-1.5">
+      F3 name
+      <input
+        name="name"
+        required
+        defaultValue={defaultValue}
+        autoComplete="off"
+        onChange={onChange}
+        className="input"
+      />
+      <span className="text-xs font-normal text-muted">
+        As it&apos;s written on your region&apos;s roster. It&apos;s the name
+        others see on your workouts and backblasts.
+      </span>
+      <span className="rounded-xl border border-accent/40 bg-accent-soft px-3 py-2 text-xs font-normal text-ink">
+        <strong>Choose carefully:</strong> your name can&apos;t be changed once
+        your account is set up.
+      </span>
+    </label>
+  );
+}
+
+/** The last check before the name is set for good. */
+export function ConfirmName({ name }: { name: string }) {
+  return (
+    <p
+      role="alert"
+      className="rounded-xl border border-accent/60 bg-accent-soft px-3 py-2.5 text-sm text-ink"
+    >
+      You&apos;ll be <strong>{name}</strong> on Rocket, for good: it can&apos;t
+      be changed later. Tap the button again to confirm, or fix the name above.
+    </p>
   );
 }
 

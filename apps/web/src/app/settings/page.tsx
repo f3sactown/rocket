@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { LANGUAGES, type Language } from "@rocket/core";
 import {
   SignedIn,
@@ -101,43 +101,9 @@ function Section({
 
 function Settings({ user }: { user: CurrentUser }) {
   const terms = useTerms();
-  const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
-  const [nameResult, setNameResult] = useState<Result>(null);
-  const nameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  /** Saves the name shortly after the last keystroke. */
-  function changeName(value: string) {
-    setName(value);
-    setNameResult({ text: "Saving…", error: false });
-    if (nameTimer.current) clearTimeout(nameTimer.current);
-    nameTimer.current = setTimeout(
-      async () => setNameResult(await saveName(value)),
-      800,
-    );
-  }
-
-  async function saveName(value: string): Promise<Result> {
-    const trimmed = value.trim();
-    if (!trimmed)
-      return { text: `Your ${terms.org} name can't be empty.`, error: true };
-    const supabase = createClient();
-    // The profile name is what others see on your backblasts; the account copy is shown to you.
-    const { error } = await supabase
-      .from("profiles")
-      .update({ name: trimmed })
-      .eq("id", user.id);
-    if (error) return { text: error.message, error: true };
-    const { error: authError } = await supabase.auth.updateUser({
-      // f3_name too, since signing in with Google overwrites `name`.
-      data: { name: trimmed, f3_name: trimmed },
-    });
-    if (authError) return { text: authError.message, error: true };
-    return { text: "Name saved.", error: false };
-  }
 
   async function saveEmail(): Promise<Result> {
     const trimmed = email.trim();
@@ -177,24 +143,18 @@ function Settings({ user }: { user: CurrentUser }) {
 
       <Section
         title="Profile"
-        description={`Your ${terms.org} name is shown on the backblasts you write. Changes save as you type.`}
+        description={`Your ${terms.org} name is shown on the workouts and backblasts you write.`}
       >
-        <label className="label flex flex-col gap-1.5">
-          {terms.org} name
-          <input
-            required
-            value={name}
-            onChange={(e) => changeName(e.target.value)}
-            className="input"
-          />
-        </label>
-        {nameResult && (
-          <p
-            className={`-mt-2 text-sm ${nameResult.error ? "text-accent" : "text-muted"}`}
-          >
-            {nameResult.text}
+        <div className="flex flex-col gap-1.5">
+          <span className="label">{terms.org} name</span>
+          {/* Set at sign-up for good: the roster, backblasts and stats all find you by it. */}
+          <p className="input cursor-default text-ink" aria-readonly="true">
+            {user.name}
           </p>
-        )}
+          <span className="text-xs text-muted">
+            Your name was set when you signed up and can&apos;t be changed.
+          </span>
+        </div>
       </Section>
 
       <Section
