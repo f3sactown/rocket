@@ -134,6 +134,14 @@ export function FinishProfile({ user }: { user: CurrentUser }) {
             ? `Yes, I'm ${confirming}: continue`
             : "Continue"}
       </button>
+      {/* No menu while signing up, so the way out is here. */}
+      <button
+        type="button"
+        onClick={() => createClient().auth.signOut()}
+        className="link -mt-2 self-center text-sm"
+      >
+        Not you? Sign out
+      </button>
     </form>
   );
 }
