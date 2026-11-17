@@ -160,7 +160,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **Offline:** the service worker (`apps/web/public/sw.js`, registered on every visit) keeps the
   app's pages and code, so Rocket opens with no signal, and keeps the data you've looked at, so a
   workout you've opened before can be read and run offline. When Home opens on a connection it
-  also keeps copies of the main screens (Workouts, Backblasts, Discover, Exicon, PAX, Settings),
+  also keeps copies of the main screens that work offline (Workouts, Backblasts, Settings),
   your upcoming workouts and those from the last two weeks (plus Home's lists) with their Run
   workout screens, and your recent backblasts (waiting for the service worker on a first visit),
   by opening each one in turn in a hidden frame (`lib/offline.ts`; again when that list changes,
@@ -173,7 +173,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   answer at once. Data requests aren't retried when they can't reach the server (Supabase would
   wait 1, 2 then 4 seconds more). Home's posts and Qs are kept on the device too (`rocket-totals:*`) and show
   offline as last seen; the likes and reuses top right say **Offline** instead, as they're only
-  counted fresh. A page asked for without its trailing slash (`/workout?id=…`, which the site
+  counted fresh. Discover, Exicon, Archive, Search and PAX need a connection: offline, the menu shows them greyed
+  out ("Offline") and opening one says **Needs a connection** (`components/offline-gate.tsx`).
+  Data asked for with today's date (Home's "up to today" and "after today" lists, Today's
+  workouts) is also kept under its address with the dates taken out, so offline on a later day
+  the latest kept answer still shows. A page asked for without its trailing slash (`/workout?id=…`, which the site
   redirects to `/workout/?id=…`) is found under the address with it. A workout or backblast that
   isn't kept says so offline ("Not kept on this phone") rather than "not found". Pages and data
   are fetched fresh when there's a connection (a kept copy is used offline, or after 5 seconds on a

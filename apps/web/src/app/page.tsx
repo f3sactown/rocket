@@ -46,6 +46,7 @@ const RECENT = 5;
  */
 function HomePage({ user }: { user: CurrentUser }) {
   const show = new Set(user.homeSections);
+  const { offline } = useConnection();
   const [lists, setLists] = useState<{
     drafts: ListItem[];
     future: ListItem[];
@@ -127,7 +128,11 @@ function HomePage({ user }: { user: CurrentUser }) {
       {show.has("today") && <TodaysWorkouts user={user} />}
 
       {error ? (
-        <p className="panel px-3 py-8 text-center text-accent">{error}</p>
+        <p className="panel px-3 py-8 text-center text-accent">
+          {offline || /fetch|network|load failed/i.test(error)
+            ? "Your workouts and backblasts aren't kept on this phone yet. They will be once Home opens with a connection."
+            : error}
+        </p>
       ) : !lists ? (
         <p className="panel px-3 py-8 text-center text-muted">Loading…</p>
       ) : (

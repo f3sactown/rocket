@@ -4,6 +4,7 @@ import { AppNav } from "@/components/app-nav";
 import { AuthProvider } from "@/components/auth-provider";
 import { DeviceSetup } from "@/components/device-setup";
 import { AppTour } from "@/components/app-tour";
+import { OfflineGate } from "@/components/offline-gate";
 import { OfflineSupport } from "@/components/offline-support";
 import { FaviconSync } from "@/components/favicon-sync";
 import { LaunchSplash } from "@/components/launch-splash";
@@ -55,7 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <OfflineSupport />
             <DeviceSetup />
             <AppTour />
-            {children}
+            <OfflineGate>{children}</OfflineGate>
           </AuthProvider>
         </main>
         <footer className="flex flex-col items-center gap-3 px-4 pb-8">

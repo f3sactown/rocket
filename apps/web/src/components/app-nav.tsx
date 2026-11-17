@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useConnection } from "@/lib/connection";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "./auth-provider";
+import { needsConnection } from "./offline-gate";
 import {
   ArchiveIcon,
   BookIcon,
@@ -117,6 +119,7 @@ const LINKS: {
 export function AppNav() {
   const { user } = useAuth();
   const pathname = usePathname();
+  const { offline } = useConnection();
   const [open, setOpen] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
 
@@ -177,6 +180,23 @@ export function AppNav() {
           </p>
           {LINKS.map((link) => {
             const current = link.match(pathname);
+            // Offline, the screens that need a connection are shown but can't be opened.
+            if (offline && needsConnection(link.href))
+              return (
+                <span
+                  key={link.href}
+                  aria-disabled="true"
+                  className={`flex items-center gap-3 rounded-xl py-2.5 pr-3 text-sm font-medium text-muted opacity-60 ${
+                    link.sub ? "pl-9" : "pl-3"
+                  }`}
+                >
+                  <span className="flex w-5 shrink-0 justify-center">
+                    {link.icon}
+                  </span>
+                  {link.label}
+                  <span className="ml-auto text-xs font-normal">Offline</span>
+                </span>
+              );
             return (
               <Link
                 key={link.href}
