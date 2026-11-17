@@ -192,8 +192,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   at once, with fresh ones fetched alongside (the worker is kept running until they answer), until
   one gets through. To notice the connection coming back, the app also asks Supabase's server
   directly (bypassing the service worker): straight away, every 5 seconds while offline, when the
-  phone says it's online, and on returning to the app; any answer clears **Offline** and tells the
-  service worker. A request waiting more than 1.5 seconds shows **Checking connection…** at the top,
+  phone says it's online, and on returning to the app; any answer tells the service worker first (so what loads next is fresh, not a kept copy), then
+  clears **Offline**, and the screen loads its data again; not the workout and backblast forms or
+  Run workout, where you'd lose your place (they save once they can). A request waiting more than 1.5 seconds shows **Checking connection…** at the top,
   and the workout, Run workout and backblast screens say "Waiting for a connection… the copy
   saved on this phone shows in a moment". A request with no kept copy gives up after 15 seconds
   (at once when already offline), except a page itself; signing out drops the kept data. An **Offline** banner says what still works, and the accent color (buttons, outlines, the rocket) turns grey until the connection's back (`<html data-connection>`). The workout and

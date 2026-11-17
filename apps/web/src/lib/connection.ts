@@ -14,6 +14,8 @@ export interface Connection {
   offline: boolean;
   /** A request has been waiting a while; it may be about to use a kept copy. */
   checking: boolean;
+  /** How many times the connection has come back, so screens can load their data again. */
+  reconnects: number;
 }
 
 /** How often to look for the connection coming back, while offline. */
@@ -21,7 +23,7 @@ const PING_MS = 5000;
 /** The longest a waiting request counts, in case its answer never comes. */
 const PENDING_MS = 15000;
 
-const ONLINE: Connection = { offline: false, checking: false };
+const ONLINE: Connection = { offline: false, checking: false, reconnects: 0 };
 let snapshot: Connection = ONLINE;
 let workerOffline = false;
 const pending = new Map<number, ReturnType<typeof setTimeout>>();
@@ -30,11 +32,18 @@ let started = false;
 let ping: ReturnType<typeof setInterval> | null = null;
 
 function update() {
+  const offline = !navigator.onLine || workerOffline;
   const next: Connection = {
-    offline: !navigator.onLine || workerOffline,
+    offline,
     checking: pending.size > 0,
+    // Back online: screens load their data again (fresh, not the copies kept on the phone).
+    reconnects: snapshot.reconnects + (snapshot.offline && !offline ? 1 : 0),
   };
-  if (next.offline === snapshot.offline && next.checking === snapshot.checking)
+  if (
+    next.offline === snapshot.offline &&
+    next.checking === snapshot.checking &&
+    next.reconnects === snapshot.reconnects
+  )
     return;
   snapshot = next;
   // The accent turns grey while offline (globals.css).
@@ -64,16 +73,27 @@ function lookForConnection() {
     mode: "no-cors",
     cache: "no-store",
   }).then(
-    () => {
-      navigator.serviceWorker?.controller?.postMessage({
-        type: "rocket-online",
-      });
+    async () => {
+      // The service worker first, so what loads next comes fresh rather than from its kept copies.
+      await tellWorkerOnline();
       if (!workerOffline) return;
       workerOffline = false;
       update();
     },
     () => {},
   );
+}
+
+/** Tells the service worker the connection is back, and waits (briefly) for it to take that in. */
+function tellWorkerOnline(): Promise<void> {
+  const worker = navigator.serviceWorker?.controller;
+  if (!worker) return Promise.resolve();
+  return new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => resolve();
+    setTimeout(resolve, 1000);
+    worker.postMessage({ type: "rocket-online" }, [channel.port2]);
+  });
 }
 
 function onMessage(event: MessageEvent) {
@@ -102,8 +122,10 @@ function start() {
   if (started) return;
   started = true;
   window.addEventListener("online", () => {
+    // The phone says it's back: still Offline until the server answers (and the service worker
+    // knows), so screens that load again get fresh data.
+    workerOffline = true;
     update();
-    // The phone says it's back: check, so the banner goes as soon as a request gets through.
     lookForConnection();
   });
   window.addEventListener("offline", update);

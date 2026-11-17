@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Fragment } from "react";
 import { usePathname } from "next/navigation";
 import { useConnection } from "@/lib/connection";
 
@@ -13,6 +14,20 @@ export const ONLINE_ONLY = [
   "/pax",
 ];
 
+/** Screens that aren't started over when the connection's back: forms and running a workout. */
+const KEEPS_STATE = [
+  "/workouts/new",
+  "/workouts/edit",
+  "/backblasts/new",
+  "/backblasts/edit",
+  "/workout/run",
+];
+
+function keepsState(path: string): boolean {
+  const page = path.replace(/\/$/, "") || "/";
+  return KEEPS_STATE.includes(page);
+}
+
 /** Whether a path is one of the screens that need a connection. */
 export function needsConnection(path: string): boolean {
   const page = path.replace(/\/$/, "") || "/";
@@ -22,8 +37,15 @@ export function needsConnection(path: string): boolean {
 /** Offline, a screen that needs a connection says so instead of failing to load. */
 export function OfflineGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { offline } = useConnection();
-  if (!offline || !needsConnection(pathname)) return children;
+  const { offline, reconnects } = useConnection();
+  if (!offline || !needsConnection(pathname))
+    // Back online, the screen starts over to load its data fresh, except where you're typing
+    // or running a workout (nothing's lost there, and it saves once it can).
+    return (
+      <Fragment key={keepsState(pathname) ? 0 : reconnects}>
+        {children}
+      </Fragment>
+    );
   return (
     <section className="card">
       <h1 className="card-title">Needs a connection</h1>
