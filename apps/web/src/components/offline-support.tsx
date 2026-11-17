@@ -44,10 +44,10 @@ export function OfflineSupport() {
     >
       <span className="size-2 shrink-0 rounded-full bg-muted" aria-hidden />
       <span>
-        <strong className="text-ink">Offline.</strong> You can keep going: the
-        main screens, your recent and upcoming workouts (and running them), and
-        anything you&apos;ve opened before still show. What you type is kept on
-        this phone and saved once you&apos;re back online.
+        <strong className="text-ink">Offline.</strong> Your workouts and
+        backblasts (and running them) still show, and what you type is kept on
+        this phone and saved once you&apos;re back online. Discover, Exicon,
+        Archive, Search and PAX need a connection.
       </span>
     </div>
   );

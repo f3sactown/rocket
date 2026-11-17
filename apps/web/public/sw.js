@@ -79,6 +79,12 @@ self.addEventListener("activate", (event) =>
 async function keptCopy(cache, request, match) {
   const kept = await cache.match(request, match);
   if (kept) return kept;
+  // Data asked for with another day's date: the latest answer kept, whatever its day.
+  const key = undated(request);
+  if (key) {
+    const latest = await cache.match(key);
+    if (latest) return latest;
+  }
   const url = new URL(request.url);
   const last = url.pathname.split("/").pop();
   if (url.origin !== self.location.origin || !last || last.includes("."))
@@ -129,10 +135,28 @@ function wentOffline() {
  * Network first: a fresh copy when there's a connection (kept for later), the kept copy when
  * there isn't one or it's too slow. Once offline, the kept copy straight away.
  */
+/**
+ * Requests that name a date (today's, for "up to today" and "after today") would never match
+ * their kept copy on another day. They're also kept under their address with the dates taken out,
+ * so offline the latest answer to the same question is found whatever the day.
+ */
+const DATES = /\d{4}-\d{2}-\d{2}(?:T[0-9:.]+(?:Z|%2B[0-9:]+|\+[0-9:]+)?)?/g;
+
+function undated(request) {
+  const url = decodeURIComponent(request.url);
+  if (!DATES.test(url)) return null;
+  DATES.lastIndex = 0;
+  return `${self.location.origin}/__undated__/${encodeURIComponent(url.replace(DATES, "*"))}`;
+}
+
 async function networkFirst(event, request, cacheName, match) {
   const cache = await caches.open(cacheName);
   const network = fetch(request).then(async (response) => {
-    if (response.ok) await cache.put(request, response.clone());
+    if (response.ok) {
+      await cache.put(request, response.clone());
+      const key = cacheName === DATA_CACHE ? undated(request) : null;
+      if (key) await cache.put(key, response.clone());
+    }
     // Any answer from the server, even an error page, means the connection is back.
     wentOnline();
     return response;

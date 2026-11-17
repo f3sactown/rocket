@@ -20,15 +20,8 @@ const SETTLE_MS = 4000;
 /** The most a screen is given before going on to the next. */
 const MOST_MS = 15000;
 
-/** The main screens, kept whatever's on Home. */
-export const MAIN_SCREENS = [
-  "/workouts/",
-  "/backblasts/",
-  "/discover/",
-  "/library/",
-  "/pax/",
-  "/settings/",
-];
+/** The main screens that work offline (the others need a connection), kept whatever's on Home. */
+export const MAIN_SCREENS = ["/workouts/", "/backblasts/", "/settings/"];
 
 /** A workout's page and its Run workout screen. */
 export const workoutScreens = (id: string) => [
