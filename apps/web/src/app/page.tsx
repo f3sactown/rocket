@@ -2,7 +2,7 @@
 
 import { formatDate, type Language } from "@rocket/core";
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
 import { HeartIcon, PlayIcon, PlusIcon, ReuseIcon } from "@/components/icons";
@@ -15,6 +15,7 @@ import {
   loadTodaysWorkouts,
   type ListItem,
 } from "@/lib/backblast-list";
+import { useConnection } from "@/lib/connection";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
 import {
   keepForOffline,
@@ -364,13 +365,9 @@ function Totals({ user }: { user: CurrentUser }) {
  */
 function MyTotals({ userId }: { userId: string }) {
   const totals = useLoad(() => loadMyTotals(userId), [userId]);
-  const online = useSyncExternalStore(
-    subscribeOnline,
-    () => navigator.onLine,
-    () => true,
-  );
+  const { offline } = useConnection();
   // Counted fresh only: offline, it says so where they'd be.
-  if (!online || (totals.error && !totals.value))
+  if (offline || (totals.error && !totals.value))
     return (
       <span
         data-tour="home-stats"
@@ -409,15 +406,6 @@ function MyTotals({ userId }: { userId: string }) {
       </span>
     </div>
   );
-}
-
-function subscribeOnline(onChange: () => void) {
-  window.addEventListener("online", onChange);
-  window.addEventListener("offline", onChange);
-  return () => {
-    window.removeEventListener("online", onChange);
-    window.removeEventListener("offline", onChange);
-  };
 }
 
 /**

@@ -165,14 +165,26 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   workout screens, and your recent backblasts (waiting for the service worker on a first visit),
   by opening each one in turn in a hidden frame (`lib/offline.ts`; again when that list changes,
   or every 3 hours; not in Data Saver). Offline, a sign-in Supabase can't renew (they last an
-  hour) still counts: the account is kept on the device (`rocket-offline-user`) until the
-  connection's back. Home's posts and Qs are kept on the device too (`rocket-totals:*`) and show
+  hour) still counts: the account and its access token are kept on the device
+  (`rocket-offline-user`, `rocket-offline-token`). Offline, Supabase keeps trying to renew an
+  expired sign-in for about half a minute; Rocket waits 3 seconds, then carries on as the kept
+  account, and data requests go ahead with the kept token (`lib/supabase/client.ts`: sign-in is
+  Supabase's own client, data requests a second one that asks it for the token), so kept copies
+  answer at once. Data requests aren't retried when they can't reach the server (Supabase would
+  wait 1, 2 then 4 seconds more). Home's posts and Qs are kept on the device too (`rocket-totals:*`) and show
   offline as last seen; the likes and reuses top right say **Offline** instead, as they're only
   counted fresh. A page asked for without its trailing slash (`/workout?id=…`, which the site
   redirects to `/workout/?id=…`) is found under the address with it. A workout or backblast that
   isn't kept says so offline ("Not kept on this phone") rather than "not found". Pages and data
-  are fetched fresh when there's a connection (a kept copy is used offline, or after 5 seconds on a slow one);
-  signing out drops the kept data. An **Offline** banner says what still works. The workout and
+  are fetched fresh when there's a connection (a kept copy is used offline, or after 5 seconds on a
+  slow one). Rocket doesn't wait for the phone to say it's offline (with a weak or dead signal
+  that can take a long while): once a request has to use a kept copy, the service worker tells
+  the app (`lib/connection.ts`) and the **Offline** banner shows; from then on kept copies answer
+  at once, with fresh ones fetched alongside, until a request gets through (it checks every 10
+  seconds). A request waiting more than 1.5 seconds shows **Checking connection…** at the top,
+  and the workout, Run workout and backblast screens say "Waiting for a connection… the copy
+  saved on this phone shows in a moment". A request with no kept copy gives up after 15 seconds
+  (at once when already offline), except a page itself; signing out drops the kept data. An **Offline** banner says what still works. The workout and
   backblast forms keep a copy of what's typed on the phone (`rocket-unsaved:*` in local storage)
   until it's saved, so a dropped connection or a closed app loses nothing: the status shows "Not
   saved yet · kept on this phone", it saves again when the connection returns, and opening the

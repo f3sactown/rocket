@@ -1,6 +1,6 @@
 "use client";
 
-import { NotFound } from "@/components/not-found";
+import { Loading, NotFound } from "@/components/not-found";
 import { BackblastNotYet } from "@/components/backblast-not-yet";
 
 import {
@@ -153,7 +153,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     }
   }
 
-  if (id && !result) return <div className="card h-96 animate-pulse" />;
+  if (id && !result) return <Loading />;
   if (!result?.workout)
     return <NotFound what="workout" error={result?.error} />;
 
