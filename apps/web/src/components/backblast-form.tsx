@@ -1,5 +1,6 @@
 "use client";
 
+import { useVisibleTop } from "@/lib/visible-top";
 import {
   attendeeFromName,
   joinQs,
@@ -297,14 +298,26 @@ export function BackblastForm({
   // Whether the header (with the save status) has scrolled out of view.
   const header = useRef<HTMLElement>(null);
   const [pinned, setPinned] = useState(false);
+  const visibleTop = useVisibleTop();
+  // Measured against what's visible, so it shows with the keyboard up too (the keyboard can hide
+  // the header while the browser still counts it on screen).
   useEffect(() => {
     const el = header.current;
     if (!el) return;
-    const observer = new IntersectionObserver(([entry]) =>
-      setPinned(!entry!.isIntersecting),
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+    const view = window.visualViewport;
+    const check = () => {
+      const visibleFrom = view?.offsetTop ?? 0;
+      setPinned(el.getBoundingClientRect().bottom < visibleFrom);
+    };
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    view?.addEventListener("scroll", check);
+    view?.addEventListener("resize", check);
+    return () => {
+      window.removeEventListener("scroll", check);
+      view?.removeEventListener("scroll", check);
+      view?.removeEventListener("resize", check);
+    };
   }, []);
   const allText = useMemo(() => stepsFor(language, "workout"), [language]);
   // A backblast is written after its workout, so it can't be finished before the workout's date.
@@ -507,7 +520,9 @@ export function BackblastForm({
         <div
           role="status"
           aria-label="Editing"
-          className="fixed inset-x-3 top-3 z-30 mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-line-strong bg-surface-raised/95 px-4 py-2.5 shadow-xl backdrop-blur"
+          // At the top of what's visible, keyboard up or not (see useVisibleTop).
+          style={{ top: 12 + visibleTop }}
+          className="fixed inset-x-3 z-30 mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-line-strong bg-surface-raised/95 px-4 py-2.5 shadow-xl backdrop-blur"
         >
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate font-semibold text-ink">
