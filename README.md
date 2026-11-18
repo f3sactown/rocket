@@ -71,8 +71,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   `packages/core`): a Warm-o-rama of five warm-up exercises (those tagged Warm-Up and one of the
   tags first), then three thangs, each a routine or three or four exercises done as an AMRAP,
   EMOM, Tabata or rounds for time, with the timer for Run workout. Entries with more of the tags
-  come up more often, and nothing repeats. **Generate again** makes another; **Create workout from
-  these** opens New workout with the Warm-o-rama and The Thang filled in. It needs a connection.
+  come up more often, and nothing repeats. Each exercise shows its Exicon description under it, easy to read; a **Descriptions** checkbox
+  beside the Warm-o-rama and each thang shows or hides them for that section, and **Show
+  descriptions** above does every section at once (a dash when some are on and some aren't).
+  **Generate again** makes another; **Create workout from these** opens New workout with the
+  Warm-o-rama and The Thang filled in, descriptions included where they're shown. It needs a connection.
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
   F3's, FiA's or both (the default), going by each author's region (authors with no region always
   show), and **Include my workouts** (off by default) adds yours; both are saved to your account.

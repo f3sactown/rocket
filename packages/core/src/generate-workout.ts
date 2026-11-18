@@ -1,4 +1,5 @@
 import type { Thang } from "./backblast";
+import type { Timer } from "./timer";
 
 /** What the generator needs of an Exicon entry. */
 export interface GeneratorEntry {
@@ -8,10 +9,62 @@ export interface GeneratorEntry {
   isRoutine: boolean;
 }
 
+/** One exercise or routine in a generated workout, with its Exicon description. */
+export interface GeneratedItem {
+  name: string;
+  /** How many (none for a routine, or Tabata, which goes by time). */
+  reps?: number;
+  description: string;
+}
+
+/** The Warm-o-rama, or one thang: what's in it, how it's done, and its timer. */
+export interface GeneratedSection {
+  /** How it's done, e.g. "AMRAP 12 minutes:" (none for the warm-up or a routine). */
+  heading?: string;
+  items: GeneratedItem[];
+  timer?: Timer;
+  /** A routine from the Exicon rather than a set of exercises. */
+  routine?: boolean;
+}
+
 /** A workout put together from the Exicon: its Warm-o-rama and its thangs. */
 export interface GeneratedWorkout {
-  warmup: string;
-  thangs: Thang[];
+  warmup: GeneratedSection;
+  thangs: GeneratedSection[];
+}
+
+/** An Exicon description on one line, its spacing tidied. */
+const tidy = (text: string) => text.replace(/\s+/g, " ").trim();
+
+/**
+ * A generated section as text, as it goes into the workout: each exercise and its count on a line,
+ * with its description on the next when asked for (a blank line between them then, to read
+ * easily); a thang starts with how it's done.
+ */
+export function sectionText(
+  section: GeneratedSection,
+  withDescriptions: boolean,
+): string {
+  const items = section.items.map((item) => {
+    const name = item.reps
+      ? `${item.name.trim()} x ${item.reps}`
+      : item.name.trim();
+    const description = tidy(item.description);
+    return withDescriptions && description ? `${name}\n${description}` : name;
+  });
+  const body = items.join(withDescriptions ? "\n\n" : "\n");
+  return [section.heading, body].filter(Boolean).join("\n");
+}
+
+/** A generated thang as a workout's thang: its text and its timer. */
+export function generatedThang(
+  section: GeneratedSection,
+  withDescriptions: boolean,
+): Thang {
+  return {
+    text: sectionText(section, withDescriptions),
+    ...(section.timer && { timer: section.timer }),
+  };
 }
 
 /** How many exercises the warm-up has, and how many thangs follow. */
@@ -61,23 +114,24 @@ function weightedTake(
   return taken;
 }
 
-/** A line for an exercise: its name and a count. */
-const line = (entry: GeneratorEntry, reps: number) =>
-  `${entry.name.trim()} x ${reps}`;
+/** An exercise with a count, and its description. */
+const item = (entry: GeneratorEntry, reps?: number): GeneratedItem => ({
+  name: entry.name.trim(),
+  ...(reps && { reps }),
+  description: entry.description,
+});
 
 /** The ways a thang of exercises can go, each with its timer for Run workout. */
 const FORMATS: ((
   exercises: GeneratorEntry[],
   random: () => number,
-) => Thang)[] = [
+) => GeneratedSection)[] = [
   // As many rounds as possible.
   (exercises, random) => {
     const minutes = pickOne([8, 10, 12], random);
     return {
-      text: [
-        `AMRAP ${minutes} minutes:`,
-        ...exercises.map((e) => line(e, pickOne([10, 15, 20], random))),
-      ].join("\n"),
+      heading: `AMRAP ${minutes} minutes:`,
+      items: exercises.map((e) => item(e, pickOne([10, 15, 20], random))),
       timer: { type: "amrap", seconds: minutes * 60 },
     };
   },
@@ -85,19 +139,15 @@ const FORMATS: ((
   (exercises, random) => {
     const rounds = pickOne([8, 10, 12], random);
     return {
-      text: [
-        `EMOM ${rounds} minutes, each minute:`,
-        ...exercises.map((e) => line(e, pickOne([5, 8, 10], random))),
-      ].join("\n"),
+      heading: `EMOM ${rounds} minutes, each minute:`,
+      items: exercises.map((e) => item(e, pickOne([5, 8, 10], random))),
       timer: { type: "emom", every: 60, rounds },
     };
   },
   // Tabata: 20 seconds on, 10 off, 8 rounds of each exercise.
   (exercises) => ({
-    text: [
-      "Tabata, 20 seconds on and 10 off, 8 rounds of each:",
-      ...exercises.map((e) => e.name.trim()),
-    ].join("\n"),
+    heading: "Tabata, 20 seconds on and 10 off, 8 rounds of each:",
+    items: exercises.map((e) => item(e)),
     timer: {
       type: "intervals",
       work: 20,
@@ -109,10 +159,8 @@ const FORMATS: ((
   (exercises, random) => {
     const rounds = pickOne([3, 4, 5], random);
     return {
-      text: [
-        `${rounds} rounds for time:`,
-        ...exercises.map((e) => line(e, pickOne([10, 15, 20, 25], random))),
-      ].join("\n"),
+      heading: `${rounds} rounds for time:`,
+      items: exercises.map((e) => item(e, pickOne([10, 15, 20, 25], random))),
       timer: { type: "stopwatch" },
     };
   },
@@ -153,14 +201,14 @@ export function generateWorkout(
     );
     if (warmups.length >= WARMUP_COUNT) break;
   }
-  const warmup = warmups
-    .map((e) => line(e, pickOne([10, 15, 20], random)))
-    .join("\n");
+  const warmup: GeneratedSection = {
+    items: warmups.map((e) => item(e, pickOne([10, 15, 20], random))),
+  };
 
   // The thangs, from what the warm-up didn't use.
   let leftExercises = exercises.filter((e) => !warmups.includes(e));
   let leftRoutines = [...routines];
-  const thangs: Thang[] = [];
+  const thangs: GeneratedSection[] = [];
   const formats = shuffled(FORMATS, random);
   for (let i = 0; i < THANG_COUNT; i++) {
     const useRoutine =
@@ -168,11 +216,7 @@ export function generateWorkout(
     if (useRoutine) {
       const [routine] = weightedTake(leftRoutines, 1, weight, random);
       leftRoutines = leftRoutines.filter((e) => e !== routine);
-      thangs.push({
-        text: [routine!.name.trim(), routine!.description.trim()]
-          .filter(Boolean)
-          .join("\n"),
-      });
+      thangs.push({ items: [item(routine!)], routine: true });
       continue;
     }
     if (leftExercises.length === 0) break;
