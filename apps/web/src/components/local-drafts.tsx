@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { LISTS_CHANGED_EVENT } from "@/lib/backblast-list";
 import { useConnection } from "@/lib/connection";
 import {
   LOCAL_DRAFTS_EVENT,
@@ -47,6 +48,14 @@ export function useLocalDrafts(
     };
   }, [kind, userId]);
   return drafts;
+}
+
+/** Runs when a workout or backblast is deleted, archived or unarchived, so lists load again. */
+export function useOnListsChanged(onChange: () => void) {
+  useEffect(() => {
+    window.addEventListener(LISTS_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(LISTS_CHANGED_EVENT, onChange);
+  }, [onChange]);
 }
 
 /** Runs when drafts kept on the phone reach Rocket, so lists can load again and show them. */

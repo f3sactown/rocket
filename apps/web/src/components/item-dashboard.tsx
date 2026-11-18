@@ -5,7 +5,11 @@ import { useCallback, useEffect, useState } from "react";
 import { loadLists, type ItemKind, type ListItem } from "@/lib/backblast-list";
 import type { CurrentUser } from "./auth-provider";
 import { BackblastList } from "./backblast-list";
-import { LocalDraftList, useOnDraftsSent } from "./local-drafts";
+import {
+  LocalDraftList,
+  useOnDraftsSent,
+  useOnListsChanged,
+} from "./local-drafts";
 import { PlusIcon, SparkleIcon } from "./icons";
 
 const WORDS = {
@@ -44,6 +48,7 @@ export function ItemDashboard({
   // Bumped when drafts kept on the phone reach Rocket, to show them here.
   const [reloads, setReloads] = useState(0);
   useOnDraftsSent(useCallback(() => setReloads((n) => n + 1), []));
+  useOnListsChanged(useCallback(() => setReloads((n) => n + 1), []));
   useEffect(() => {
     loadLists(kind, user.id).then(setLists, (e: Error) => setError(e.message));
   }, [user.id, kind, reloads]);

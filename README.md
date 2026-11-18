@@ -230,7 +230,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **About** (last in the menu): what Rocket is and does, the running version and build, and the
   **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
   open, the rest folded; commit links and repeated lines are left out.
-- **Lists:** swipe to archive or delete (directions set in Settings), with Undo. Archiving hides a
+- **Lists:** swipe to archive or delete (directions set in Settings), with Undo (a delete happens once Undo goes, or on leaving the screen). Once a delete, archive or unarchive is done, Home and the Workouts and Backblasts pages load their lists again, so one finished just as another screen opened doesn't leave it showing. Archiving hides a
   workout or backblast only from your own Workouts and Backblasts lists (and Home's Recent lists);
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
   still shows unless it's private. **Archive** lists what you've archived, by workout date (newest first); **Search** finds workouts and backblasts by any word, with matches
