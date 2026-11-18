@@ -89,7 +89,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   scrolls sideways the same way. Rows that scroll sideways (here and throughout the app) show no scrollbar; with a mouse, arrow
   buttons at either end page through a row of tiles, and it can be dragged.
 - **PAX** (in the menu, under Search) lists everyone on your region's roster (or every region's,
-  when you've chosen all regions) as tiles in alphabetical order (three across on a phone, four on larger screens), with a search box that matches
+  when you've chosen all regions), plus every Rocket account whose name isn't on any roster of its
+  organization yet (with no posts or Qs: under its own region, or, for an account that chose all of
+  an organization's regions, under each of them with "All F3 regions" or "All FiA regions" in
+  place of a region badge; one with no region at all shows as F3 under every region, marked "No
+  region yet"), as tiles in alphabetical order (three across on a phone, four on larger screens), with a search box that matches
   names and an **Only PAX on Rocket** checkbox (saved to the account as `pax_rocket_only`) that
   leaves just the roster names with a Rocket account, matched as on their profile. Each tile shows the PAX's regions, posts and Qs (from the synced region stats, or read
   straight from the sheet for a region added since the last sync) and the
