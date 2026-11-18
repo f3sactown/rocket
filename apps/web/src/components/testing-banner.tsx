@@ -1,4 +1,4 @@
-/** "alpha" or "beta" while Rocket's version is a test release (0.1.0-alpha.7), else nothing. */
+/** "alpha" or "beta" while Rocket's version is a test release (0.1.0-beta.1), else nothing. */
 const STAGE = /-(alpha|beta)\b/i
   .exec(process.env.NEXT_PUBLIC_APP_VERSION ?? "")?.[1]
   ?.toLowerCase();

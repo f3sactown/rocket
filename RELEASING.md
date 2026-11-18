@@ -3,7 +3,7 @@
 Rocket uses [Semantic Versioning](https://semver.org). The whole repo shares one version, kept in
 the root `package.json` (and mirrored into each workspace package).
 
-## Current phase: alpha
+## Current phase: beta
 
 | Phase   | Version looks like | Meaning                                          |
 | ------- | ------------------ | ------------------------------------------------ |
@@ -12,7 +12,8 @@ the root `package.json` (and mirrored into each workspace package).
 | rc      | `0.1.0-rc.1`       | Release candidate                                |
 | release | `0.1.0`, `1.0.0`   | Stable                                           |
 
-While in alpha, every release bumps the trailing number: `0.1.0-alpha.1` → `0.1.0-alpha.2` → …
+Rocket moved from alpha (last release `0.1.0-alpha.7`) to beta at `0.1.0-beta.1`. While in beta,
+every release bumps the trailing number: `0.1.0-beta.1` → `0.1.0-beta.2` → …
 
 ## Commit messages
 

@@ -71,8 +71,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   `packages/core`): a Warm-o-rama of five warm-up exercises (those tagged Warm-Up and one of the
   tags first), then three thangs, each a routine or three or four exercises done as an AMRAP,
   EMOM, Tabata or rounds for time, with the timer for Run workout. Entries with more of the tags
-  come up more often, and nothing repeats. **Generate again** makes another; **Create workout from
-  these** opens New workout with the Warm-o-rama and The Thang filled in. It needs a connection.
+  come up more often, and nothing repeats. Each exercise shows its Exicon description under it, easy to read; a **Descriptions** checkbox
+  beside the Warm-o-rama and each thang shows or hides them for that section, and **Show
+  descriptions** above does every section at once (a dash when some are on and some aren't).
+  **Generate again** makes another; **Create workout from these** opens New workout with the
+  Warm-o-rama and The Thang filled in, descriptions included where they're shown. It needs a connection.
 - **Discover** shows public workouts from every other Q. At the top, a **From** picker chooses
   F3's, FiA's or both (the default), going by each author's region (authors with no region always
   show), and **Include my workouts** (off by default) adds yours; both are saved to your account.
@@ -224,15 +227,16 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   backblast offline, the new-backblast form is kept for each of your workouts that has happened
   (with the workout's copy, the roster and the AO's regulars), along with the new workout and
   new backblast forms.
-- **About** (last in the menu): what Rocket is and does, the running version and build, and the
-  **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
+- **About** (last in the menu): what Rocket is and everything it does, **Contact the developer**
+  (a `mailto:contact@f3sactown.com` link that opens the phone's mail app, its subject naming the
+  version and build), the running version and build, and the **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
   open, the rest folded; commit links and repeated lines are left out.
-- **Lists:** swipe to archive or delete (directions set in Settings), with Undo. Archiving hides a
+- **Lists:** swipe to archive or delete (directions set in Settings), with Undo (a delete happens once Undo goes, or on leaving the screen). A swiped delete leaves every section on the screen at once (Home's Today's workouts too), and Undo brings it back. Once a delete, archive or unarchive is done, Home and the Workouts and Backblasts pages load their lists again, so one finished just as another screen opened doesn't leave it showing. Archiving hides a
   workout or backblast only from your own Workouts and Backblasts lists (and Home's Recent lists);
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
   still shows unless it's private. **Archive** lists what you've archived, by workout date (newest first); **Search** finds workouts and backblasts by any word, with matches
   highlighted.
-- **Testing banner:** while the version is an alpha or beta (`0.1.0-alpha.7`), a slim bar across the
+- **Testing banner:** while the version is an alpha or beta (`0.1.0-beta.1`, so it reads **BETA**), a slim bar across the
   top of every screen says Rocket is being tested and things may change or not work as expected, and asks people to contact the developer with any issues;
   it goes away by itself with the first full release.
 - **Continue with Google:** the sign-in screen leads with Google: one **Continue with Google**
@@ -712,7 +716,7 @@ password hashes.
 
 ## Versions and releases
 
-Rocket is in **alpha** (`0.1.0-alpha.N`); the running version and build number show in the footer.
+Rocket is in **beta** (`0.1.0-beta.N`; it was in alpha up to `0.1.0-alpha.7`); the running version and build number show in the footer.
 Versions and the [changelog](CHANGELOG.md) are meant to be managed automatically from commit
 messages (see [RELEASING.md](RELEASING.md)). Until GitHub Actions is allowed to open pull requests
 (Settings → Actions → General), each release is bumped by hand.

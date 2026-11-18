@@ -1,10 +1,16 @@
-import { thangText, type GeneratedWorkout, type Workout } from "@rocket/core";
+import { thangText, type Thang, type Workout } from "@rocket/core";
 
 /** Where a generated workout waits for the new workout form, which takes it once. */
 const KEY = "rocket-generated-workout";
 
+/** A generated workout as it goes into the form: its Warm-o-rama text and its thangs. */
+export interface GeneratedForForm {
+  warmup: string;
+  thangs: Thang[];
+}
+
 /** Hands a generated workout to the new workout form. */
-export function keepGenerated(workout: GeneratedWorkout) {
+export function keepGenerated(workout: GeneratedForForm) {
   try {
     sessionStorage.setItem(KEY, JSON.stringify(workout));
   } catch {
@@ -18,7 +24,7 @@ export function takeGenerated(blank: Workout): Workout | null {
     const raw = sessionStorage.getItem(KEY);
     sessionStorage.removeItem(KEY);
     if (!raw) return null;
-    const generated = JSON.parse(raw) as GeneratedWorkout;
+    const generated = JSON.parse(raw) as GeneratedForForm;
     return {
       ...blank,
       warmup: generated.warmup,

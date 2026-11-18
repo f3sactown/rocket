@@ -6,7 +6,11 @@ import { useCallback, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
 import { HeartIcon, PlayIcon, PlusIcon, ReuseIcon } from "@/components/icons";
-import { LocalDraftList, useOnDraftsSent } from "@/components/local-drafts";
+import {
+  LocalDraftList,
+  useOnDraftsSent,
+  useOnListsChanged,
+} from "@/components/local-drafts";
 import { WhatsNew } from "@/components/whats-new";
 import { WorkoutCards } from "@/components/workout-card";
 import {
@@ -18,6 +22,7 @@ import {
   type ListItem,
 } from "@/lib/backblast-list";
 import { useConnection } from "@/lib/connection";
+import { useDeleting } from "@/lib/deleting";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
 import {
   backblastForScreen,
@@ -111,6 +116,8 @@ function HomePage({ user }: { user: CurrentUser }) {
 
   // Drafts kept on the phone reached Rocket: load the lists again to show them.
   useOnDraftsSent(useCallback(() => setReloads((n) => n + 1), []));
+  // A workout or backblast deleted or archived (perhaps just as Home opened): load them again.
+  useOnListsChanged(useCallback(() => setReloads((n) => n + 1), []));
 
   useEffect(() => {
     if (!wantsTrending) return;
@@ -136,7 +143,7 @@ function HomePage({ user }: { user: CurrentUser }) {
       </header>
       <WhatsNew user={user} />
       {show.has("totals") && <Totals user={user} />}
-      {show.has("today") && <TodaysWorkouts user={user} />}
+      {show.has("today") && <TodaysWorkouts user={user} reloads={reloads} />}
       <LocalDraftList />
 
       {error ? (
@@ -238,8 +245,17 @@ const TODAY_GRACE_MINUTES = 60;
  * Your finished workouts dated today, by start time; tap one to run it. Each drops off an hour
  * after its end time (one with no time stays all day), and the section hides when none are left.
  */
-function TodaysWorkouts({ user }: { user: CurrentUser }) {
-  const workouts = useLoad(() => loadTodaysWorkouts(user.id), [user.id]);
+function TodaysWorkouts({
+  user,
+  reloads,
+}: {
+  user: CurrentUser;
+  reloads: number;
+}) {
+  const workouts = useLoad(
+    () => loadTodaysWorkouts(user.id),
+    [user.id, reloads],
+  );
   // The time now, updated each minute so workouts drop off on their own.
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -247,7 +263,10 @@ function TodaysWorkouts({ user }: { user: CurrentUser }) {
     return () => clearInterval(timer);
   }, []);
   const minutesNow = now.getHours() * 60 + now.getMinutes();
+  // One swiped to delete is gone at once (back if Undo is tapped).
+  const deleting = useDeleting();
   const shown = (workouts.value ?? [])
+    .filter((w) => !deleting.has(w.id))
     .filter((w) => endMinutes(w.time ?? "") + TODAY_GRACE_MINUTES > minutesNow)
     .sort(
       (a, b) =>

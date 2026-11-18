@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { generateWorkout, type GeneratorEntry } from "./generate-workout";
+import {
+  generatedThang,
+  generateWorkout,
+  sectionText,
+  type GeneratorEntry,
+} from "./generate-workout";
 
 /** A repeatable stand-in for Math.random. */
 function seeded(seed: number) {
@@ -11,7 +16,7 @@ function seeded(seed: number) {
 
 const exercise = (name: string, ...tags: string[]): GeneratorEntry => ({
   name,
-  description: `${name} description`,
+  description: `${name} how-to`,
   tags,
   isRoutine: false,
 });
@@ -41,32 +46,40 @@ const LIBRARY: GeneratorEntry[] = [
   routine("Mary", "Core"),
 ];
 
+const names = (workout: ReturnType<typeof generateWorkout>) =>
+  [workout.warmup, ...workout.thangs].flatMap((s) =>
+    s.items.map((i) => i.name),
+  );
+
 describe("generateWorkout", () => {
-  it("gives a warm-up of warm-up exercises and three thangs", () => {
+  it("gives a warm-up of five warm-up exercises and three thangs", () => {
     const workout = generateWorkout(LIBRARY, ["Core", "Cardio"], seeded(1));
-    const lines = workout.warmup.split("\n");
-    expect(lines).toHaveLength(5);
-    for (const l of lines) expect(l).toMatch(/ x \d+$/);
+    expect(workout.warmup.items).toHaveLength(5);
+    for (const item of workout.warmup.items)
+      expect(item.reps).toBeGreaterThan(0);
     expect(workout.thangs).toHaveLength(3);
-    for (const thang of workout.thangs) expect(thang.text.trim()).not.toBe("");
+    for (const thang of workout.thangs)
+      expect(thang.items.length).toBeGreaterThan(0);
   });
 
   it("uses only entries with a chosen tag in the thangs", () => {
     const workout = generateWorkout(LIBRARY, ["Legs", "Arms"], seeded(7));
-    const text = workout.thangs.map((t) => t.text).join("\n");
+    const used = workout.thangs.flatMap((t) => t.items.map((i) => i.name));
     for (const name of ["LBC", "Flutter Kick", "Burpee", "Mary"])
-      expect(text).not.toContain(name);
+      expect(used).not.toContain(name);
   });
 
   it("doesn't repeat an exercise", () => {
-    const workout = generateWorkout(LIBRARY, ["Core", "Cardio"], seeded(3));
-    const names = [
-      ...workout.warmup.split("\n"),
-      ...workout.thangs.flatMap((t) => t.text.split("\n").slice(1)),
-    ]
-      .map((l) => l.replace(/ x \d+$/, ""))
-      .filter((l) => LIBRARY.some((e) => e.name === l));
-    expect(new Set(names).size).toBe(names.length);
+    const used = names(generateWorkout(LIBRARY, ["Core", "Cardio"], seeded(3)));
+    expect(new Set(used).size).toBe(used.length);
+  });
+
+  it("keeps each exercise's description", () => {
+    const workout = generateWorkout(LIBRARY, ["Core", "Cardio"], seeded(1));
+    for (const item of [workout.warmup, ...workout.thangs].flatMap(
+      (s) => s.items,
+    ))
+      expect(item.description).toMatch(/how-to|steps/);
   });
 
   it("gives each thang of exercises a timer", () => {
@@ -75,7 +88,10 @@ describe("generateWorkout", () => {
       ["Core", "Cardio", "Arms"],
       seeded(11),
     );
-    for (const thang of workout.thangs) expect(thang.timer).toBeDefined();
+    for (const thang of workout.thangs) {
+      expect(thang.timer).toBeDefined();
+      expect(thang.heading).toBeTruthy();
+    }
   });
 
   it("is different each time", () => {
@@ -86,11 +102,45 @@ describe("generateWorkout", () => {
 
   it("copes with too few matches", () => {
     const workout = generateWorkout(LIBRARY, ["Legs"], seeded(5));
-    expect(workout.warmup).not.toBe("");
+    expect(workout.warmup.items.length).toBeGreaterThan(0);
     expect(workout.thangs.length).toBeLessThanOrEqual(3);
     expect(generateWorkout([], ["Legs"], seeded(5))).toEqual({
-      warmup: "",
+      warmup: { items: [] },
       thangs: [],
+    });
+  });
+});
+
+describe("sectionText", () => {
+  const section = {
+    heading: "AMRAP 10 minutes:",
+    items: [
+      {
+        name: "Merkin",
+        reps: 10,
+        description: "A push-up.\n  Count in cadence.",
+      },
+      { name: "Bear Crawl", description: "" },
+    ],
+    timer: { type: "amrap" as const, seconds: 600 },
+  };
+
+  it("lists each exercise and its count", () => {
+    expect(sectionText(section, false)).toBe(
+      "AMRAP 10 minutes:\nMerkin x 10\nBear Crawl",
+    );
+  });
+
+  it("adds descriptions on their own lines, tidied, with space between", () => {
+    expect(sectionText(section, true)).toBe(
+      "AMRAP 10 minutes:\nMerkin x 10\nA push-up. Count in cadence.\n\nBear Crawl",
+    );
+  });
+
+  it("makes a thang with its timer", () => {
+    expect(generatedThang(section, false)).toEqual({
+      text: "AMRAP 10 minutes:\nMerkin x 10\nBear Crawl",
+      timer: { type: "amrap", seconds: 600 },
     });
   });
 });

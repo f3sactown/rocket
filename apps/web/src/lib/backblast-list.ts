@@ -79,12 +79,24 @@ export async function loadArchivedIds(
   );
 }
 
+/**
+ * Fired once a workout or backblast is deleted, archived or unarchived, so lists showing it load
+ * again. (A swipe's delete waits for Undo, and can finish after the next screen has loaded.)
+ */
+export const LISTS_CHANGED_EVENT = "rocket-lists-changed";
+
+function listsChanged() {
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event(LISTS_CHANGED_EVENT));
+}
+
 export async function archive(id: string, kind: ItemKind = "backblast") {
   const { archives, key } = TABLES[kind];
   const { error } = await createClient()
     .from(archives)
     .upsert({ [key]: id } as never, { onConflict: `user_id,${key}` });
   if (error) throw new Error(error.message);
+  listsChanged();
 }
 
 export async function unarchive(id: string, kind: ItemKind = "backblast") {
@@ -95,6 +107,7 @@ export async function unarchive(id: string, kind: ItemKind = "backblast") {
     // The two archive tables name their key column differently; the union confuses the types.
     .eq(key as "user_id", id);
   if (error) throw new Error(error.message);
+  listsChanged();
 }
 
 export async function deleteItem(id: string, kind: ItemKind = "backblast") {
@@ -103,6 +116,7 @@ export async function deleteItem(id: string, kind: ItemKind = "backblast") {
     .delete()
     .eq("id", id);
   if (error) throw new Error(error.message);
+  listsChanged();
 }
 
 /** Deletes a backblast. */
