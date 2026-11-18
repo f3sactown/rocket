@@ -104,8 +104,8 @@ export default function AboutPage() {
           {build && ` · build ${build}${commit ? ` (${commit})` : ""}`}
         </p>
         <p>
-          Rocket is in alpha: new things arrive often, and Home tells you
-          what&apos;s new after each update.
+          Rocket is in beta: it&apos;s being tested by PAX, new things still
+          arrive often, and Home tells you what&apos;s new after each update.
         </p>
       </Section>
 
