@@ -492,3 +492,21 @@ export function SparkleIcon() {
     </svg>
   );
 }
+
+export function MailIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="btn-icon size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="1.75" y="3.25" width="12.5" height="9.5" rx="1.5" />
+      <path d="M2.25 4.25 8 8.75l5.75-4.5" />
+    </svg>
+  );
+}

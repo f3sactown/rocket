@@ -227,10 +227,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   backblast offline, the new-backblast form is kept for each of your workouts that has happened
   (with the workout's copy, the roster and the AO's regulars), along with the new workout and
   new backblast forms.
-- **About** (last in the menu): what Rocket is and does, the running version and build, and the
-  **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
+- **About** (last in the menu): what Rocket is and everything it does, **Contact the developer**
+  (a `mailto:contact@f3sactown.com` link that opens the phone's mail app, its subject naming the
+  version and build), the running version and build, and the **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
   open, the rest folded; commit links and repeated lines are left out.
-- **Lists:** swipe to archive or delete (directions set in Settings), with Undo (a delete happens once Undo goes, or on leaving the screen). Once a delete, archive or unarchive is done, Home and the Workouts and Backblasts pages load their lists again, so one finished just as another screen opened doesn't leave it showing. Archiving hides a
+- **Lists:** swipe to archive or delete (directions set in Settings), with Undo (a delete happens once Undo goes, or on leaving the screen). A swiped delete leaves every section on the screen at once (Home's Today's workouts too), and Undo brings it back. Once a delete, archive or unarchive is done, Home and the Workouts and Backblasts pages load their lists again, so one finished just as another screen opened doesn't leave it showing. Archiving hides a
   workout or backblast only from your own Workouts and Backblasts lists (and Home's Recent lists);
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
   still shows unless it's private. **Archive** lists what you've archived, by workout date (newest first); **Search** finds workouts and backblasts by any word, with matches
