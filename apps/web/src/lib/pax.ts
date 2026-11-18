@@ -36,6 +36,12 @@ export interface PaxEntry {
   /** How many public workouts and backblasts they've written on Rocket. */
   workouts: number;
   backblasts: number;
+  /**
+   * For a Rocket account on no region's roster whose account names no region: the organization
+   * whose regions it chose all of, or "any" for an account with neither. It's listed under every
+   * region of that organization (or every region) instead of under one.
+   */
+  scope?: Language | "any";
 }
 
 /** The key a PAX is known by: their organization and name (lower case), e.g. "f3:tinman". */
@@ -122,39 +128,54 @@ async function likesAndReusesByName(): Promise<Map<string, Social>> {
   return totals;
 }
 
-/**
- * Every Rocket account's name, keyed like `paxKey` by its organization (or "any" for an account
- * with no region), to tell which roster names have signed up.
- */
-async function accountNames(): Promise<Set<string>> {
+/** A Rocket account: its name, organization (if it has one) and region (if it chose one). */
+interface Account {
+  name: string;
+  org: Language | null;
+  regionId: string | null;
+}
+
+/** Every Rocket account with a name, to tell which roster names have signed up. */
+async function loadAccounts(): Promise<Account[]> {
   const { data, error } = await createClient()
     .from("profiles")
     .select(
-      "name, region_scope, region:regions!profiles_region_id_fkey(language)",
+      "name, region_id, region_scope, region:regions!profiles_region_id_fkey(language)",
     )
     .limit(10000);
   if (error) throw new Error(error.message);
-  return new Set(
-    ((data ?? []) as unknown as ({ name: string } & NonNullable<AuthorOrg>)[])
-      .filter((p) => p.name?.trim())
-      .map((p) => paxKey(orgOf(p) ?? "any", p.name)),
-  );
+  return (
+    (data ?? []) as unknown as ({
+      name: string;
+      region_id: string | null;
+    } & NonNullable<AuthorOrg>)[]
+  )
+    .filter((p) => p.name?.trim())
+    .map((p) => ({
+      name: p.name.trim(),
+      org: orgOf(p),
+      regionId: p.region_id,
+    }));
 }
 
 let cache: Promise<{ regions: Region[]; pax: PaxEntry[] }> | null = null;
 
 /**
  * Every name on every region's roster, once per organization (the same name in F3 and FiA is two
- * PAX), with the regions that list it and their posts and Qs there (from the nightly sync). Loaded
- * once per visit.
+ * PAX), with the regions that list it and their posts and Qs there (from the nightly sync), plus
+ * every Rocket account that isn't on any roster (with no posts or Qs). Loaded once per visit.
  */
 export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
   cache ??= (async () => {
-    const [regions, social, accounts] = await Promise.all([
+    const [regions, social, accountList] = await Promise.all([
       loadRegions(),
       likesAndReusesByName().catch(() => new Map<string, Social>()),
-      accountNames().catch(() => new Set<string>()),
+      loadAccounts().catch(() => [] as Account[]),
     ]);
+    // Keyed like `paxKey` by the account's organization, or "any" for one with no region.
+    const accounts = new Set(
+      accountList.map((a) => paxKey(a.org ?? "any", a.name)),
+    );
     const byName = new Map<string, PaxEntry>();
     // Each organization's region names: "Baby Shark (Dry Creek)" on one F3 region's roster is the
     // same PAX as "Baby Shark" of F3 DryCreek, but never the same as a FiA PAX.
@@ -199,6 +220,40 @@ export function loadAllPax(): Promise<{ regions: Region[]; pax: PaxEntry[] }> {
         }
       }),
     );
+    // Rocket accounts on no roster: listed under their own region, or all of their organization's.
+    for (const account of accountList) {
+      const org = account.org ?? "any";
+      // An account with no region matches the name on either organization's rosters.
+      const orgs: Language[] = org === "any" ? ["f3", "fia"] : [org];
+      if (orgs.some((o) => byName.has(paxKey(o, account.name)))) continue;
+      const region = regions.find((r) => r.id === account.regionId);
+      // With no organization, it's listed as F3 (the profile matches an account with no region
+      // under either).
+      const entryOrg: Language =
+        region?.language ?? (org === "any" ? "f3" : org);
+      const key = paxKey(entryOrg, account.name);
+      const own = social.get(paxKey(org, account.name)) ?? NO_SOCIAL;
+      // An account with no region is counted under "any"; don't add it twice.
+      const any =
+        org === "any"
+          ? NO_SOCIAL
+          : (social.get(paxKey("any", account.name)) ?? NO_SOCIAL);
+      byName.set(key, {
+        name: account.name,
+        org: entryOrg,
+        regions: region
+          ? [{ id: region.id, name: region.name, posts: 0, qs: 0 }]
+          : [],
+        posts: 0,
+        qs: 0,
+        likes: own.likes + any.likes,
+        reuses: own.reuses + any.reuses,
+        workouts: own.workouts + any.workouts,
+        backblasts: own.backblasts + any.backblasts,
+        onRocket: true,
+        ...(region ? {} : { scope: org }),
+      });
+    }
     return {
       regions,
       pax: [...byName.values()].sort(

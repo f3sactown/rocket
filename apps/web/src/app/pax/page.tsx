@@ -7,7 +7,7 @@ import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { Highlight } from "@/components/highlight";
 import { HeartIcon, ReuseIcon } from "@/components/icons";
 import { SourceChips } from "@/components/source-chips";
-import { loadAllPax, loadNewPax } from "@/lib/pax";
+import { loadAllPax, loadNewPax, type PaxEntry } from "@/lib/pax";
 import { regionColors } from "@/lib/regions";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/use-region";
@@ -21,7 +21,7 @@ export default function PaxPage() {
 const PAGE = 60;
 
 /**
- * Every PAX on the regions' rosters, in alphabetical order, searchable by name, as tiles with
+ * Every PAX on the regions' rosters (and every Rocket account on none), in alphabetical order, searchable by name, as tiles with
  * their regions, posts and Qs; tap one for their profile. The From picker (which regions) is saved
  * to the account.
  */
@@ -50,6 +50,12 @@ function Pax({ user }: { user: CurrentUser }) {
     () => query.toLowerCase().split(/\s+/).filter(Boolean),
     [query],
   );
+  // Whether any of an organization's regions (or any region at all) is chosen in From.
+  const chosen = useMemo(() => {
+    const on = (data.value?.regions ?? []).filter((r) => !off.includes(r.id));
+    return (scope: PaxEntry["scope"]) =>
+      on.some((r) => scope === "any" || r.language === scope);
+  }, [data.value, off]);
   const results = useMemo(
     () =>
       (data.value?.pax ?? [])
@@ -65,11 +71,12 @@ function Pax({ user }: { user: CurrentUser }) {
         })
         .filter(
           (p) =>
-            p.regions.length > 0 &&
+            // An account on no roster with no region of its own shows under its organization's.
+            (p.regions.length > 0 || (p.scope && chosen(p.scope))) &&
             (!onlyRocket || p.onRocket) &&
             words.every((w) => p.name.toLowerCase().includes(w)),
         ),
-    [data.value, off, onlyRocket, words],
+    [data.value, off, onlyRocket, words, chosen],
   );
 
   // The tile the tour opens: the first PAX (of all of them, not just those shown so far) with a
@@ -96,8 +103,9 @@ function Pax({ user }: { user: CurrentUser }) {
       <header className="flex flex-col gap-1">
         <h1 className="card-title">PAX</h1>
         <p className="text-sm text-muted">
-          Everyone on your regions&apos; rosters, A to Z. Search by name, and
-          tap one for their profile.
+          Everyone on your regions&apos; rosters, plus anyone on Rocket who
+          isn&apos;t on one yet, A to Z. Search by name, and tap one for their
+          profile.
         </p>
       </header>
       <NewOnRocket user={user} />
@@ -185,6 +193,11 @@ function Pax({ user }: { user: CurrentUser }) {
                         {r.name}
                       </span>
                     ))}
+                    {p.scope && p.regions.length === 0 && (
+                      <span className="text-[0.6rem] text-muted sm:text-[0.65rem]">
+                        {scopeLabel(p.scope)}
+                      </span>
+                    )}
                   </span>
                   <span className="mt-auto flex flex-col gap-1 pt-1 text-xs text-ink-soft">
                     <span className="flex flex-wrap gap-x-2 gap-y-0.5">
@@ -241,6 +254,13 @@ function Pax({ user }: { user: CurrentUser }) {
       )}
     </section>
   );
+}
+
+/** Where an account on no roster, with no region of its own, is listed. */
+function scopeLabel(scope: NonNullable<PaxEntry["scope"]>): string {
+  if (scope === "f3") return "All F3 regions";
+  if (scope === "fia") return "All FiA regions";
+  return "No region yet";
 }
 
 /**
