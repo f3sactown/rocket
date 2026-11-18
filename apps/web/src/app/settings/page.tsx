@@ -11,6 +11,7 @@ import {
   type SwipeAction,
 } from "@/components/auth-provider";
 import { AccountData } from "@/components/account-data";
+import { InstallSettings } from "@/components/device-setup";
 import { ProfileName } from "@/components/name-check";
 import { NOTICES } from "@/components/notice-dialog";
 import { PushSettings } from "@/components/push-settings";
@@ -257,6 +258,10 @@ function Settings({ user }: { user: CurrentUser }) {
           hint="When a public workout, or a backblast from one, is copied or shared, it ends with a link to that workout, asking PAX to like it and reuse it. Not shown on screen."
           save={(on) => ({ share_workout_link: on })}
         />
+      </Section>
+
+      <Section title="Install the app" description="Just for this device.">
+        <InstallSettings />
       </Section>
 
       <Section

@@ -13,7 +13,8 @@ import {
   sendTestPush,
 } from "@/lib/push";
 import { createClient } from "@/lib/supabase/client";
-import { openDeviceSetup } from "./device-setup";
+import { IosNotificationNote, openDeviceSetup } from "./device-setup";
+import { Switch } from "./switch";
 
 const noSubscribe = () => () => {};
 
@@ -125,6 +126,7 @@ export function PushSettings({ userId }: { userId: string }) {
             Set up this device again
           </button>
         </span>
+        <IosNotificationNote />
         {support === "needs-home-screen" ? (
           <p className="text-sm text-ink-soft">
             On iPhone and iPad, add Rocket to your Home Screen first: tap Share,
@@ -324,22 +326,7 @@ function Row({
           <span className="text-sm text-ink">{label}</span>
           {hint && <span className="text-xs text-muted">{hint}</span>}
         </span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={on}
-          aria-label={label}
-          onClick={() => onToggle(!on)}
-          className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors ${
-            on ? "border-accent/60 bg-accent" : "border-line-strong bg-panel"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 size-5.5 rounded-full bg-white shadow transition-[left] ${
-              on ? "left-[calc(100%-1.5rem)]" : "left-0.5"
-            }`}
-          />
-        </button>
+        <Switch label={label} on={on} onToggle={onToggle} />
       </div>
       {on && children && (
         <span className="flex items-center gap-1.5 text-sm text-ink-soft">
