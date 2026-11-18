@@ -268,11 +268,13 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   URL Configuration must have the site as the Site URL and under Redirect URLs.
 - **Settings:** name (shown, not changeable: it's set at sign-up), region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
   locked while you have one, and free to choose with no region or one you added), theme, accent color (Red, Teal, Blue, Green, Orange or Violet; saved to the account as `accent`, so it follows you to every device; the first region you choose sets Red for F3 or Teal for FiA, and later region changes leave it alone), the launch
-  animation, what Home shows,
+  animation, what Home shows (every section, Trending included, until you choose),
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,
   and whether a copied or shared public workout, or backblast from one, ends with
   a link to that workout asking PAX to like and reuse it (a few lines below the text, and on a
-  backblast right above the hidden PAX list; on by default, never shown on screen). **Notifications** turns on push notifications for the device and
+  backblast right above the hidden PAX list; on by default, never shown on screen). **Install the
+  app** says whether Rocket is installed on this device and, if not, shows how (the browser's
+  **Install Rocket** button where it offers one, otherwise the steps for the device). **Notifications** turns on push notifications for the device and
   chooses which come and when (see [Push notifications](#push-notifications)), and lists the
   notices you chose not to show again (`notices_off` in the account's metadata, included in
   exports), with **Reset notifications** to show them all again.
@@ -622,9 +624,13 @@ them through it, one step at a time:
    the browser offers one (Chrome and Edge), or the steps for the device (Share → Add to Home
    Screen on iPhone and iPad; the browser menu on Android; the address bar or File → Add to Dock on
    a computer).
-2. **Turn on notifications**, with **Send a test** once they're on.
+2. **Turn on notifications**: a switch for this device (off and on again if they stop arriving),
+   with **Send a test** once they're on. On iPhone and iPad it (and Settings → Notifications) also
+   warns of their limits there: Home Screen app only (iOS 16.4 or later), removing the app stops
+   them, Focus and Low Power Mode can hold them back, and iOS can stop them for an app left unopened.
 
-Each step can be skipped. Finished or skipped, it doesn't come back on that device
+Each step can be skipped. **Remind me later** puts it off for a day (it opens again the first time
+Rocket opens after that). Finished or skipped, it doesn't come back on that device
 (`rocket-device-setup` in local storage); **Set up this device again** in Settings →
 Notifications runs it again. On iPhone, the Home Screen app keeps its own storage, so opening it
 from there picks up at the notifications step.
