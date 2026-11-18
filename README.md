@@ -235,7 +235,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   everywhere else (Today's and Future workouts, New backblast, Discover, Trending, PAX profiles) it
   still shows unless it's private. **Archive** lists what you've archived, by workout date (newest first); **Search** finds workouts and backblasts by any word, with matches
   highlighted.
-- **Testing banner:** while the version is an alpha or beta (`0.1.0-alpha.7`), a slim bar across the
+- **Testing banner:** while the version is an alpha or beta (`0.1.0-beta.1`, so it reads **BETA**), a slim bar across the
   top of every screen says Rocket is being tested and things may change or not work as expected, and asks people to contact the developer with any issues;
   it goes away by itself with the first full release.
 - **Continue with Google:** the sign-in screen leads with Google: one **Continue with Google**
@@ -715,7 +715,7 @@ password hashes.
 
 ## Versions and releases
 
-Rocket is in **alpha** (`0.1.0-alpha.N`); the running version and build number show in the footer.
+Rocket is in **beta** (`0.1.0-beta.N`; it was in alpha up to `0.1.0-alpha.7`); the running version and build number show in the footer.
 Versions and the [changelog](CHANGELOG.md) are meant to be managed automatically from commit
 messages (see [RELEASING.md](RELEASING.md)). Until GitHub Actions is allowed to open pull requests
 (Settings → Actions → General), each release is bumped by hand.
