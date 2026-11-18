@@ -1,5 +1,6 @@
 "use client";
 
+import { markDeleting, unmarkDeleting, useDeleting } from "@/lib/deleting";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -79,6 +80,7 @@ export function BackblastList({
 }) {
   // Rows swiped away, hidden here until the page reloads.
   const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const deleting = useDeleting();
   const [pending, setPending] = useState<Pending | null>(null);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,15 +126,21 @@ export function BackblastList({
 
   function fail(id: string, message: string) {
     hide(id, false);
+    unmarkDeleting(id);
     setError(message);
   }
 
   function remove(item: ListItem) {
     hide(item.id, true);
+    // Gone from every list at once, not just this one.
+    markDeleting(item.id);
     setError(null);
     offerUndo({
       message: `Deleted “${item.title || untitled(item)}”`,
-      undo: () => hide(item.id, false),
+      undo: () => {
+        hide(item.id, false);
+        unmarkDeleting(item.id);
+      },
       finish: () =>
         deleteItem(item.id, item.kind).then(
           () => onDeleted?.(item.id),
@@ -194,7 +202,9 @@ export function BackblastList({
   return (
     <>
       {groups.map((group, index) => {
-        const items = group.items.filter((item) => !hidden.has(item.id));
+        const items = group.items.filter(
+          (item) => !hidden.has(item.id) && !deleting.has(item.id),
+        );
         if (items.length === 0 && !group.empty) return null;
         return (
           <div

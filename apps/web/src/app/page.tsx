@@ -22,6 +22,7 @@ import {
   type ListItem,
 } from "@/lib/backblast-list";
 import { useConnection } from "@/lib/connection";
+import { useDeleting } from "@/lib/deleting";
 import { loadPublicWorkouts, trending } from "@/lib/discover";
 import {
   backblastForScreen,
@@ -262,7 +263,10 @@ function TodaysWorkouts({
     return () => clearInterval(timer);
   }, []);
   const minutesNow = now.getHours() * 60 + now.getMinutes();
+  // One swiped to delete is gone at once (back if Undo is tapped).
+  const deleting = useDeleting();
   const shown = (workouts.value ?? [])
+    .filter((w) => !deleting.has(w.id))
     .filter((w) => endMinutes(w.time ?? "") + TODAY_GRACE_MINUTES > minutesNow)
     .sort(
       (a, b) =>
