@@ -12,6 +12,13 @@
 import { isOffline } from "./connection";
 import { keep, readKept } from "./kept";
 import { loadLibrary } from "./library";
+import {
+  loadRegions,
+  loadRegularsIn,
+  loadRosterIn,
+  loadSitesIn,
+  type Region,
+} from "./regions";
 import { createClient } from "./supabase/client";
 import type { Database } from "./supabase/database.types";
 
@@ -45,9 +52,15 @@ let owner: string | null = null;
 let memory: Pocket | null = null;
 let fetching: Promise<void> | null = null;
 
-export function setPocketOwner(userId: string | null) {
+let ownerRegion: string | null = null;
+
+export function setPocketOwner(
+  userId: string | null,
+  regionId: string | null = null,
+) {
   if (owner !== userId) memory = null;
   owner = userId;
+  ownerRegion = regionId;
 }
 
 /** What's on this phone for the signed-in user, if anything. */
@@ -79,7 +92,10 @@ async function rows<T>(
 }
 
 /** Fetches your recent workouts and backblasts (and the Exicon) and keeps them on this phone. */
-export function refreshPocket(userId: string): Promise<void> {
+export function refreshPocket(
+  userId: string,
+  regionId: string | null = null,
+): Promise<void> {
   if (isOffline()) return Promise.resolve();
   fetching ??= (async () => {
     const supabase = createClient();
@@ -119,6 +135,10 @@ export function refreshPocket(userId: string): Promise<void> {
     await keep(KEY, pocket);
     // The Exicon too (its own kept copy), for the Exicon screen and the forms' Exicon buttons.
     await loadLibrary().catch(() => {});
+    // And your region's AOs, roster and the regulars at your AOs, for the forms offline.
+    await keepRegion(regionId, [
+      ...new Set(allWorkouts.map((w) => w.ao.trim()).filter(Boolean)),
+    ]);
   })()
     .catch(() => {
       // Kept as it was; fetched again next time.
@@ -127,6 +147,25 @@ export function refreshPocket(userId: string): Promise<void> {
       fetching = null;
     });
   return fetching;
+}
+
+/**
+ * Loads (so keeps, see lib/kept.ts) your region's AOs and roster and the regulars at the AOs
+ * given (up to 12): one region, or every region of one organization ("all:f3" or "all:fia").
+ */
+async function keepRegion(regionId: string | null, aos: string[]) {
+  if (!regionId) return;
+  const regions = await loadRegions().catch(() => [] as Region[]);
+  const all = regionId.startsWith("all:") ? regionId.slice(4) : null;
+  const scope = regions.filter((r) =>
+    all ? r.language === all : r.id === regionId,
+  );
+  if (!scope.length) return;
+  await Promise.allSettled([
+    loadSitesIn(scope),
+    loadRosterIn(scope),
+    ...aos.slice(0, 12).map((ao) => loadRegularsIn(scope, ao)),
+  ]);
 }
 
 let soon: ReturnType<typeof setTimeout> | null = null;
@@ -138,7 +177,7 @@ export function refreshPocketSoon() {
   if (soon) clearTimeout(soon);
   soon = setTimeout(() => {
     soon = null;
-    void refreshPocket(userId);
+    void refreshPocket(userId, ownerRegion);
   }, 8000);
 }
 

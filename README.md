@@ -229,7 +229,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   (`components/offline-gate.tsx`); so does **Settings**, as changes to your account need a
   connection. **About** works offline. New backblast offline with no workouts on the phone says to
   start it **Without a workout**, and it links up with the workout at its AO and date once it
-  reaches Rocket.
+  reaches Rocket. Your region's AOs and roster, and the regulars at the AOs of your recent
+  workouts, are fetched with them too, for the forms offline; one that isn't on the phone says so
+  rather than showing an error (the AO list: type the AO instead; Name-o-rama's regulars: they show
+  once you're back online).
   Data asked for with today's date (Home's "up to today" and "after today" lists, Today's
   workouts) is also kept under its address with the dates taken out, so offline on a later day
   the latest kept answer still shows. A page asked for without its trailing slash (`/workout?id=…`, which the site
@@ -249,8 +252,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   saved on this phone shows in a moment". A request with no kept copy gives up after 15 seconds
   (at once when already offline), except a page itself; signing out drops the kept data. **Signing out offline** first says what it means (`SignOutOffline`): you can't sign back in until you're online, the copies kept for offline use are removed, anything written offline that hasn't reached Rocket stays on the phone and is saved once you're back in that account with a connection, and everything is fetched fresh after. It signs out on the phone only (Supabase can't be told offline). What's kept on the phone notes whose it is, and is only sent, listed or reopened for that account. An **Offline** banner says what still works, and the accent color (buttons, outlines, the rocket) turns grey until the connection's back (`<html data-connection>`). The workout and
   backblast forms keep a copy of what's typed on the phone (`rocket-unsaved:*` in local storage)
-  until it's saved, so a dropped connection or a closed app loses nothing: the status shows "Not
-  saved yet · kept on this phone", it saves again when the connection returns, and opening the
+  until it's saved, so a dropped connection or a closed app loses nothing: the status shows
+  "Offline · saved locally" (or, with a connection that failed, "Not saved yet · kept on this
+  phone"), it saves again when the connection returns, and opening the
   same one later brings the kept copy back and saves it. **Drafts offline:** workouts and
   backblasts can be written with no connection at all (`lib/local-drafts.ts`). A new one gets an
   ID on the phone (its address becomes `/workouts/new?local=…`), is listed on Home and on the

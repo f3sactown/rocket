@@ -1,5 +1,6 @@
 "use client";
 
+import { useConnection } from "@/lib/connection";
 import { attendeeFromName, type Attendee } from "@rocket/core";
 import { loadRegularsIn, REGULARS_MONTHS, type Region } from "@/lib/regions";
 import { useLoad } from "@/lib/use-region";
@@ -28,6 +29,7 @@ export function Regulars({
     aoName ? () => loadRegularsIn(regions, aoName) : null,
     [regions.map((r) => r.id).join(), aoName.toLowerCase()],
   );
+  const { offline } = useConnection();
   if (!aoName) return null;
 
   const listed = new Set(
@@ -50,7 +52,11 @@ export function Regulars({
       </div>
       {regulars.loading && <p className="text-sm text-muted">Loading…</p>}
       {regulars.error && (
-        <p className="text-sm text-accent">{regulars.error}</p>
+        <p className="text-sm text-muted">
+          {offline
+            ? "Not available offline: the regulars here show once you're back online."
+            : regulars.error}
+        </p>
       )}
       {regulars.value &&
         (available.length === 0 ? (

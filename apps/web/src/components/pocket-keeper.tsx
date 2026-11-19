@@ -13,18 +13,19 @@ export function PocketKeeper() {
   const { user } = useAuth();
   const { offline, reconnects } = useConnection();
   const userId = user && !user.needsProfile ? user.id : null;
+  const regionId = user?.regionId ?? null;
   useEffect(() => {
-    setPocketOwner(userId);
-  }, [userId]);
+    setPocketOwner(userId, regionId);
+  }, [userId, regionId]);
   useEffect(() => {
     // Not in the hidden frames that keep copies of screens.
     if (!userId || offline || window.top !== window) return;
-    void refreshPocket(userId);
+    void refreshPocket(userId, regionId);
     const timer = setInterval(
-      () => void refreshPocket(userId),
+      () => void refreshPocket(userId, regionId),
       POCKET_EVERY_MS,
     );
     return () => clearInterval(timer);
-  }, [userId, offline, reconnects]);
+  }, [userId, regionId, offline, reconnects]);
   return null;
 }

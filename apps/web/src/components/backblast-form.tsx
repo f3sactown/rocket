@@ -25,6 +25,7 @@ import {
   sitesByDay,
 } from "@/lib/regions";
 import { useLoad, useRegionScope } from "@/lib/use-region";
+import { useConnection } from "@/lib/connection";
 import { useWorkoutLink } from "@/lib/workout-link";
 import { AttendanceInput } from "./attendance-input";
 import { ConditionsField } from "./conditions-field";
@@ -264,6 +265,7 @@ export function BackblastForm({
   const page = useRef<HTMLDivElement>(null);
   const navigated = useRef(false);
   const language = useAuth().user?.language ?? "f3";
+  const { offline } = useConnection();
   // A shared backblast ends with a link to its workout, when it has a public one.
   const workoutLink = useWorkoutLink(
     mode === "backblast" ? backblast.workoutId : undefined,
@@ -469,7 +471,9 @@ export function BackblastForm({
         )}
         {sites.error && (
           <span className="text-xs font-normal text-accent">
-            AO list unavailable: {sites.error}
+            {offline
+              ? "The AO list isn't available offline: type the AO, or choose it once you're back online."
+              : `AO list unavailable: ${sites.error}`}
           </span>
         )}
       </label>
