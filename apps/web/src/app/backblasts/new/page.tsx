@@ -1,5 +1,6 @@
 "use client";
 
+import { useConnection } from "@/lib/connection";
 import { copyWorkout, formatDate, type Backblast } from "@rocket/core";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -128,6 +129,7 @@ function ChooseWorkout({
     () => loadWorkoutsNeedingBackblast(userId),
     [userId],
   );
+  const { offline } = useConnection();
   return (
     <section className="card">
       <header className="flex flex-col gap-1">
@@ -140,7 +142,11 @@ function ChooseWorkout({
       </header>
       <div className="panel p-2">
         {workouts.error ? (
-          <p className="px-3 py-8 text-center text-accent">{workouts.error}</p>
+          <p className="px-3 py-8 text-center text-accent">
+            {offline
+              ? "Your workouts aren't kept on this phone yet, so there are none to choose here. Start it without one below: once it reaches Rocket, it links up with your workout at the same AO and date."
+              : workouts.error}
+          </p>
         ) : !workouts.value ? (
           <p className="px-3 py-8 text-center text-muted">Loading…</p>
         ) : workouts.value.length === 0 ? (
@@ -189,7 +195,7 @@ function ChooseWorkout({
       </div>
       <button type="button" onClick={onWithout} className="btn w-full">
         <PlusIcon />
-        New backblast
+        Without a workout
       </button>
     </section>
   );

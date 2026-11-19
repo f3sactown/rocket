@@ -1,3 +1,4 @@
+import { keep, readKept, withKeptCopy } from "./kept";
 import { isPlaceholderPax, type Language } from "@rocket/core";
 import { createClient } from "./supabase/client";
 import { cellText, quote, querySheet, type SheetTable } from "./sheets";
@@ -97,10 +98,23 @@ export function loadRegions(refresh = false): Promise<Region[]> {
           "id, name, sheet_id, language, config, created_by, created_at, synced_at, sync_error, latest_post_on",
         )
         .order("name"),
-    ).then(({ data, error }) => {
-      if (error) throw error;
-      return (data ?? []) as unknown as Region[];
-    });
+    )
+      .then(({ data, error }) => {
+        if (error) throw error;
+        return (data ?? []) as unknown as Region[];
+      })
+      .then(
+        (regions) => {
+          void keep("regions", regions);
+          return regions;
+        },
+        // Offline: the regions last seen, so your region (and its AOs and roster) still show.
+        async (error) => {
+          const kept = await readKept<Region[]>("regions");
+          if (kept) return kept;
+          throw error;
+        },
+      );
     regionsCache.catch(() => (regionsCache = null));
   }
   return regionsCache;
@@ -109,9 +123,14 @@ export function loadRegions(refresh = false): Promise<Region[]> {
 // Reads are cached per page load so moving between steps doesn't re-download. Regions that have
 // synced read the nightly copy in Supabase; until then they read the sheet live.
 const cache = new Map<string, Promise<unknown>>();
+/** What's kept on this device for offline (plain data; the rest is only kept for the visit). */
+const KEPT = /^(sites|roster|roster-sheet|regulars|stats|latest):/;
+
 function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
   if (!cache.has(key)) {
-    const promise = load();
+    const promise = KEPT.test(key)
+      ? withKeptCopy(`region:${key}`, load)
+      : load();
     cache.set(key, promise);
     promise.catch(() => cache.delete(key));
   }

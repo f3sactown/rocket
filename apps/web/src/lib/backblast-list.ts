@@ -1,3 +1,4 @@
+import { withKeptCopy } from "./kept";
 import { createClient } from "./supabase/client";
 
 /** The kinds of things listed, searched and archived. */
@@ -153,7 +154,7 @@ export function byWorkoutDate(a: ListItem, b: ListItem): number {
  * (undated ones last). Others' public workouts are on Discover, not here. What you've archived is
  * left out.
  */
-export async function loadLists(
+async function loadListsFresh(
   kind: ItemKind,
   userId: string,
   limit = 50,
@@ -198,7 +199,7 @@ export async function loadLists(
  * Your finished workouts dated today. Archived ones are included: archiving only hides them from
  * your Workouts and Backblasts lists.
  */
-export async function loadTodaysWorkouts(
+async function loadTodaysWorkoutsFresh(
   userId: string,
 ): Promise<(ListItem & { time: string | null })[]> {
   const query = createClient()
@@ -213,7 +214,7 @@ export async function loadTodaysWorkouts(
 }
 
 /** Your finished workouts dated after today, soonest first, archived ones included. */
-export async function loadFutureWorkouts(
+async function loadFutureWorkoutsFresh(
   userId: string,
   limit = 50,
 ): Promise<ListItem[]> {
@@ -235,7 +236,7 @@ export async function loadFutureWorkouts(
  * Your finished workouts that don't have a backblast yet, newest first (archived ones included).
  * Only the workout's Q writes its backblast.
  */
-export async function loadWorkoutsNeedingBackblast(
+async function loadWorkoutsNeedingBackblastFresh(
   userId: string,
 ): Promise<ListItem[]> {
   const supabase = createClient();
@@ -271,4 +272,55 @@ export async function linkBackblast(backblastId: string, workoutId: string) {
     .update({ workout_id: workoutId })
     .eq("id", backblastId);
   if (error) throw new Error(error.message);
+}
+
+// Each list comes with its last kept copy, for offline (see lib/kept.ts).
+
+/**
+ * Your drafts and your finished ones of a kind, each by workout date, the most recent on top
+ * (undated ones last). Others' public workouts are on Discover, not here. What you've archived is
+ * left out. Offline, the last copy kept on this device.
+ */
+export function loadLists(
+  kind: ItemKind,
+  userId: string,
+  limit = 50,
+  /** Leave out finished ones dated after today (Home lists those as Future workouts). */
+  pastOnly = false,
+): Promise<{ drafts: ListItem[]; published: ListItem[] }> {
+  return withKeptCopy(`lists:${kind}:${userId}:${limit}:${pastOnly}`, () =>
+    loadListsFresh(kind, userId, limit, pastOnly),
+  );
+}
+
+/** Your finished workouts dated today (archived ones included); offline, the kept copy. */
+export function loadTodaysWorkouts(
+  userId: string,
+): Promise<(ListItem & { time: string | null })[]> {
+  // Kept by day, so yesterday's copy never shows as today's.
+  return withKeptCopy(`today:${userId}:${localToday()}`, () =>
+    loadTodaysWorkoutsFresh(userId),
+  );
+}
+
+/** Your finished workouts dated after today, soonest first; offline, the kept copy. */
+export async function loadFutureWorkouts(
+  userId: string,
+  limit = 50,
+): Promise<ListItem[]> {
+  const list = await withKeptCopy(`future:${userId}:${limit}`, () =>
+    loadFutureWorkoutsFresh(userId, limit),
+  );
+  // A copy kept on an earlier day may hold one that's today now.
+  const today = localToday();
+  return list.filter((w) => !w.date || w.date > today);
+}
+
+/** Your finished workouts with no backblast yet, newest first; offline, the kept copy. */
+export function loadWorkoutsNeedingBackblast(
+  userId: string,
+): Promise<ListItem[]> {
+  return withKeptCopy(`needs-backblast:${userId}`, () =>
+    loadWorkoutsNeedingBackblastFresh(userId),
+  );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { withKeptCopy } from "@/lib/kept";
 import type { Backblast } from "@rocket/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -7,6 +8,7 @@ import { saveWorkoutNotes, toInsert, toWorkoutInsert } from "@/lib/backblast";
 import { isUpcoming } from "@/lib/backblast-list";
 import { useConnection } from "@/lib/connection";
 import {
+  alreadyThere,
   backupKey,
   dropBackup,
   localBackblastFor,
@@ -249,12 +251,17 @@ export function BackblastEditor({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    createClient()
-      .from("section_templates")
-      .select(TEMPLATE_COLUMNS)
-      .order("name")
-      .then(({ data }) => {
-        const templates = data ?? [];
+    // Offline, the templates last loaded on this device.
+    withKeptCopy(`templates:${user.id}`, async () => {
+      const { data, error } = await createClient()
+        .from("section_templates")
+        .select(TEMPLATE_COLUMNS)
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    })
+      .catch(() => [])
+      .then((templates) => {
         // A new one starts with the user's default templates filled in.
         const loaded = draftId
           ? initialRef.current
@@ -311,19 +318,29 @@ export function BackblastEditor({
             .eq("id", id.current);
           if (error) throw error;
         } else {
-          const { data, error } = await table
-            .insert({
-              ...row,
-              author_id: user.id,
-              // New ones start public or private as chosen in Settings.
-              visibility:
-                mode === "workout"
-                  ? user.defaultWorkoutVisibility
-                  : user.defaultBackblastVisibility,
-            } as never)
-            .select("id")
-            .single();
-          if (error) throw error;
+          // Made under the phone's ID for it, so it's the same one however often it's sent (the
+          // kept copy may have reached Rocket already, from another screen).
+          const { error } = await table.insert({
+            ...row,
+            id: localId,
+            author_id: user.id,
+            // New ones start public or private as chosen in Settings.
+            visibility:
+              mode === "workout"
+                ? user.defaultWorkoutVisibility
+                : user.defaultBackblastVisibility,
+          } as never);
+          if (error && !alreadyThere(error)) throw error;
+          if (error) {
+            // Already there: this is it, so the latest goes to it.
+            const changes: Record<string, unknown> = { ...row };
+            if (mode === "backblast") delete changes.workout_id;
+            const { error: updateError } = await table
+              .update(changes as never)
+              .eq("id", localId);
+            if (updateError) throw updateError;
+          }
+          const data = { id: localId };
           id.current = data.id;
           openKeys.add(backupKey(mode, data.id));
           // Point the address bar at the draft, so a reload or the back button returns to it.
@@ -357,6 +374,7 @@ export function BackblastEditor({
       user.defaultBackblastVisibility,
       mode,
       words,
+      localId,
     ],
   );
 

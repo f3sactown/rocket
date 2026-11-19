@@ -202,8 +202,21 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   answer at once. Data requests aren't retried when they can't reach the server (Supabase would
   wait 1, 2 then 4 seconds more). Home's posts and Qs are kept on the device too (`rocket-totals:*`) and show
   offline as last seen; the likes and reuses top right say **Offline** instead, as they're only
-  counted fresh. Discover, Exicon, Archive, Search and PAX need a connection: offline, the menu shows them greyed
-  out ("Offline") and opening one says **Needs a connection** (`components/offline-gate.tsx`).
+  counted fresh. **Kept copies** (`lib/kept.ts`): each list (Home's sections, the Workouts and
+  Backblasts pages, Today's and Future workouts, the workouts New backblast offers), the regions,
+  your region's AOs, roster, regulars and totals, your section templates and the whole **Exicon**
+  keep their last answer on the device (Cache Storage, `rocket-kept-v1`, dropped on signing out),
+  not tied to the exact request, so a screen that asks a little differently after an update or on
+  another day still finds it; each is loaded fresh when there's a connection. Home shows each of
+  its lists that's kept even if another isn't, and with none kept it says so and that a new
+  workout or backblast can still be written. Your region isn't taken for "none" offline, so Home
+  doesn't ask you to choose one. The **Exicon** works offline (its screen, and the forms' Exicon
+  buttons), kept in the background with the main screens; one not kept yet says so. Discover,
+  Generate workout, Archive, Search and PAX need a connection: offline, the menu shows them
+  greyed out ("Offline") and opening one says **Needs a connection**
+  (`components/offline-gate.tsx`). Home has **New workout** and **New backblast** side by side;
+  New backblast offline with no workouts kept says to start it **Without a workout**, and it
+  links up with the workout at its AO and date once it reaches Rocket.
   Data asked for with today's date (Home's "up to today" and "after today" lists, Today's
   workouts) is also kept under its address with the dates taken out, so offline on a later day
   the latest kept answer still shows. A page asked for without its trailing slash (`/workout?id=…`, which the site
@@ -231,7 +244,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   Workouts or Backblasts page under **On this phone** ("Saves once online"), and is sent to Rocket
   as a draft as soon as there's a connection (`DraftSender`: on opening, on reconnecting, and
   every minute), then joins the lists. **Done** offline keeps it as finished ("Finishes once
-  online"): it's finished when it's sent, and an editor still open goes on to its page. Changes
+  online"): it's finished when it's sent, and an editor still open goes on to its page. A new one
+  is created in Rocket under the phone's ID for it, so sending it twice (the app closed or moved
+  on just as it was sent) can't make two: the second finds it there and saves the latest to it. Changes
   to one already in Rocket are sent the same way, unless it's been saved since from somewhere
   else. An open editor sends its own; the hidden frames that keep copies never save. To write a
   backblast offline, the new-backblast form is kept for each of your workouts that has happened

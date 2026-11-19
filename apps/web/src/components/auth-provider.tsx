@@ -1,5 +1,6 @@
 "use client";
 
+import { dropKept } from "@/lib/kept";
 import { termsFor, type Language } from "@rocket/core";
 import { isAuthRetryableFetchError, type User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -244,6 +245,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (event === "SIGNED_OUT") {
         keepSession(null);
         if ("caches" in window) caches.delete("rocket-data-v1").catch(() => {});
+        dropKept();
       }
       // No session but not signed out: the sign-in couldn't be renewed (offline). The check
       // above decides who's signed in.
