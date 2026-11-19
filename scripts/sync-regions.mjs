@@ -6,6 +6,10 @@
  * a compact copy: active AOs with addresses, roster names, each AO's regulars over the last few
  * months, and every PAX's total posts and Qs. The app reads that copy instead of the sheet.
  *
+ * Then it looks up where each AO is (from its address) for its weather, once per address: the US
+ * Census geocoder, then OpenStreetMap's Nominatim for what that can't find (a park's name), kept
+ * in place_coordinates. One that can't be found is tried again after 30 days.
+ *
  * Needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY. The sheets must be shared so anyone with the
  * link can view them. SHEETS_BASE overrides the Google address (for tests).
  */
@@ -33,13 +37,14 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
   process.exit(1);
 }
 
-async function supabase(path, body, method) {
+async function supabase(path, body, method, headers = {}) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     method: method ?? (body === undefined ? "GET" : "POST"),
     headers: {
       apikey: SERVICE_KEY,
       Authorization: `Bearer ${SERVICE_KEY}`,
       "Content-Type": "application/json",
+      ...headers,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -272,13 +277,122 @@ export async function readRegionExicon({ id: regionId, sheet_id: id, config }) {
   return entries;
 }
 
+/** An address as place_coordinates keys it (the same as placeKey in _shared/weather.ts). */
+const placeKey = (address) => address.trim().replace(/\s+/g, " ").toLowerCase();
+
+/** The street address after a place's name, if it has one (as streetAddress in _shared/weather.ts). */
+function streetAddress(address) {
+  const parts = address.split(/\s+[-–—]\s+/).map((p) => p.trim());
+  const street = [...parts].reverse().find((p) => /\d/.test(p) && /,/.test(p));
+  return (street ?? address).trim();
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Where an address is, from the US Census geocoder (street addresses), or null. */
+async function censusLookup(address) {
+  const params = new URLSearchParams({
+    address,
+    benchmark: "Public_AR_Current",
+    format: "json",
+  });
+  const response = await fetch(
+    `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?${params}`,
+  );
+  if (!response.ok) return null;
+  const match = (await response.json())?.result?.addressMatches?.[0];
+  const { x, y } = match?.coordinates ?? {};
+  return typeof x === "number" && typeof y === "number"
+    ? { latitude: y, longitude: x }
+    : null;
+}
+
+/** Where a place is, from OpenStreetMap (parks and other named places), or null. */
+async function osmLookup(place) {
+  // Nominatim asks for no more than one request a second, from a named app.
+  await sleep(1100);
+  const params = new URLSearchParams({
+    q: place,
+    format: "jsonv2",
+    limit: "1",
+    countrycodes: "us",
+  });
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/search?${params}`,
+    { headers: { "User-Agent": "Rocket F3 Q planner, AO weather lookup" } },
+  );
+  if (!response.ok) return null;
+  const [found] = await response.json();
+  const latitude = Number(found?.lat);
+  const longitude = Number(found?.lon);
+  return Number.isFinite(latitude) && Number.isFinite(longitude)
+    ? { latitude, longitude }
+    : null;
+}
+
+/** The most addresses looked up in one run (the rest wait for the next night). */
+const MOST_LOOKUPS = 150;
+/** How long before an address that couldn't be found is tried again. */
+const RETRY_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Looks up where every AO is that isn't known yet, for its weather. */
+async function locateSites(addresses) {
+  const known = new Map(
+    (
+      await supabase("place_coordinates?select=address,latitude,looked_up_at")
+    ).map((p) => [p.address, p]),
+  );
+  const wanted = [...addresses.entries()].filter(([key]) => {
+    const kept = known.get(key);
+    return (
+      !kept ||
+      (kept.latitude === null &&
+        Date.now() - Date.parse(kept.looked_up_at) > RETRY_MS)
+    );
+  });
+  let found = 0;
+  for (const [key, address] of wanted.slice(0, MOST_LOOKUPS)) {
+    let place = null;
+    try {
+      const street = streetAddress(address);
+      place =
+        (/\d/.test(street) && (await censusLookup(street))) ||
+        (await osmLookup(street)) ||
+        (street !== address ? await osmLookup(address) : null);
+    } catch (error) {
+      console.log(`::warning::Couldn't look up "${address}": ${error.message}`);
+      continue;
+    }
+    if (place) found++;
+    await supabase(
+      "place_coordinates",
+      {
+        address: key,
+        latitude: place?.latitude ?? null,
+        longitude: place?.longitude ?? null,
+        looked_up_at: new Date().toISOString(),
+      },
+      "POST",
+      { Prefer: "resolution=merge-duplicates" },
+    );
+  }
+  console.log(
+    `AO locations: ${addresses.size} AOs, ${wanted.length} to look up, found ${found} of ${Math.min(wanted.length, MOST_LOOKUPS)}.`,
+  );
+}
+
 const regions = await supabase(
   "regions?select=id,name,sheet_id,config&order=name",
 );
 let failures = 0;
+/** Every AO's address, by its key, for looking up where they are. */
+const siteAddresses = new Map();
 for (const region of regions) {
   try {
     const data = await readRegion(region);
+    for (const site of data.sites)
+      if (site.address?.trim())
+        siteAddresses.set(placeKey(site.address), site.address.trim());
     await supabase("rpc/replace_region_data", {
       p_region: region.id,
       p_sites: data.sites,
@@ -322,6 +436,12 @@ for (const region of regions) {
 console.log(
   `Synced ${regions.length - failures} of ${regions.length} regions.`,
 );
+// Where the AOs are, for their weather. A problem here doesn't fail the sync.
+try {
+  await locateSites(siteAddresses);
+} catch (error) {
+  console.log(`::warning::AO locations not looked up: ${error.message}`);
+}
 // Fail the run only when nothing could be synced, so one broken custom region doesn't mark every
 // night red; its error is shown in that region's Settings.
 if (regions.length > 0 && failures === regions.length) process.exit(1);

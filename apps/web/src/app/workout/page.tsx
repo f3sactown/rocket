@@ -10,6 +10,7 @@ import {
   type Workout,
 } from "@rocket/core";
 import Link from "next/link";
+import { WorkoutWeather } from "@/components/workout-weather";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
@@ -196,6 +197,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         <span className="font-medium text-ink">{workout.ao}</span>
         <span className="text-ink-soft">{formatDate(workout.date)}</span>
       </div>
+      <WorkoutWeather workout={workout} className="-mt-2" />
       <div className="-mt-2 flex flex-wrap items-center justify-between gap-3">
         <WorkoutStatsBar
           workoutId={id!}

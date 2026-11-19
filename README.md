@@ -143,6 +143,12 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     out with the reason, and New backblast shows that workout greyed out with the date it opens.
   - **Copy** and **Share** produce Band- and Slack-ready text (Event Data, Workout Details, COT), ending with a
     plain comma-separated list of everyone who posted.
+  - **Conditions** (on the backblast's Workout page, below the basics): the weather at the AO when
+    the workout started, e.g. "48°F (feels like 41°F), overcast, wind 12 mph". Once the workout's
+    day has come it fills in on its own (when blank), **Use the weather at the AO** fills it in
+    again, and it can be typed over. It's the backblast's own (`backblasts.weather`, not shared
+    with its workout), and the copied text has it in Event Data, below the place
+    (`Conditions: …`). See [Weather](#weather).
   - On a finished backblast's page, **Copy**, **Share** and copying the text on screen all give
     exactly the same text, including the link to its workout. Share sends only that text (no
     separate title), and Copy and Share wait the moment it takes to check the workout is public.
@@ -543,7 +549,8 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
   night (about 2–3am Pacific, or on demand from the Actions tab). It copies each region's active
   AOs, roster, regulars per AO (last 3 months), all-time totals per PAX and the newest post date
   into Supabase, and the app reads those. A region that hasn't synced yet is read from its sheet live. A failed sync keeps
-  the previous copy and shows the error in Settings.
+  the previous copy and shows the error in Settings. Then it looks up where each AO is, for its
+  weather (see [Weather](#weather)).
 - **Placeholders and retired PAX:** a name like "Site Closed (Archived)" that a sheet puts in the
   PAX column to mark a closed AO isn't a PAX, and a PAX marked retired ("007 (Retired)") is hidden
   too: both are left out of rosters, the PAX page, Name-o-rama suggestions, regulars, PAX totals
@@ -608,6 +615,9 @@ Notifications** (`push_subscriptions`) and chooses, for all their devices
 | Likes and reuses of your workouts | On                                                                     |
 | A new PAX in your region joins    | On                                                                     |
 
+The day-before reminder ends with the forecast at the AO for the workout's start (`Forecast: 48°F,
+overcast, 60% chance of rain.`), when Rocket knows where the AO is; without it, it goes as before.
+
 Workout reminders are for the Q's own finished workouts; times are read from the workout's time
 (like `5:15am-6:00am`; one with only a start counts as 45 minutes). Every 5 minutes the database
 (pg_cron) calls the function, which sends what's due and logs each one (`notification_log`) so
@@ -648,6 +658,25 @@ from there picks up at the notifications step.
    Vault. In the SQL Editor:
    `select vault.create_secret('https://<ref>.supabase.co', 'project_url');`
    Until it's there, nothing is sent.
+
+## Weather
+
+Weather comes from [Open-Meteo](https://open-meteo.com) (free, no key; credited wherever it's
+shown), in °F and mph, for the hour nearest the workout's start (6am for one with no time). The
+helpers are in `supabase/functions/_shared/weather.ts` (used by the app and the push function,
+tested in `packages/core`).
+
+- **Where each AO is:** the nightly region sync looks each AO's address up once: the street
+  address after its name with the US Census geocoder, else the place itself on OpenStreetMap
+  (Nominatim, one request a second). It keeps the coordinates in `place_coordinates`, keyed by the
+  address trimmed and in lower case (readable by anyone signed in). One that can't be found is
+  kept without coordinates and tried again after 30 days; at most 150 are looked up a night. A
+  workout at an AO typed by hand (no address from the region's list) has no weather.
+- **Workout page and Run workout:** the forecast at the AO for when it starts, from a week ahead
+  (**Forecast: …**), and once its day is past, what the weather was (**Weather: …**, for up to
+  three months). The last one found is kept on the phone for offline use.
+- **Backblast:** its **Conditions** line (see above).
+- **Day-before reminder:** the forecast, added to the notification.
 
 ## Daily users email
 

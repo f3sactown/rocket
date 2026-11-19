@@ -23,6 +23,8 @@ export interface Backblast {
   address?: string;
   /** When the workout ran, e.g. "5:15am-6:00am". */
   time?: string;
+  /** A backblast's weather at the AO, e.g. "48°F, light rain" (filled in from the forecast). */
+  weather?: string;
   /** The Q, or several separated by commas, e.g. "Casper, Sparky". */
   q: string;
   introduction?: string;
@@ -351,6 +353,7 @@ function eventData(backblast: Backblast): string {
       .filter(Boolean)
       .join(" - "),
     location(backblast.address),
+    backblast.weather?.trim() && `Conditions: ${backblast.weather.trim()}`,
   ]
     .filter(Boolean)
     .join("\n");
