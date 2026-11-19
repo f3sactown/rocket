@@ -148,6 +148,13 @@ export function localDraftHref(draft: LocalDraft): string {
     : `/backblasts/new?local=${draft.localId}${workout ? `&workout=${workout}` : ""}`;
 }
 
+/**
+ * Whether creating one failed because it's already there under that ID: sent once already (from
+ * this phone's kept copy), so this isn't a new one.
+ */
+export const alreadyThere = (error: { code?: string; message?: string }) =>
+  error.code === "23505" && /_pkey\b/.test(error.message ?? "");
+
 let sending: Promise<number> | null = null;
 
 /**
@@ -217,20 +224,28 @@ async function send(
       .eq("id", id);
     if (error) throw error;
   } else {
-    const { data, error } = await supabase
-      .from(table as "backblasts")
-      .insert({
-        ...row,
-        author_id: user.id,
-        visibility:
-          draft.kind === "workout"
-            ? user.defaultWorkoutVisibility
-            : user.defaultBackblastVisibility,
-      } as never)
-      .select("id")
-      .single();
-    if (error) throw error;
-    id = (data as { id: string }).id;
+    // Made under the phone's own ID, so sending it twice (the app closed just as it was sent,
+    // say) can't make two: the second finds it there and saves the latest to it.
+    id = draft.localId!;
+    const { error } = await supabase.from(table as "backblasts").insert({
+      ...row,
+      id,
+      author_id: user.id,
+      visibility:
+        draft.kind === "workout"
+          ? user.defaultWorkoutVisibility
+          : user.defaultBackblastVisibility,
+    } as never);
+    if (error && !alreadyThere(error)) throw error;
+    if (error) {
+      const changes: Record<string, unknown> = { ...row };
+      if (draft.kind === "backblast") delete changes.workout_id;
+      const { error: updateError } = await supabase
+        .from(table as "backblasts")
+        .update(changes as never)
+        .eq("id", id);
+      if (updateError) throw updateError;
+    }
   }
   if (draft.kind === "workout") await saveWorkoutNotes(id, content.notes ?? "");
   dropBackup(draft.key);

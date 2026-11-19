@@ -5,10 +5,12 @@ import { Fragment } from "react";
 import { usePathname } from "next/navigation";
 import { useConnection } from "@/lib/connection";
 
-/** Screens that need a connection: they search or browse everyone's data, which isn't kept. */
+/**
+ * Screens that need a connection: they search or browse everyone's data, which isn't kept. (The
+ * Exicon is kept on the phone, so it works offline.)
+ */
 export const ONLINE_ONLY = [
   "/discover",
-  "/library",
   "/archive",
   "/search",
   "/pax",

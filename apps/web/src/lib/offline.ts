@@ -42,6 +42,8 @@ export const MAIN_SCREENS = [
   // Writing one offline: the forms, with their templates, AOs and the workouts to choose from.
   "/workouts/new/",
   "/backblasts/new/",
+  // The Exicon, kept whole for its screen and the forms' Exicon buttons.
+  "/library/",
 ];
 
 /** Writing a workout's backblast (its copy of the workout, the roster and regulars), offline too. */

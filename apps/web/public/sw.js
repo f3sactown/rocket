@@ -23,6 +23,7 @@ const PAGES = [
   "backblast/",
   "discover/",
   "library/",
+  "workouts/generate/",
   "pax/",
   "pax/profile/",
   "settings/",
@@ -64,7 +65,8 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) =>
   event.waitUntil(
     (async () => {
-      const keep = [PAGES_CACHE, DATA_CACHE];
+      // rocket-kept-v1: the app's own kept copies (lib/kept.ts).
+      const keep = [PAGES_CACHE, DATA_CACHE, "rocket-kept-v1"];
       for (const name of await caches.keys())
         if (!keep.includes(name)) await caches.delete(name);
       await self.clients.claim();

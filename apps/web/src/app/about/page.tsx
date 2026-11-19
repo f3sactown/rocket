@@ -134,9 +134,9 @@ export default function AboutPage() {
             likes and reuses, and new PAX on Rocket. Choose which and when.
           </Feature>
           <Feature title="Works with no signal">
-            Your workouts, running them and writing backblasts work offline.
-            What you write is kept on your phone and saved once you&apos;re back
-            online.
+            Write new workouts and backblasts, run your workouts and look things
+            up in the Exicon, all offline. What you write is kept on your phone
+            and saved once you&apos;re back online.
           </Feature>
           <Feature title="Made for you">
             Install it as an app, take the tour, use F3 or FiA words, and pick

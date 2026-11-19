@@ -1,3 +1,4 @@
+import { withKeptCopy } from "./kept";
 import { createClient } from "./supabase/client";
 
 /** Where a Library entry comes from: F3 Nation's Exicon, FiA's, or a region's own sheet. */
@@ -23,9 +24,11 @@ export interface LibraryEntry {
 const PAGE = 1000;
 let cache: Promise<LibraryEntry[]> | null = null;
 
-/** The whole Library, by name. Loaded once per visit; it only changes weekly. */
+/** The whole Library, by name. Loaded once per visit; it only changes weekly. Kept for offline. */
 export function loadLibrary(): Promise<LibraryEntry[]> {
-  cache ??= (async () => {
+  // Offline, the copy last loaded on this device (the whole Exicon, for the Exicon screen and the
+  // forms' Exicon buttons).
+  cache ??= withKeptCopy("exicon", async () => {
     const supabase = createClient();
     const entries: LibraryEntry[] = [];
     // Page through (the database returns at most 1000 rows at a time), with a cap in case a page
@@ -58,7 +61,7 @@ export function loadLibrary(): Promise<LibraryEntry[]> {
       if (!data || data.length < PAGE) break;
     }
     return entries;
-  })().catch((error) => {
+  }).catch((error) => {
     cache = null;
     throw error;
   });

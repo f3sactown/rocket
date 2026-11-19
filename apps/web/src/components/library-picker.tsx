@@ -9,6 +9,7 @@ import {
 } from "@/lib/library";
 import { loadRegions, regionColors } from "@/lib/regions";
 import { useLoad } from "@/lib/use-region";
+import { useConnection } from "@/lib/connection";
 import { BookIcon, CloseIcon } from "./icons";
 import { SourceChips } from "./source-chips";
 
@@ -245,6 +246,7 @@ export function LibraryBrowser({
   autoFocus?: boolean;
 }) {
   const library = useLoad(loadLibrary, []);
+  const { offline } = useConnection();
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState(PAGE);
   const [open, setOpen] = useState<string | null>(null);
@@ -299,7 +301,9 @@ export function LibraryBrowser({
       >
         {library.error ? (
           <p className="py-8 text-center text-sm text-accent">
-            {library.error}
+            {offline
+              ? "The Exicon isn't kept on this phone yet. It will be once Rocket opens with a connection."
+              : library.error}
           </p>
         ) : library.loading ? (
           <p className="py-8 text-center text-sm text-muted">Loading…</p>

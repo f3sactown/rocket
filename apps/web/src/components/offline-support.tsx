@@ -46,10 +46,10 @@ export function OfflineSupport() {
     >
       <span className="size-2 shrink-0 rounded-full bg-muted" aria-hidden />
       <span>
-        <strong className="text-ink">Offline.</strong> Your workouts and
-        backblasts (and running them) still show, and what you type is kept on
-        this phone and saved once you&apos;re back online. Discover, Exicon,
-        Archive, Search and PAX need a connection.
+        <strong className="text-ink">Offline.</strong> Write new workouts and
+        backblasts as usual: they&apos;re kept on this phone and saved once
+        you&apos;re back online. Your workouts, backblasts and the Exicon still
+        show. Discover, Generate, Archive, Search and PAX need a connection.
       </span>
     </div>
   );

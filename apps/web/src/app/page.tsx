@@ -73,45 +73,46 @@ function HomePage({ user }: { user: CurrentUser }) {
   const [reloads, setReloads] = useState(0);
 
   useEffect(() => {
-    Promise.all([
+    // Each list on its own: offline, any kept on this phone show even if another isn't.
+    const none = { drafts: [] as ListItem[], published: [] as ListItem[] };
+    Promise.allSettled([
       loadLists("workout", user.id, RECENT, wantsFuture),
       loadLists("backblast", user.id, RECENT),
       wantsFuture ? loadFutureWorkouts(user.id, RECENT) : [],
-    ]).then(
-      ([workouts, backblasts, future]) => {
-        // Copies for offline use: the main screens, and these workouts with their Run screens.
-        // (Home's own, and every one from the last two weeks and coming up.)
-        // Those that have happened bring their new backblast, to write it at the AO with no signal.
-        offlineWorkoutIds(user.id)
-          .catch(() => [] as { id: string; date: string | null }[])
-          .then((recent) => {
-            const all = [...future, ...workouts.published, ...recent];
-            const ids = [...new Set(all.map((w) => w.id))];
-            const happened = [
-              ...new Set(
-                all.filter((w) => !isUpcoming(w.date)).map((w) => w.id),
-              ),
-            ];
-            keepLater([
-              ...MAIN_SCREENS,
-              ...ids.flatMap(workoutScreens),
-              ...happened.map(backblastForScreen),
-              ...backblasts.published
-                .slice(0, RECENT)
-                .map((b) => `/backblast/?id=${b.id}`),
-            ]);
-          });
-        setLists({
-          drafts: [...workouts.drafts, ...backblasts.drafts].sort(
-            byWorkoutDate,
-          ),
-          future,
-          workouts: workouts.published,
-          backblasts: backblasts.published,
+    ]).then(([w, b, f]) => {
+      if (w.status === "rejected" && b.status === "rejected")
+        return setError((w.reason as Error).message);
+      setError(null);
+      const workouts = w.status === "fulfilled" ? w.value : none;
+      const backblasts = b.status === "fulfilled" ? b.value : none;
+      const future = f.status === "fulfilled" ? f.value : [];
+      // Copies for offline use: the main screens, and these workouts with their Run screens.
+      // (Home's own, and every one from the last two weeks and coming up.)
+      // Those that have happened bring their new backblast, to write it at the AO with no signal.
+      offlineWorkoutIds(user.id)
+        .catch(() => [] as { id: string; date: string | null }[])
+        .then((recent) => {
+          const all = [...future, ...workouts.published, ...recent];
+          const ids = [...new Set(all.map((w) => w.id))];
+          const happened = [
+            ...new Set(all.filter((w) => !isUpcoming(w.date)).map((w) => w.id)),
+          ];
+          keepLater([
+            ...MAIN_SCREENS,
+            ...ids.flatMap(workoutScreens),
+            ...happened.map(backblastForScreen),
+            ...backblasts.published
+              .slice(0, RECENT)
+              .map((b) => `/backblast/?id=${b.id}`),
+          ]);
         });
-      },
-      (e: Error) => setError(e.message),
-    );
+      setLists({
+        drafts: [...workouts.drafts, ...backblasts.drafts].sort(byWorkoutDate),
+        future,
+        workouts: workouts.published,
+        backblasts: backblasts.published,
+      });
+    });
   }, [user.id, wantsFuture, reloads]);
 
   // Drafts kept on the phone reached Rocket: load the lists again to show them.
@@ -149,7 +150,7 @@ function HomePage({ user }: { user: CurrentUser }) {
       {error ? (
         <p className="panel px-3 py-8 text-center text-accent">
           {offline || /fetch|network|load failed/i.test(error)
-            ? "Your workouts and backblasts aren't kept on this phone yet. They will be once Home opens with a connection."
+            ? "Your workouts and backblasts aren't kept on this phone yet: they show here once Rocket opens with a connection. You can still write a new workout or backblast now, and it's saved once you're back online."
             : error}
         </p>
       ) : !lists ? (
@@ -225,14 +226,21 @@ function HomePage({ user }: { user: CurrentUser }) {
         </>
       )}
 
-      <Link
-        href="/workouts/new"
-        data-tour="home-new-workout"
-        className="btn w-full"
-      >
-        <PlusIcon />
-        New workout
-      </Link>
+      {/* Both work offline too: they're kept on the phone until there's a connection. */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link
+          href="/workouts/new"
+          data-tour="home-new-workout"
+          className="btn w-full"
+        >
+          <PlusIcon />
+          New workout
+        </Link>
+        <Link href="/backblasts/new" className="btn w-full">
+          <PlusIcon />
+          New backblast
+        </Link>
+      </div>
     </section>
   );
 }
