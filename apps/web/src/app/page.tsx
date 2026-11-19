@@ -1,5 +1,6 @@
 "use client";
 
+import { takeFlash } from "@/lib/flash";
 import { formatDate, type Language } from "@rocket/core";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -71,6 +72,11 @@ function HomePage({ user }: { user: CurrentUser }) {
   const wantsFuture = show.has("upcoming");
   const sources = user.publicSources.join();
   const [reloads, setReloads] = useState(0);
+  // A note left for Home, e.g. after Done offline.
+  // (Home only shows once signed in, in the browser, so this is read there, once.)
+  const [flash, setFlashNote] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : takeFlash(),
+  );
 
   useEffect(() => {
     // Each list on its own: offline, any kept on this phone show even if another isn't.
@@ -142,6 +148,21 @@ function HomePage({ user }: { user: CurrentUser }) {
         <h1 className="card-title">Hey, {user.name}</h1>
         <MyTotals userId={user.id} />
       </header>
+      {flash && (
+        <div
+          role="status"
+          className="flex items-start justify-between gap-3 rounded-2xl border border-line-strong bg-panel px-4 py-3 text-sm text-ink-soft"
+        >
+          <span>{flash}</span>
+          <button
+            type="button"
+            onClick={() => setFlashNote(null)}
+            className="link shrink-0 text-sm"
+          >
+            OK
+          </button>
+        </div>
+      )}
       <WhatsNew user={user} />
       {show.has("totals") && <Totals user={user} />}
       {show.has("today") && <TodaysWorkouts user={user} reloads={reloads} />}

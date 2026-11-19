@@ -1,5 +1,6 @@
 "use client";
 
+import { setFlash } from "@/lib/flash";
 import { withKeptCopy } from "@/lib/kept";
 import type { Backblast } from "@rocket/core";
 import { useRouter } from "next/navigation";
@@ -238,6 +239,8 @@ export function BackblastEditor({
   const inFrame = typeof window !== "undefined" && window.top !== window;
   // Done tapped offline: finished as soon as the connection's back.
   const finishPending = useRef(false);
+  // Whether anything's been changed here (Done offline says it's in your drafts if so).
+  const changed = useRef(false);
   // Whether Rocket knows it's offline (the phone says so, or requests aren't getting through).
   const { offline } = useConnection();
   const offlineRef = useRef(offline);
@@ -405,6 +408,7 @@ export function BackblastEditor({
   const onChange = useCallback(
     (backblast: Backblast) => {
       if (inFrame) return;
+      changed.current = true;
       latest.current = backblast;
       // Kept on the phone first, so a dropped connection or a closed app loses nothing.
       writeBackup(keyFor(), backblast, user.id);
@@ -529,10 +533,17 @@ export function BackblastEditor({
             await persist("published");
           } catch (error) {
             if (!navigator.onLine || isConnectionError(error)) {
-              // Kept on the phone as finished: it's sent and finished once there's a connection.
-              writeBackup(keyFor(), backblast, user.id, true);
-              finishPending.current = true;
-              return "You're offline. It's kept on this phone and will be finished as soon as you're back online.";
+              // Offline: Done closes it. Any changes stay on the phone as a draft, saved to Rocket
+              // once there's a connection; Home says so.
+              finishPending.current = false;
+              if (changed.current) {
+                writeBackup(keyFor(), backblast, user.id);
+                setFlash(
+                  `Your ${mode} was added to your drafts. It's kept on this phone and saved to Rocket once you're back online.`,
+                );
+              }
+              router.push("/");
+              return;
             }
             return (error as { message?: string }).message ?? words.failed;
           }

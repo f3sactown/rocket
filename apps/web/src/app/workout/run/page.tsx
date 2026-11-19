@@ -342,8 +342,8 @@ function RunWorkout({ user }: { user: CurrentUser }) {
           {section(terms.wordsOfWisdom, workout.wordsOfWisdom)}
         </div>
         <div className="flex items-start gap-2">
-          {/* Back to the workout's page, done running it. */}
-          <Link href={backHref} className="btn shrink-0 px-7">
+          {/* Done running it: back to Home. */}
+          <Link href="/" className="btn shrink-0 px-7">
             Close
           </Link>
           {/* Its backblast once it's in Rocket (not for one only on this phone). */}
