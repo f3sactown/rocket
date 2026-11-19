@@ -489,6 +489,10 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      name_taken: {
+        Args: { p_region: string; p_name: string };
+        Returns: boolean;
+      };
       workout_stats: {
         Args: { p_ids: string[] };
         Returns: {

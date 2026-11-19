@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   loadRegions,
   loadRosterForSignUp,
+  nameTaken,
+  takenNameMessage,
   takenNames,
   type Region,
 } from "@/lib/regions";
@@ -84,6 +86,12 @@ export function AuthForm() {
         return setConfirming(name);
       }
       const region = regions.value?.find((r) => r.id === form.get("region"));
+      // One name per region: someone on Rocket may have it already.
+      if (region && (await nameTaken(region.id, name))) {
+        setPending(false);
+        setConfirming(null);
+        return setMessage({ text: takenNameMessage(region.name), error: true });
+      }
       if (region) setAccent(region.language);
       const { data, error } = await supabase.auth.signUp({
         email,
