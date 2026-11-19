@@ -15,6 +15,7 @@
 
 import { addDays } from "../../../../supabase/functions/_shared/reminders";
 import { localToday } from "./backblast-list";
+import { refreshPocketSoon } from "./pocket";
 import { createClient } from "./supabase/client";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -38,12 +39,11 @@ const IDLE_MS = 4000;
 export const MAIN_SCREENS = [
   "/workouts/",
   "/backblasts/",
-  "/settings/",
   // Writing one offline: the forms, with their templates, AOs and the workouts to choose from.
   "/workouts/new/",
   "/backblasts/new/",
   // The Exicon, kept whole for its screen and the forms' Exicon buttons.
-  "/library/",
+  "/exicon/",
 ];
 
 /** Writing a workout's backblast (its copy of the workout, the roster and regulars), offline too. */
@@ -68,8 +68,7 @@ export function screensFor(path: string, search: string): string[] {
   if (id && page === "/workouts/edit") return workoutScreens(id);
   if (id && (page === "/backblast" || page === "/backblasts/edit"))
     return backblastScreens(id);
-  if (["/workouts", "/backblasts", "/settings"].includes(page))
-    return [`${page}/`];
+  if (["/workouts", "/backblasts"].includes(page)) return [`${page}/`];
   return [];
 }
 
@@ -181,6 +180,8 @@ export function keepLater(paths: string[]) {
 export function markChanged(paths: string[]) {
   for (const path of paths) changed.add(path);
   save();
+  // Your recent workouts and backblasts on the phone are fetched again too.
+  refreshPocketSoon();
 }
 
 /** Starts on whatever was waiting when Rocket was last closed. */

@@ -1,5 +1,7 @@
 "use client";
 
+import { isOffline } from "@/lib/connection";
+import { readPocket } from "@/lib/pocket";
 import { Loading, NotFound } from "@/components/not-found";
 import { BackblastNotYet } from "@/components/backblast-not-yet";
 
@@ -127,12 +129,27 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         error: error?.message,
       });
     });
-    supabase
-      .from("backblasts")
-      .select("id, title, status, date")
-      .eq("workout_id", id)
-      .eq("author_id", user.id)
-      .then(({ data }) => setBackblasts(data ?? []));
+    if (isOffline())
+      // Offline: its backblast, if it's among yours on the phone.
+      void readPocket().then((pocket) =>
+        setBackblasts(
+          (pocket?.backblasts ?? [])
+            .filter((b) => b.workout_id === id)
+            .map(({ id, title, status, date }) => ({
+              id,
+              title,
+              status,
+              date,
+            })),
+        ),
+      );
+    else
+      supabase
+        .from("backblasts")
+        .select("id, title, status, date")
+        .eq("workout_id", id)
+        .eq("author_id", user.id)
+        .then(({ data }) => setBackblasts(data ?? []));
     loadWorkoutStats([id]).then(
       (all) => setStats(all.get(id) ?? NO_STATS),
       () => {},

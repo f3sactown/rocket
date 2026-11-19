@@ -29,9 +29,17 @@ export function pushSupport(): PushSupport {
   return ios ? "needs-home-screen" : "unsupported";
 }
 
+/**
+ * Rocket's service worker, by this build's address: each build registers its own (sw.js?v=…), so
+ * the phone installs it and keeps that version's every page and file for offline use.
+ */
+export const SERVICE_WORKER_URL = `${BASE}/sw.js?v=${encodeURIComponent(
+  `${process.env.NEXT_PUBLIC_BUILD_NUMBER ?? "dev"}-${process.env.NEXT_PUBLIC_COMMIT ?? ""}`,
+)}`;
+
 /** Rocket's service worker, registered once (it only shows notifications). */
 function registration(): Promise<ServiceWorkerRegistration> {
-  return navigator.serviceWorker.register(`${BASE}/sw.js`, {
+  return navigator.serviceWorker.register(SERVICE_WORKER_URL, {
     scope: `${BASE}/`,
   });
 }

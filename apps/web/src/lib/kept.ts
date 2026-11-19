@@ -10,6 +10,8 @@
  * update (or on another day) still finds it. Signing out deletes it.
  */
 
+import { isOffline } from "./connection";
+
 export const KEPT_CACHE = "rocket-kept-v1";
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -58,6 +60,11 @@ export async function withKeptCopy<T>(
   key: string,
   load: () => Promise<T>,
 ): Promise<T> {
+  // Offline: the kept copy straight away, rather than waiting on a request that can't answer.
+  if (isOffline()) {
+    const kept = await readKept<T>(key);
+    if (kept !== undefined) return kept;
+  }
   try {
     const value = await load();
     void keep(key, value);

@@ -15,6 +15,8 @@ export const ONLINE_ONLY = [
   "/search",
   "/pax",
   "/workouts/generate",
+  // Changes to your account need a connection to be saved.
+  "/settings",
 ];
 
 /** Screens that aren't started over when the connection's back: forms and running a workout. */
