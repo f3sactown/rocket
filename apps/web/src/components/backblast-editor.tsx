@@ -123,6 +123,7 @@ function statusLabel(
   state: SaveState,
   savedAt: Date | null,
   now: number,
+  offline: boolean,
 ): string {
   switch (state) {
     case "new":
@@ -132,7 +133,9 @@ function statusLabel(
     case "saved":
       return savedAt ? `Saved ${savedAgo(savedAt, now)}` : "Saved";
     case "error":
-      return "Not saved yet · kept on this phone";
+      return offline
+        ? "Offline · saved locally"
+        : "Not saved yet · kept on this phone";
   }
 }
 
@@ -498,7 +501,7 @@ export function BackblastEditor({
         heading={
           published ? words.published : draftId ? words.draft : words.new
         }
-        status={statusLabel(saveState, lastSaved, now)}
+        status={statusLabel(saveState, lastSaved, now, offline)}
         saveLabel={words.finish}
         initial={loaded.start}
         fixedDate={fixedDate}
