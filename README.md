@@ -261,7 +261,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   Workouts or Backblasts page under **On this phone** ("Saves once online"), and is sent to Rocket
   as a draft as soon as there's a connection (`DraftSender`: on opening, on reconnecting, and
   every minute), then joins the lists. **Done** offline keeps it as finished ("Finishes once
-  online"): it's finished when it's sent, and an editor still open goes on to its page. A new one
+  online"): it's finished when it's sent, and an editor still open goes on to its page.
+  Offline, a workout's **Review** page has **Run workout**, which runs it from what's typed on the
+  phone: one not in Rocket yet by its phone ID (`/workout/run?local=…`; Close goes back to its
+  form), one already there with any changes made offline. A new one
   is created in Rocket under the phone's ID for it, so sending it twice (the app closed or moved
   on just as it was sent) can't make two: the second finds it there and saves the latest to it. Changes
   to one already in Rocket are sent the same way, unless it's been saved since from somewhere
