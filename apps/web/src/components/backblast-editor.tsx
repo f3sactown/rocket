@@ -507,6 +507,19 @@ export function BackblastEditor({
         fixedDate={fixedDate}
         userId={user.id}
         initialTemplates={loaded.templates}
+        // Offline, a workout's review can open Run workout: from the copy on this phone.
+        onRun={
+          mode === "workout" && offline
+            ? () => {
+                // What's typed is on the phone already (every change is); Run reads it there.
+                router.push(
+                  id.current
+                    ? `/workout/run?id=${id.current}`
+                    : `/workout/run?local=${localId}`,
+                );
+              }
+            : undefined
+        }
         onChange={onChange}
         onSave={async (backblast) => {
           if (timer.current) clearTimeout(timer.current);

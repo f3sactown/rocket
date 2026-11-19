@@ -34,7 +34,7 @@ import { QPicker } from "./q-picker";
 import { ThangsInput } from "./thangs-input";
 import { Regulars } from "./regulars";
 import { useAuth } from "./auth-provider";
-import { ArrowIcon, SkipIcon, TrashIcon } from "./icons";
+import { ArrowIcon, PlayIcon, SkipIcon, TrashIcon } from "./icons";
 import { ProtectedText } from "./protected-text";
 import {
   SectionTemplates,
@@ -236,6 +236,7 @@ export function BackblastForm({
   userId,
   initialTemplates,
   fixedDate,
+  onRun,
 }: {
   mode?: FormMode;
   heading: string;
@@ -253,6 +254,8 @@ export function BackblastForm({
   initialTemplates: SectionTemplate[];
   /** A date it keeps, shown but not changeable (the app tour's workout is today's). */
   fixedDate?: string;
+  /** Opens Run workout from the review (a workout, offline); omitted, there's no button. */
+  onRun?: () => void;
 }) {
   const [backblast, setBackblast] = useState<Backblast>(
     fixedDate ? { ...initial, date: fixedDate } : initial,
@@ -747,6 +750,13 @@ export function BackblastForm({
 
         {step.kind === "review" && (
           <>
+            {onRun && (
+              // Offline it can't be finished yet, but it can be run straight from here.
+              <button type="button" onClick={onRun} className="btn w-full">
+                <PlayIcon />
+                Run workout
+              </button>
+            )}
             {tooEarly && (
               <p className="rounded-xl border border-line px-3 py-2 text-sm text-ink-soft">
                 You can finish this backblast on{" "}
