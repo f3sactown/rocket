@@ -351,6 +351,18 @@ export function BackblastForm({
   }
 
   async function save() {
+    // Offline, Done keeps it as a draft (it's finished later, with a connection), so what a
+    // finished one needs isn't asked for yet.
+    if (offline) {
+      setSaving(true);
+      setError(null);
+      const message = await onSave(backblast);
+      if (message) {
+        setError(message);
+        setSaving(false);
+      }
+      return;
+    }
     if (!isFilled(steps[0]!, backblast)) {
       setError(
         `Add a title, date and AO on the ${steps[0]!.title} page first.`,
@@ -750,13 +762,6 @@ export function BackblastForm({
 
         {step.kind === "review" && (
           <>
-            {onRun && (
-              // Offline it can't be finished yet, but it can be run straight from here.
-              <button type="button" onClick={onRun} className="btn w-full">
-                <PlayIcon />
-                Run workout
-              </button>
-            )}
             {tooEarly && (
               <p className="rounded-xl border border-line px-3 py-2 text-sm text-ink-soft">
                 You can finish this backblast on{" "}
@@ -839,7 +844,7 @@ export function BackblastForm({
           <button
             type="submit"
             data-tour="editor-save"
-            disabled={saving || tooEarly}
+            disabled={saving || (tooEarly && !offline)}
             className="btn gap-2 px-4 text-base whitespace-nowrap disabled:opacity-50"
           >
             <ArrowIcon />
@@ -847,6 +852,13 @@ export function BackblastForm({
           </button>
         )}
       </div>
+      {stepIndex === lastStep && onRun && (
+        // Offline it can't be finished yet, but it can be run straight from here.
+        <button type="button" onClick={onRun} className="btn w-full">
+          <PlayIcon />
+          Run workout
+        </button>
+      )}
       {stepIndex < lastStep && (
         <button
           type="button"

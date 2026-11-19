@@ -33,7 +33,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     short beeps at 3, 2 and 1 seconds left and a long, louder beep at 0. The beeps share one audio context, started by the Start tap, which is what iPhones and iPads need to let a page make sound; there it also asks for "playback" audio, so the beeps sound with the ring/silent switch on silent (Safari 16.4 and later). Starting one timer pauses any other that's running. The timer in use pins to the top
     when scrolled away, and the screen stays awake. A stopwatch shows hundredths of a second. On the
     workout's day, five minutes before the end of its time (or 45 minutes after a start with no
-    end), a **5 minutes left** banner with a beep says it's time to wrap up for COT. At the bottom, a **Close** button back to the workout's page sits to the left of
+    end), a **5 minutes left** banner with a beep says it's time to wrap up for COT. At the bottom, a **Close** button back to Home sits to the left of
     Create backblast (or Continue or Open backblast). Leaving the run of a finished private workout of
     yours any way (those buttons, the menu, the Rocket logo, any link, or back) first asks whether
     to make it public (Make public / Keep private), then goes on; closing the app can't be asked
@@ -260,11 +260,14 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   ID on the phone (its address becomes `/workouts/new?local=…`), is listed on Home and on the
   Workouts or Backblasts page under **On this phone** ("Saves once online"), and is sent to Rocket
   as a draft as soon as there's a connection (`DraftSender`: on opening, on reconnecting, and
-  every minute), then joins the lists. **Done** offline keeps it as finished ("Finishes once
-  online"): it's finished when it's sent, and an editor still open goes on to its page.
-  Offline, a workout's **Review** page has **Run workout**, which runs it from what's typed on the
-  phone: one not in Rocket yet by its phone ID (`/workout/run?local=…`; Close goes back to its
-  form), one already there with any changes made offline. A new one
+  every minute), then joins the lists. **Done** offline closes it and goes to Home: with changes made, they're kept on the phone as a
+  draft and Home says so ("added to your drafts … saved to Rocket once you're back online", a
+  one-time note, `lib/flash.ts`); what a finished one needs (title, date, AO, the Q) isn't asked
+  for until it's finished with a connection. (One kept as finished by an earlier version,
+  "Finishes once online", is still finished when it's sent.)
+  Offline, a workout's **Review** page has **Run workout** below Done, which runs it from what's
+  typed on the phone: one not in Rocket yet by its phone ID (`/workout/run?local=…`; ← Workout
+  goes back to its form), one already there with any changes made offline. A new one
   is created in Rocket under the phone's ID for it, so sending it twice (the app closed or moved
   on just as it was sent) can't make two: the second finds it there and saves the latest to it. Changes
   to one already in Rocket are sent the same way, unless it's been saved since from somewhere
