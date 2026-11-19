@@ -94,14 +94,14 @@ export default function AboutPage() {
           <Feature title="Run it at the AO">
             Every thang with its timer (countdown, stopwatch, AMRAP, Tabata or
             EMOM), beeps for the last seconds, a 5-minute warning before the
-            end, and the screen kept on.
+            end, the screen kept on, and the forecast at the AO.
           </Feature>
           <Feature title="Write the backblast">
             Straight from the workout, which it shares: change either and both
-            change. Name-o-rama suggests your region&apos;s roster and the
-            AO&apos;s regulars, with FNGs, 2.0s and downrange PAX. Then
-            Announcements and Coffeeteria, and copy or share it for Band or
-            Slack.
+            change. The weather at the AO fills in its Conditions. Name-o-rama
+            suggests your region&apos;s roster and the AO&apos;s regulars, with
+            FNGs, 2.0s and downrange PAX. Then Announcements and Coffeeteria,
+            and copy or share it for Band or Slack.
           </Feature>
           <Feature title="Share and discover">
             Make a workout or backblast public or private, share a link to it,
@@ -129,9 +129,9 @@ export default function AboutPage() {
             any word.
           </Feature>
           <Feature title="Reminders">
-            Notifications the day before and before your workouts, a nudge to
-            write the backblast, drafts left unfinished, likes and reuses, and
-            new PAX on Rocket. Choose which and when.
+            Notifications the day before (with the forecast) and before your
+            workouts, a nudge to write the backblast, drafts left unfinished,
+            likes and reuses, and new PAX on Rocket. Choose which and when.
           </Feature>
           <Feature title="Works with no signal">
             Your workouts, running them and writing backblasts work offline.

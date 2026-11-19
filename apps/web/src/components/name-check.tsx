@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { loadRoster, type Region } from "@/lib/regions";
+import {
+  isTakenNameError,
+  loadRoster,
+  takenNameMessage,
+  type Region,
+} from "@/lib/regions";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad, useUserRegion } from "@/lib/use-region";
 import { useAuth, type CurrentUser } from "./auth-provider";
@@ -169,7 +174,11 @@ export function ProfileName({
       .eq("id", user.id);
     if (error) {
       setPending(false);
-      return setMessage({ text: error.message, error: true });
+      setConfirming(null);
+      return setMessage({
+        text: isTakenNameError(error) ? takenNameMessage() : error.message,
+        error: true,
+      });
     }
     const { error: authError } = await supabase.auth.updateUser({
       // f3_name too, since signing in with Google overwrites `name`.

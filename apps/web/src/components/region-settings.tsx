@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   checkRegion,
   DEFAULT_CONFIG,
+  isTakenNameError,
   loadPaxStatsIn,
   loadRegions,
   type Region,
@@ -35,7 +36,11 @@ export async function chooseRegion(
     // each workout's region by its AO).
     .update({ region_id: single?.id ?? null, region_scope: all })
     .eq("id", userId);
-  if (error) return error.message;
+  // One name per region: another account there has this one's name.
+  if (error)
+    return isTakenNameError(error)
+      ? `Your name is already taken in ${single?.name ?? "that region"} by someone on Rocket, so you can't join it with that name. Contact the developer if it's yours.`
+      : error.message;
   const language = single?.language ?? all;
   // Only the first region chosen sets the accent color (Red for F3, Teal for FiA); after that,
   // the accent stays as the user has it.

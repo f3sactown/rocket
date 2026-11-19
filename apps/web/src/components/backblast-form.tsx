@@ -27,6 +27,7 @@ import {
 import { useLoad, useRegionScope } from "@/lib/use-region";
 import { useWorkoutLink } from "@/lib/workout-link";
 import { AttendanceInput } from "./attendance-input";
+import { ConditionsField } from "./conditions-field";
 import { LibraryButton } from "./library-picker";
 import { QPicker } from "./q-picker";
 import { ThangsInput } from "./thangs-input";
@@ -650,6 +651,13 @@ export function BackblastForm({
               </p>
             )}
             {basicsFields}
+            <ConditionsField
+              value={backblast.weather ?? ""}
+              onChange={(weather) => set("weather", weather)}
+              address={backblast.address}
+              date={backblast.date}
+              time={backblast.time}
+            />
             {WORKOUT_TEXT.map((name) =>
               name === "thang" ? (
                 <div key={name} className="flex flex-col gap-1.5">

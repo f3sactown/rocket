@@ -143,6 +143,12 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     out with the reason, and New backblast shows that workout greyed out with the date it opens.
   - **Copy** and **Share** produce Band- and Slack-ready text (Event Data, Workout Details, COT), ending with a
     plain comma-separated list of everyone who posted.
+  - **Conditions** (on the backblast's Workout page, below the basics): the weather at the AO when
+    the workout started, e.g. "48°F (feels like 41°F), overcast, wind 12 mph". Once the workout's
+    day has come it fills in on its own (when blank), **Use the weather at the AO** fills it in
+    again, and it can be typed over. It's the backblast's own (`backblasts.weather`, not shared
+    with its workout), and the copied text has it in Event Data, below the place
+    (`Conditions: …`). See [Weather](#weather).
   - On a finished backblast's page, **Copy**, **Share** and copying the text on screen all give
     exactly the same text, including the link to its workout. Share sends only that text (no
     separate title), and Copy and Share wait the moment it takes to check the workout is public.
@@ -252,7 +258,15 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   Signing up with email asks for the same two first. Either way the name is picked from the chosen region's roster (suggested as you type; read
   from the region's sheet when signing up with email, as the synced roster needs a sign-in; names
   already taken by a Rocket account are left out after Google), and only a roster name is
-  accepted unless **I'm not on the roster yet** is ticked. It comes with a warning that it must
+  accepted unless **I'm not on the roster yet** is ticked. **One account per name in a region**
+  (there's one Casper of F3 SacTown; another region can have its own): the database holds to it
+  (`profiles_name_per_region`, names compared trimmed and ignoring case; accounts with no region
+  or all F3/FiA regions aren't held to it), and sign-up, Welcome, Settings → Profile and choosing
+  a region in Settings say "That name is already taken … by someone on Rocket" rather than saving
+  it. Sign-up asks the database first with `name_taken`, which answers only yes or no, so it works
+  before there's an account. Two people signing up with the same name at the same moment: the
+  second account is made without its region (rather than the sign-up failing), and they choose
+  it again. It comes with a warning that it must
   match the database (the roster) exactly and can't be changed once the account is set up, and the first tap shows it back ("You'll be …
   on Rocket, for good") to confirm with a second. Settings shows it but doesn't let it change, unless it's no longer on your region's roster
   (renamed or corrected there; `name_on_roster` in the account remembers it once was): then a warning at the top of each screen says so, with **Fix it
@@ -268,11 +282,13 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   URL Configuration must have the site as the Site URL and under Redirect URLs.
 - **Settings:** name (shown, not changeable: it's set at sign-up), region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
   locked while you have one, and free to choose with no region or one you added), theme, accent color (Red, Teal, Blue, Green, Orange or Violet; saved to the account as `accent`, so it follows you to every device; the first region you choose sets Red for F3 or Teal for FiA, and later region changes leave it alone), the launch
-  animation, what Home shows,
+  animation, what Home shows (every section, Trending included, until you choose),
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,
   and whether a copied or shared public workout, or backblast from one, ends with
   a link to that workout asking PAX to like and reuse it (a few lines below the text, and on a
-  backblast right above the hidden PAX list; on by default, never shown on screen). **Notifications** turns on push notifications for the device and
+  backblast right above the hidden PAX list; on by default, never shown on screen). **Install the
+  app** says whether Rocket is installed on this device and, if not, shows how (the browser's
+  **Install Rocket** button where it offers one, otherwise the steps for the device). **Notifications** turns on push notifications for the device and
   chooses which come and when (see [Push notifications](#push-notifications)), and lists the
   notices you chose not to show again (`notices_off` in the account's metadata, included in
   exports), with **Reset notifications** to show them all again.
@@ -533,15 +549,17 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
   organization: choosing a region switches the user to its wording and colors. **F3 SacTown** (F3)
   is set up by `supabase/migrations/20261101000000_regions.sql`, **FiA SacTown** (FiA) by
   `supabase/migrations/20261105020000_fia_sactown_region.sql`, **F3 Delta** (F3) by
-  `supabase/migrations/20261107010000_f3_delta_region.sql` and **F3 DryCreek** (F3) by
+  `supabase/migrations/20261107010000_f3_delta_region.sql`, **F3 DryCreek** (F3) by
   `supabase/migrations/20261108000000_f3_drycreek_region.sql` (its Sites tab has no address
-  column, so the AO's Location is used). Others can be added in Settings,
+  column, so the AO's Location is used) and **F3 Iron Corridor** (F3, the default settings) by
+  `supabase/migrations/20261120000100_f3_iron_corridor_region.sql`. Others can be added in Settings,
   with a **Check sheet** button that confirms every column exists.
 - **Nightly sync:** `.github/workflows/sync-regions.yml` runs `scripts/sync-regions.mjs` every
   night (about 2–3am Pacific, or on demand from the Actions tab). It copies each region's active
   AOs, roster, regulars per AO (last 3 months), all-time totals per PAX and the newest post date
   into Supabase, and the app reads those. A region that hasn't synced yet is read from its sheet live. A failed sync keeps
-  the previous copy and shows the error in Settings.
+  the previous copy and shows the error in Settings. Then it looks up where each AO is, for its
+  weather (see [Weather](#weather)).
 - **Placeholders and retired PAX:** a name like "Site Closed (Archived)" that a sheet puts in the
   PAX column to mark a closed AO isn't a PAX, and a PAX marked retired ("007 (Retired)") is hidden
   too: both are left out of rosters, the PAX page, Name-o-rama suggestions, regulars, PAX totals
@@ -606,6 +624,9 @@ Notifications** (`push_subscriptions`) and chooses, for all their devices
 | Likes and reuses of your workouts | On                                                                     |
 | A new PAX in your region joins    | On                                                                     |
 
+The day-before reminder ends with the forecast at the AO for the workout's start (`Forecast: 48°F,
+overcast, 60% chance of rain.`), when Rocket knows where the AO is; without it, it goes as before.
+
 Workout reminders are for the Q's own finished workouts; times are read from the workout's time
 (like `5:15am-6:00am`; one with only a start counts as 45 minutes). Every 5 minutes the database
 (pg_cron) calls the function, which sends what's due and logs each one (`notification_log`) so
@@ -622,9 +643,13 @@ them through it, one step at a time:
    the browser offers one (Chrome and Edge), or the steps for the device (Share → Add to Home
    Screen on iPhone and iPad; the browser menu on Android; the address bar or File → Add to Dock on
    a computer).
-2. **Turn on notifications**, with **Send a test** once they're on.
+2. **Turn on notifications**: a switch for this device (off and on again if they stop arriving),
+   with **Send a test** once they're on. On iPhone and iPad it (and Settings → Notifications) also
+   warns of their limits there: Home Screen app only (iOS 16.4 or later), removing the app stops
+   them, Focus and Low Power Mode can hold them back, and iOS can stop them for an app left unopened.
 
-Each step can be skipped. Finished or skipped, it doesn't come back on that device
+Each step can be skipped. **Remind me later** puts it off for a day (it opens again the first time
+Rocket opens after that). Finished or skipped, it doesn't come back on that device
 (`rocket-device-setup` in local storage); **Set up this device again** in Settings →
 Notifications runs it again. On iPhone, the Home Screen app keeps its own storage, so opening it
 from there picks up at the notifications step.
@@ -642,6 +667,25 @@ from there picks up at the notifications step.
    Vault. In the SQL Editor:
    `select vault.create_secret('https://<ref>.supabase.co', 'project_url');`
    Until it's there, nothing is sent.
+
+## Weather
+
+Weather comes from [Open-Meteo](https://open-meteo.com) (free, no key; credited wherever it's
+shown), in °F and mph, for the hour nearest the workout's start (6am for one with no time). The
+helpers are in `supabase/functions/_shared/weather.ts` (used by the app and the push function,
+tested in `packages/core`).
+
+- **Where each AO is:** the nightly region sync looks each AO's address up once: the street
+  address after its name with the US Census geocoder, else the place itself on OpenStreetMap
+  (Nominatim, one request a second). It keeps the coordinates in `place_coordinates`, keyed by the
+  address trimmed and in lower case (readable by anyone signed in). One that can't be found is
+  kept without coordinates and tried again after 30 days; at most 150 are looked up a night. A
+  workout at an AO typed by hand (no address from the region's list) has no weather.
+- **Workout page and Run workout:** the forecast at the AO for when it starts, from a week ahead
+  (**Forecast: …**), and once its day is past, what the weather was (**Weather: …**, for up to
+  three months). The last one found is kept on the phone for offline use.
+- **Backblast:** its **Conditions** line (see above).
+- **Day-before reminder:** the forecast, added to the notification.
 
 ## Daily users email
 

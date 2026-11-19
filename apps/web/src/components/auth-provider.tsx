@@ -104,6 +104,7 @@ export const DEFAULT_HOME_SECTIONS: HomeSection[] = [
   "today",
   "drafts",
   "upcoming",
+  "trending",
   "workouts",
   "backblasts",
 ];
