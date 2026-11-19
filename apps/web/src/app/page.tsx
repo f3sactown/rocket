@@ -150,7 +150,7 @@ function HomePage({ user }: { user: CurrentUser }) {
       {error ? (
         <p className="panel px-3 py-8 text-center text-accent">
           {offline || /fetch|network|load failed/i.test(error)
-            ? "Your workouts and backblasts aren't kept on this phone yet: they show here once Rocket opens with a connection. You can still write a new workout or backblast now, and it's saved once you're back online."
+            ? "Your workouts and backblasts aren't kept on this phone yet: they show here once Rocket opens with a connection. You can still write a new workout, or a backblast from the menu, and it's saved once you're back online."
             : error}
         </p>
       ) : !lists ? (
@@ -184,7 +184,9 @@ function HomePage({ user }: { user: CurrentUser }) {
                 </p>
               ) : hot.workouts.length === 0 ? (
                 <p className="panel px-3 py-8 text-center text-muted">
-                  Nothing trending yet.
+                  {offline
+                    ? "Trending shows when the connection's back."
+                    : "Nothing trending yet."}
                 </p>
               ) : (
                 <WorkoutCards
@@ -226,21 +228,14 @@ function HomePage({ user }: { user: CurrentUser }) {
         </>
       )}
 
-      {/* Both work offline too: they're kept on the phone until there's a connection. */}
-      <div className="grid grid-cols-2 gap-3">
-        <Link
-          href="/workouts/new"
-          data-tour="home-new-workout"
-          className="btn w-full"
-        >
-          <PlusIcon />
-          New workout
-        </Link>
-        <Link href="/backblasts/new" className="btn w-full">
-          <PlusIcon />
-          New backblast
-        </Link>
-      </div>
+      <Link
+        href="/workouts/new"
+        data-tour="home-new-workout"
+        className="btn w-full"
+      >
+        <PlusIcon />
+        New workout
+      </Link>
     </section>
   );
 }

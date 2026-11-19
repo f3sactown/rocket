@@ -1,5 +1,6 @@
 "use client";
 
+import { useConnection } from "@/lib/connection";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { loadLists, type ItemKind, type ListItem } from "@/lib/backblast-list";
@@ -16,12 +17,14 @@ const WORDS = {
   workout: {
     title: "Workouts",
     empty: "No workouts yet.",
+    plural: "workouts",
     newHref: "/workouts/new",
     newLabel: "New workout",
   },
   backblast: {
     title: "Backblasts",
     empty: "No backblasts yet.",
+    plural: "backblasts",
     newHref: "/backblasts/new",
     newLabel: "New backblast",
   },
@@ -44,6 +47,7 @@ export function ItemDashboard({
     published: ListItem[];
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { offline } = useConnection();
 
   // Bumped when drafts kept on the phone reach Rocket, to show them here.
   const [reloads, setReloads] = useState(0);
@@ -60,8 +64,19 @@ export function ItemDashboard({
       </header>
 
       <LocalDraftList kind={kind} />
+      {offline && !error && (
+        // Offline: what's on the phone is the most recent; the rest needs a connection.
+        <p className="rounded-xl border border-line px-3 py-2 text-sm text-ink-soft">
+          Offline: your most recent {words.plural} on this phone. The rest show
+          when the connection&apos;s back.
+        </p>
+      )}
       {error ? (
-        <p className="panel px-3 py-8 text-center text-accent">{error}</p>
+        <p className="panel px-3 py-8 text-center text-accent">
+          {offline
+            ? `Your ${words.plural} aren't on this phone yet: they're kept as soon as Rocket opens with a connection.`
+            : error}
+        </p>
       ) : !lists ? (
         <p className="panel px-3 py-8 text-center text-muted">Loading…</p>
       ) : (

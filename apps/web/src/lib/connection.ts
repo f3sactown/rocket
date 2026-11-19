@@ -152,6 +152,16 @@ function subscribe(listener: () => void) {
   };
 }
 
+/**
+ * Whether Rocket is offline right now (the phone says so, or a request just had to use a kept
+ * copy), for code outside React: loaders go straight to what's kept on the phone.
+ */
+export function isOffline(): boolean {
+  if (typeof navigator === "undefined") return false;
+  start();
+  return !navigator.onLine || workerOffline;
+}
+
 /** The connection, kept up to date. */
 export function useConnection(): Connection {
   return useSyncExternalStore(

@@ -291,13 +291,13 @@ const STEPS: Step[] = [
     body: "Trending, most liked, most reused, at your region's AOs, newest, and the ones you've liked. Like a workout with the heart, or open it and Reuse it to make it your own.",
   },
   {
-    route: "/library",
+    route: "/exicon",
     target: "exicon-search",
     title: "The Exicon",
     body: "Exercises and routines from F3's and FiA's Exicons and your region's own. Search by name or description.",
   },
   {
-    route: "/library",
+    route: "/exicon",
     target: "source-chips",
     title: "Narrow it down",
     body: "Choose the sources and tags, open an entry to read it, and copy it. While writing a workout, the Exicon button adds an entry straight in.",

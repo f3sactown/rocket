@@ -1,5 +1,6 @@
 "use client";
 
+import { rowOrPocket } from "@/lib/backblast";
 import type { Backblast } from "@rocket/core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -30,26 +31,23 @@ function EditBackblast({ user }: { user: CurrentUser }) {
 
   useEffect(() => {
     if (!id) return;
-    createClient()
-      .from("backblasts")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle()
-      .then(({ data }) => {
-        // Only the author can edit; anyone else is shown the published backblast instead.
-        if (data && data.author_id !== user.id && data.status === "published")
-          router.replace(`/backblast?id=${data.id}`);
-        else
-          setLoaded(
-            data && data.author_id === user.id
-              ? {
-                  backblast: fromRow(data),
-                  published: data.status === "published",
-                  savedAt: data.updated_at,
-                }
-              : null,
-          );
-      });
+    rowOrPocket("backblast", id, () =>
+      createClient().from("backblasts").select("*").eq("id", id).maybeSingle(),
+    ).then(({ data }) => {
+      // Only the author can edit; anyone else is shown the published backblast instead.
+      if (data && data.author_id !== user.id && data.status === "published")
+        router.replace(`/backblast?id=${data.id}`);
+      else
+        setLoaded(
+          data && data.author_id === user.id
+            ? {
+                backblast: fromRow(data),
+                published: data.status === "published",
+                savedAt: data.updated_at,
+              }
+            : null,
+        );
+    });
   }, [id, user.id, router]);
 
   if (id && loaded === undefined)

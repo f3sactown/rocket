@@ -1,4 +1,4 @@
-import { withKeptCopy } from "./kept";
+import { freshOrPocket, type Pocket } from "./pocket";
 import { createClient } from "./supabase/client";
 
 /** The kinds of things listed, searched and archived. */
@@ -274,12 +274,26 @@ export async function linkBackblast(backblastId: string, workoutId: string) {
   if (error) throw new Error(error.message);
 }
 
-// Each list comes with its last kept copy, for offline (see lib/kept.ts).
+// Each list comes from what's on this phone when offline (see lib/pocket.ts).
+
+/** Rows from the phone as list items, archived ones left out unless asked for. */
+function pocketItems(
+  pocket: Pocket,
+  kind: ItemKind,
+  { withArchived = false } = {},
+): ListItem[] {
+  const archived = new Set(pocket.archived[kind]);
+  const rows = kind === "workout" ? pocket.workouts : pocket.backblasts;
+  return asItems(
+    kind,
+    rows.filter((r) => withArchived || !archived.has(r.id)),
+  );
+}
 
 /**
  * Your drafts and your finished ones of a kind, each by workout date, the most recent on top
  * (undated ones last). Others' public workouts are on Discover, not here. What you've archived is
- * left out. Offline, the last copy kept on this device.
+ * left out. Offline, the recent ones kept on this phone.
  */
 export function loadLists(
   kind: ItemKind,
@@ -288,39 +302,72 @@ export function loadLists(
   /** Leave out finished ones dated after today (Home lists those as Future workouts). */
   pastOnly = false,
 ): Promise<{ drafts: ListItem[]; published: ListItem[] }> {
-  return withKeptCopy(`lists:${kind}:${userId}:${limit}:${pastOnly}`, () =>
-    loadListsFresh(kind, userId, limit, pastOnly),
+  return freshOrPocket(
+    () => loadListsFresh(kind, userId, limit, pastOnly),
+    (pocket) => {
+      const items = pocketItems(pocket, kind).sort(byWorkoutDate);
+      const today = localToday();
+      return {
+        drafts: items.filter((i) => i.status === "draft").slice(0, limit),
+        published: items
+          .filter(
+            (i) =>
+              i.status === "published" &&
+              (!pastOnly || !i.date || i.date <= today),
+          )
+          .slice(0, limit),
+      };
+    },
   );
 }
 
-/** Your finished workouts dated today (archived ones included); offline, the kept copy. */
+/** Your finished workouts dated today (archived ones included); offline, from the phone. */
 export function loadTodaysWorkouts(
   userId: string,
 ): Promise<(ListItem & { time: string | null })[]> {
-  // Kept by day, so yesterday's copy never shows as today's.
-  return withKeptCopy(`today:${userId}:${localToday()}`, () =>
-    loadTodaysWorkoutsFresh(userId),
+  return freshOrPocket(
+    () => loadTodaysWorkoutsFresh(userId),
+    (pocket) =>
+      asItems(
+        "workout",
+        pocket.workouts.filter(
+          (w) => w.status === "published" && w.date === localToday(),
+        ),
+      ) as (ListItem & { time: string | null })[],
   );
 }
 
-/** Your finished workouts dated after today, soonest first; offline, the kept copy. */
-export async function loadFutureWorkouts(
+/** Your finished workouts dated after today, soonest first; offline, from the phone. */
+export function loadFutureWorkouts(
   userId: string,
   limit = 50,
 ): Promise<ListItem[]> {
-  const list = await withKeptCopy(`future:${userId}:${limit}`, () =>
-    loadFutureWorkoutsFresh(userId, limit),
+  return freshOrPocket(
+    () => loadFutureWorkoutsFresh(userId, limit),
+    (pocket) =>
+      pocketItems(pocket, "workout", { withArchived: true })
+        .filter(
+          (w) => w.status === "published" && !!w.date && w.date > localToday(),
+        )
+        .sort((a, b) => a.date!.localeCompare(b.date!))
+        .slice(0, limit),
   );
-  // A copy kept on an earlier day may hold one that's today now.
-  const today = localToday();
-  return list.filter((w) => !w.date || w.date > today);
 }
 
-/** Your finished workouts with no backblast yet, newest first; offline, the kept copy. */
+/**
+ * Your finished workouts with no backblast yet, newest first; offline, those on the phone with
+ * none there either.
+ */
 export function loadWorkoutsNeedingBackblast(
   userId: string,
 ): Promise<ListItem[]> {
-  return withKeptCopy(`needs-backblast:${userId}`, () =>
-    loadWorkoutsNeedingBackblastFresh(userId),
+  return freshOrPocket(
+    () => loadWorkoutsNeedingBackblastFresh(userId),
+    (pocket) => {
+      const written = new Set(pocket.backblasts.map((b) => b.workout_id));
+      return pocketItems(pocket, "workout", { withArchived: true })
+        .filter((w) => w.status === "published" && !written.has(w.id))
+        .sort(byWorkoutDate);
+    },
   );
 }

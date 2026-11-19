@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef } from "react";
 import { useConnection } from "@/lib/connection";
 import { leftScreen, resumeKeeping } from "@/lib/offline";
+import { SERVICE_WORKER_URL } from "@/lib/push";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -17,7 +18,7 @@ export function OfflineSupport() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker
-      .register(`${BASE}/sw.js`, { scope: `${BASE}/` })
+      .register(SERVICE_WORKER_URL, { scope: `${BASE}/` })
       .catch(() => {
         // Without it Rocket still works, just not offline.
       });
@@ -48,8 +49,9 @@ export function OfflineSupport() {
       <span>
         <strong className="text-ink">Offline.</strong> Write new workouts and
         backblasts as usual: they&apos;re kept on this phone and saved once
-        you&apos;re back online. Your workouts, backblasts and the Exicon still
-        show. Discover, Generate, Archive, Search and PAX need a connection.
+        you&apos;re back online. Your recent workouts and backblasts, the Exicon
+        and About still show. Discover, Generate, Archive, Search, PAX and
+        Settings need a connection.
       </span>
     </div>
   );
