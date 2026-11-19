@@ -264,6 +264,30 @@ export async function takenNames(
   return new Set((data ?? []).map((p) => p.name.trim().toLowerCase()));
 }
 
+/**
+ * Whether a name is already another Rocket account's in a region (one name per region; the
+ * database holds to it). Asked before signing up too.
+ */
+export async function nameTaken(
+  regionId: string,
+  name: string,
+): Promise<boolean> {
+  const { data, error } = await createClient().rpc("name_taken", {
+    p_region: regionId,
+    p_name: name.trim(),
+  });
+  return !error && data === true;
+}
+
+/** What to say when a name is already taken in a region. */
+export const takenNameMessage = (regionName?: string) =>
+  `That name is already taken${regionName ? ` in ${regionName}` : " in that region"} by someone on Rocket. Choose another, or contact the developer if it's yours.`;
+
+/** Whether saving a profile failed because its name is taken in its region. */
+export const isTakenNameError = (error: { code?: string; message?: string }) =>
+  error.code === "23505" ||
+  /profiles_name_per_region/.test(error.message ?? "");
+
 /** Who has posted at an AO in the last few months, most posts first. */
 export function loadRegulars(region: Region, ao: string): Promise<Regular[]> {
   if (region.synced_at)

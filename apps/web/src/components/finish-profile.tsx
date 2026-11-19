@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { loadRegions } from "@/lib/regions";
+import { loadRegions, nameTaken, takenNameMessage } from "@/lib/regions";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/use-region";
 import type { CurrentUser } from "./auth-provider";
@@ -55,6 +55,12 @@ export function FinishProfile({ user }: { user: CurrentUser }) {
     if (profileError) {
       setPending(false);
       return setError(profileError.message);
+    }
+    // One name per region: someone on Rocket may have it already.
+    if (region && (await nameTaken(region.id, name))) {
+      setPending(false);
+      setConfirming(null);
+      return setError(takenNameMessage(region.name));
     }
     if (region) {
       const message = await chooseRegion(user.id, region);

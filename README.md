@@ -258,7 +258,15 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   Signing up with email asks for the same two first. Either way the name is picked from the chosen region's roster (suggested as you type; read
   from the region's sheet when signing up with email, as the synced roster needs a sign-in; names
   already taken by a Rocket account are left out after Google), and only a roster name is
-  accepted unless **I'm not on the roster yet** is ticked. It comes with a warning that it must
+  accepted unless **I'm not on the roster yet** is ticked. **One account per name in a region**
+  (there's one Casper of F3 SacTown; another region can have its own): the database holds to it
+  (`profiles_name_per_region`, names compared trimmed and ignoring case; accounts with no region
+  or all F3/FiA regions aren't held to it), and sign-up, Welcome, Settings → Profile and choosing
+  a region in Settings say "That name is already taken … by someone on Rocket" rather than saving
+  it. Sign-up asks the database first with `name_taken`, which answers only yes or no, so it works
+  before there's an account. Two people signing up with the same name at the same moment: the
+  second account is made without its region (rather than the sign-up failing), and they choose
+  it again. It comes with a warning that it must
   match the database (the roster) exactly and can't be changed once the account is set up, and the first tap shows it back ("You'll be …
   on Rocket, for good") to confirm with a second. Settings shows it but doesn't let it change, unless it's no longer on your region's roster
   (renamed or corrected there; `name_on_roster` in the account remembers it once was): then a warning at the top of each screen says so, with **Fix it
@@ -541,9 +549,10 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
   organization: choosing a region switches the user to its wording and colors. **F3 SacTown** (F3)
   is set up by `supabase/migrations/20261101000000_regions.sql`, **FiA SacTown** (FiA) by
   `supabase/migrations/20261105020000_fia_sactown_region.sql`, **F3 Delta** (F3) by
-  `supabase/migrations/20261107010000_f3_delta_region.sql` and **F3 DryCreek** (F3) by
+  `supabase/migrations/20261107010000_f3_delta_region.sql`, **F3 DryCreek** (F3) by
   `supabase/migrations/20261108000000_f3_drycreek_region.sql` (its Sites tab has no address
-  column, so the AO's Location is used). Others can be added in Settings,
+  column, so the AO's Location is used) and **F3 Iron Corridor** (F3, the default settings) by
+  `supabase/migrations/20261120000100_f3_iron_corridor_region.sql`. Others can be added in Settings,
   with a **Check sheet** button that confirms every column exists.
 - **Nightly sync:** `.github/workflows/sync-regions.yml` runs `scripts/sync-regions.mjs` every
   night (about 2–3am Pacific, or on demand from the Actions tab). It copies each region's active
