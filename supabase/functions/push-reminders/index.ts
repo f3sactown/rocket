@@ -19,7 +19,9 @@ import {
   type Notice,
   type ReminderDraft,
   type ReminderWorkout,
+  workoutTimes,
 } from "../_shared/reminders.ts";
+import { describeWeather, fetchWeather, placeKey } from "../_shared/weather.ts";
 
 const PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
 const PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
@@ -121,7 +123,7 @@ async function collect(subscriptions: Subscription[]): Promise<Outgoing[]> {
   const [workouts, drafts, draftBackblasts] = await Promise.all([
     db
       .from("workouts")
-      .select("id, author_id, title, ao, date, time")
+      .select("id, author_id, title, ao, date, time, address")
       .in("author_id", users)
       .eq("status", "published")
       .gte("date", addDays(today, -1))
@@ -217,9 +219,68 @@ async function collect(subscriptions: Subscription[]): Promise<Outgoing[]> {
       out.push({ ...notice, user_id: user });
   }
 
+  await addForecasts(out, workouts.data ?? []);
   out.push(...(await social(users, prefs, now)));
   out.push(...(await newPax(users, prefs, now)));
   return out;
+}
+
+/**
+ * The day-before reminder ends with the forecast at the AO for the workout's start, when Rocket
+ * knows where the AO is (place_coordinates) and Open-Meteo answers; without it, it goes as it is.
+ */
+async function addForecasts(
+  notices: Outgoing[],
+  workouts: {
+    id: string;
+    date: string | null;
+    time: string | null;
+    address: string | null;
+  }[],
+) {
+  const dayBefore = notices.filter((n) => n.kind === "day_before");
+  if (!dayBefore.length) return;
+  const byId = new Map(workouts.map((w) => [w.id, w]));
+  const keys = [
+    ...new Set(
+      dayBefore
+        .map((n) => byId.get(n.ref.split(":")[0]!)?.address?.trim())
+        .filter((a): a is string => !!a)
+        .map(placeKey),
+    ),
+  ];
+  if (!keys.length) return;
+  const { data, error } = await db
+    .from("place_coordinates")
+    .select("address, latitude, longitude")
+    .in("address", keys);
+  if (error) {
+    console.error("place coordinates", error.message);
+    return;
+  }
+  const places = new Map(
+    (data ?? [])
+      .filter((p) => p.latitude !== null && p.longitude !== null)
+      .map((p) => [p.address, p as { latitude: number; longitude: number }]),
+  );
+  for (const notice of dayBefore) {
+    const workout = byId.get(notice.ref.split(":")[0]!);
+    const place =
+      workout?.address && workout.date
+        ? places.get(placeKey(workout.address))
+        : undefined;
+    if (!workout?.date || !place) continue;
+    const weather = await fetchWeather({
+      latitude: place.latitude,
+      longitude: place.longitude,
+      date: workout.date,
+      startMinutes: workoutTimes(workout.time).start,
+      // The day before: tomorrow's forecast, so "today" is the day before it.
+      today: addDays(workout.date, -1),
+    });
+    if (weather)
+      notice.body = `${notice.body} Forecast: ${describeWeather(weather)}.`;
+  }
 }
 
 type Prefs = Map<string, { settings: ReturnType<typeof normalizeSettings> }>;

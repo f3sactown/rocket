@@ -67,6 +67,7 @@ export type Database = {
           status: "draft" | "published";
           updated_at: string;
           visibility: "public" | "private";
+          weather: string | null;
         };
         Insert: {
           id?: string;
@@ -92,6 +93,7 @@ export type Database = {
           status?: "draft" | "published";
           updated_at?: string;
           visibility?: "public" | "private";
+          weather?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["backblasts"]["Insert"]>;
         Relationships: [
@@ -358,6 +360,24 @@ export type Database = {
         };
         Update: Partial<
           Database["public"]["Tables"]["notification_log"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      place_coordinates: {
+        Row: {
+          address: string;
+          latitude: number | null;
+          longitude: number | null;
+          looked_up_at: string;
+        };
+        Insert: {
+          address: string;
+          latitude?: number | null;
+          longitude?: number | null;
+          looked_up_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["place_coordinates"]["Insert"]
         >;
         Relationships: [];
       };

@@ -12,6 +12,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { ArrowIcon } from "@/components/icons";
 import { ActiveTimer, ThangTimer } from "@/components/thang-timer";
+import { WorkoutWeather } from "@/components/workout-weather";
 import { WrapUpWarning } from "@/components/wrap-up-warning";
 import { fromWorkoutRow, loadWorkoutNotes, workoutById } from "@/lib/backblast";
 import { createClient } from "@/lib/supabase/client";
@@ -259,6 +260,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
           <p className="leading-relaxed whitespace-pre-wrap text-ink-soft">
             <Linkify text={where} />
           </p>
+          <WorkoutWeather workout={workout} className="-mt-4" />
           {section("Introduction", workout.introduction)}
           {section(terms.warmup, workout.warmup)}
           {thangs.length > 0 && (

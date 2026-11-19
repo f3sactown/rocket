@@ -163,6 +163,11 @@ describe("formatBackblast", () => {
     );
   });
 
+  it("adds the conditions below the place", () => {
+    const text = formatBackblast({ ...talko, weather: " 48°F, light rain " });
+    expect(text).toContain("Oki Park\nConditions: 48°F, light rain\n");
+  });
+
   it("adds home regions, who invited FNGs, and 2.0s when given", () => {
     const detailed = formatBackblast({
       ...talko,
