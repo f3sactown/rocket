@@ -562,9 +562,11 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
   weather (see [Weather](#weather)).
 - **Placeholders and retired PAX:** a name like "Site Closed (Archived)" that a sheet puts in the
   PAX column to mark a closed AO isn't a PAX, and a PAX marked retired ("007 (Retired)") is hidden
-  too: both are left out of rosters, the PAX page, Name-o-rama suggestions, regulars, PAX totals
-  and the names to choose at sign-up (`isPlaceholderPax` in `@rocket/core`; the sync does the
-  same).
+  too, and so is a sheet's "last updated" note kept as a row (PAX "UPDATED 1/8/2025", as F3 Iron
+  Corridor's Master Data has): all are left out of rosters, the PAX page, Name-o-rama suggestions,
+  regulars, PAX totals and the names to choose at sign-up (`isPlaceholderPax` in `@rocket/core`;
+  the sync does the same). Attendance rows dated after tomorrow (that note is dated 1/1/2099)
+  aren't posts either: they're left out of the regulars and the region's latest post date.
 - The sync needs the repository **secret** `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project
   Settings → API Keys → secret key) alongside the `SUPABASE_URL` variable.
 - Sheets are read with Google's Visualization API (`apps/web/src/lib/sheets.ts` in the app,

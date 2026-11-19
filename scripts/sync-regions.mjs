@@ -19,10 +19,24 @@ const REGULARS_MONTHS = 3;
 /**
  * A name in the PAX column left out rather than synced as a PAX: a placeholder such as "Site Closed
  * (Archived)" marking when an AO stopped meeting, or a PAX marked retired, e.g. "007 (Retired)"
- * (the same rule as isPlaceholderPax in @rocket/core).
+ * or a sheet's "last updated" note, e.g. "UPDATED 1/8/2025" (the same rule as isPlaceholderPax in
+ * @rocket/core).
  */
 function isPlaceholderPax(name) {
-  return /\bsite\s*closed\b/i.test(name) || /\(\s*retired\s*\)/i.test(name);
+  return (
+    /\bsite\s*closed\b/i.test(name) ||
+    /\(\s*retired\s*\)/i.test(name) ||
+    /^\s*updated\b.*\d/i.test(name)
+  );
+}
+
+/**
+ * Tomorrow (YYYY-MM-DD): no post is later than that, so a row dated after it is a sheet's note kept
+ * at the top (e.g. dated 1/1/2099), not a post.
+ */
+function lastPostDate() {
+  const day = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  return day.toISOString().slice(0, 10);
 }
 const SHEETS_BASE = process.env.SHEETS_BASE || "https://docs.google.com";
 const SUPABASE_URL = process.env.SUPABASE_URL
@@ -182,7 +196,7 @@ async function readRegion({ sheet_id: id, config }) {
       await query(
         id,
         a.sheet,
-        `select ${att.ao}, ${att.pax}, count(${att.pax}) where ${att.date} >= date '${since.toISOString().slice(0, 10)}' group by ${att.ao}, ${att.pax}`,
+        `select ${att.ao}, ${att.pax}, count(${att.pax}) where ${att.date} >= date '${since.toISOString().slice(0, 10)}' and ${att.date} <= date '${lastPostDate()}' group by ${att.ao}, ${att.pax}`,
       )
     ).rows
       .map((row) => ({
@@ -210,8 +224,12 @@ async function readRegion({ sheet_id: id, config }) {
     (s) => s.pax,
   );
 
-  // The newest post date, to show how current the sheet is.
-  const latest = await query(id, a.sheet, `select max(${att.date})`);
+  // The newest post date, to show how current the sheet is (a note dated in the future isn't one).
+  const latest = await query(
+    id,
+    a.sheet,
+    `select max(${att.date}) where ${att.date} <= date '${lastPostDate()}'`,
+  );
   const latestPostOn = sheetDate(latest.rows[0]?.[0]);
 
   return { sites, roster, regulars, stats, latestPostOn };

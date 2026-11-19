@@ -316,7 +316,7 @@ export function loadRegulars(region: Region, ao: string): Promise<Regular[]> {
     const table = await querySheet(
       region.sheet_id,
       sheet,
-      `select ${cols.pax}, count(${cols.pax}) where ${cols.ao} = ${quote(ao)} and ${cols.date} >= date '${since.toISOString().slice(0, 10)}' group by ${cols.pax} order by count(${cols.pax}) desc`,
+      `select ${cols.pax}, count(${cols.pax}) where ${cols.ao} = ${quote(ao)} and ${cols.date} >= date '${since.toISOString().slice(0, 10)}' and ${cols.date} <= date '${lastPostDate()}' group by ${cols.pax} order by count(${cols.pax}) desc`,
     );
     return rows(table)
       .filter((row) => row[0] && !isPlaceholderPax(row[0]))
@@ -517,6 +517,14 @@ function sheetDate(value: string): string | null {
   return /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : null;
 }
 
+/**
+ * Tomorrow (YYYY-MM-DD): no post is later than that, so a row dated after it is a sheet's note kept
+ * at the top (e.g. dated 1/1/2099), not a post. (The region sync does the same.)
+ */
+function lastPostDate(): string {
+  return new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 /** The most recent post date (YYYY-MM-DD) in the region's attendance records, if any. */
 export function loadLatestPost(region: Region): Promise<string | null> {
   if (region.synced_at) return Promise.resolve(region.latest_post_on ?? null);
@@ -526,7 +534,7 @@ export function loadLatestPost(region: Region): Promise<string | null> {
     const table = await querySheet(
       region.sheet_id,
       sheet,
-      `select max(${cols.date})`,
+      `select max(${cols.date}) where ${cols.date} <= date '${lastPostDate()}'`,
     );
     return sheetDate(rows(table)[0]?.[0] ?? "");
   });
