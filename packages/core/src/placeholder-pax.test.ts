@@ -14,11 +14,17 @@ describe("isPlaceholderPax", () => {
     expect(isPlaceholderPax("Arrowhead ( Retired )")).toBe(true);
   });
 
+  it("spots a sheet's last-updated note", () => {
+    expect(isPlaceholderPax("UPDATED 1/8/2025")).toBe(true);
+    expect(isPlaceholderPax("Updated 2026-01-08")).toBe(true);
+  });
+
   it("leaves real PAX alone", () => {
     expect(isPlaceholderPax("Retiree")).toBe(false);
     expect(isPlaceholderPax("Tired")).toBe(false);
     expect(isPlaceholderPax("Carter")).toBe(false);
     expect(isPlaceholderPax("Closer")).toBe(false);
+    expect(isPlaceholderPax("Updated")).toBe(false);
     expect(isPlaceholderPax("Baby Shark (Dry Creek)")).toBe(false);
   });
 });

@@ -4,69 +4,70 @@
 //   run offline (always fetched fresh when there's a connection; the copy is only a fallback);
 // - shows push notifications and opens the right page when one is tapped.
 
-const PAGES_CACHE = "rocket-pages-v1";
+/**
+ * This version of the app (its build), from the address it's registered with (sw.js?v=…): a new
+ * build registers a new address, so the phone installs it, keeping every file of that version.
+ */
+const VERSION = new URL(self.location.href).searchParams.get("v") || "dev";
+/** The app's pages, their data files and code, one cache per version. */
+const APP_PREFIX = "rocket-app-";
+const APP_CACHE = `${APP_PREFIX}${VERSION}`;
 const DATA_CACHE = "rocket-data-v1";
+/** The app's own kept copies (lib/kept.ts and lib/pocket.ts). */
+const KEPT_CACHE = "rocket-kept-v1";
 /** How long to wait on a slow connection before using the kept copy instead. */
 const SLOW_MS = 5000;
 
-/** The app's pages, kept when it's installed so they open offline even if never visited. */
-const PAGES = [
-  "",
-  "workouts/",
-  "workouts/new/",
-  "workouts/edit/",
-  "workout/",
-  "workout/run/",
-  "backblasts/",
-  "backblasts/new/",
-  "backblasts/edit/",
-  "backblast/",
-  "discover/",
-  "library/",
-  "pax/",
-  "pax/profile/",
-  "settings/",
-  "about/",
-];
-
-/** Keeps each page and the code it loads (the /_next/static/ files it names). */
-async function keepPages() {
-  const cache = await caches.open(PAGES_CACHE);
+/**
+ * Keeps every file of this version (listed at build time in precache.json: the pages, the data
+ * files Next.js loads when moving between them, and the code), so every screen opens offline and
+ * they all match. The new version only takes over once they're all kept; until then the old one
+ * goes on with its own.
+ */
+async function keepApp() {
   const scope = self.registration.scope;
-  const assets = new Set();
-  await Promise.allSettled(
-    PAGES.map(async (page) => {
-      const url = new URL(page, scope).href;
-      const response = await fetch(url, { cache: "no-cache" });
-      if (!response.ok) return;
-      await cache.put(url, response.clone());
-      const html = await response.text();
-      for (const match of html.matchAll(
-        /["'(]([^"'()\s]*\/_next\/static\/[^"'()\s]+)["')]/g,
-      ))
-        assets.add(new URL(match[1], url).href);
-    }),
-  );
-  await Promise.allSettled(
-    [...assets].map(async (url) => {
+  const cache = await caches.open(APP_CACHE);
+  const list = await fetch(new URL("precache.json", scope), {
+    cache: "no-cache",
+  });
+  if (!list.ok) throw new Error("No precache.json");
+  const { files } = await list.json();
+  const results = await Promise.allSettled(
+    files.map(async (file) => {
+      const url = new URL(file, scope).href;
       if (await cache.match(url)) return;
-      const response = await fetch(url);
-      if (response.ok) await cache.put(url, response);
+      const response = await fetch(url, { cache: "no-cache" });
+      if (!response.ok) throw new Error(`${response.status} ${url}`);
+      await cache.put(url, response);
     }),
   );
+  // Most must be there for it to be worth taking over; a stray failure is fetched when used.
+  const failed = results.filter((r) => r.status === "rejected").length;
+  if (failed > files.length / 10) throw new Error(`${failed} files not kept`);
 }
 
 self.addEventListener("install", (event) => {
-  self.skipWaiting();
-  event.waitUntil(keepPages().catch(() => {}));
+  event.waitUntil(keepApp().then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) =>
   event.waitUntil(
     (async () => {
-      const keep = [PAGES_CACHE, DATA_CACHE];
-      for (const name of await caches.keys())
-        if (!keep.includes(name)) await caches.delete(name);
+      // Older versions go, except the one just before: a screen still open on it can load the
+      // code it's missing from there. (rocket-pages-v1 was the single cache before versions.)
+      const names = await caches.keys();
+      const apps = names.filter(
+        (n) => n.startsWith(APP_PREFIX) && n !== APP_CACHE,
+      );
+      const previous = apps[apps.length - 1];
+      for (const name of names)
+        if (
+          name !== APP_CACHE &&
+          name !== previous &&
+          name !== DATA_CACHE &&
+          name !== KEPT_CACHE
+        )
+          await caches.delete(name);
       await self.clients.claim();
     })(),
   ),
@@ -226,10 +227,13 @@ async function networkFirst(event, request, cacheName, match) {
   }
 }
 
-/** Cache first, for the app's code, whose file names change whenever it does. */
+/**
+ * Cache first, for the app's code, whose file names change whenever it does. Looked for in every
+ * version kept, so a screen still open on the previous version finds its code.
+ */
 async function cacheFirst(request) {
-  const cache = await caches.open(PAGES_CACHE);
-  const kept = await cache.match(request);
+  const cache = await caches.open(APP_CACHE);
+  const kept = await caches.match(request);
   if (kept) return kept;
   const response = await fetch(request);
   if (response.ok) await cache.put(request, response.clone());
@@ -245,7 +249,7 @@ self.addEventListener("fetch", (event) => {
       return event.respondWith(cacheFirst(request));
     // Pages (and their data files): one page serves every ?id=, so the query is ignored.
     return event.respondWith(
-      networkFirst(event, request, PAGES_CACHE, {
+      networkFirst(event, request, APP_CACHE, {
         ignoreSearch: true,
         ignoreVary: true,
       }),

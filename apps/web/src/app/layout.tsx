@@ -5,6 +5,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { DeviceSetup } from "@/components/device-setup";
 import { AppTour } from "@/components/app-tour";
 import { DraftSender } from "@/components/local-drafts";
+import { PocketKeeper } from "@/components/pocket-keeper";
 import { NameCheck } from "@/components/name-check";
 import { OfflineGate } from "@/components/offline-gate";
 import { TestingBanner } from "@/components/testing-banner";
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <NameCheck />
             <KeepOnLeave />
             <DraftSender />
+            <PocketKeeper />
             <DeviceSetup />
             <AppTour />
             <OfflineGate>{children}</OfflineGate>

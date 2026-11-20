@@ -15,6 +15,14 @@ import { ActiveTimer, ThangTimer } from "@/components/thang-timer";
 import { WorkoutWeather } from "@/components/workout-weather";
 import { WrapUpWarning } from "@/components/wrap-up-warning";
 import { fromWorkoutRow, loadWorkoutNotes, workoutById } from "@/lib/backblast";
+import { isOffline } from "@/lib/connection";
+import {
+  backupKey,
+  newBackupKey,
+  ownedBy,
+  readBackup,
+} from "@/lib/local-drafts";
+import { readPocket } from "@/lib/pocket";
 import { createClient } from "@/lib/supabase/client";
 import { setVisibility } from "@/lib/workout-social";
 
@@ -51,7 +59,12 @@ function savedSize(): Size {
  * allows.
  */
 function RunWorkout({ user }: { user: CurrentUser }) {
-  const id = useSearchParams().get("id");
+  const params = useSearchParams();
+  const id = params.get("id");
+  // A new workout written offline, not in Rocket yet: run from the copy kept on this phone.
+  const local = params.get("local");
+  // Back to it: its page, or the form it's being written in.
+  const backHref = local ? `/workouts/new?local=${local}` : `/workout?id=${id}`;
   const [size, setSize] = useState<Size>(savedSize);
   const [activeTimer, setActiveTimer] = useState<string | null>(null);
   // The timer last started and how to pause it, so starting another pauses it.
@@ -115,27 +128,53 @@ function RunWorkout({ user }: { user: CurrentUser }) {
   }, [privateFinished]);
 
   useEffect(() => {
+    // What's typed and kept on this phone: the newest, while offline.
+    const onPhone = (key: string) => {
+      const backup = readBackup(key);
+      return backup && ownedBy(backup, user.id) ? backup.content : null;
+    };
+    if (local) {
+      const workout = onPhone(newBackupKey("workout", local));
+      setResult(
+        workout
+          ? { workout, mine: true }
+          : { workout: null, error: "Not kept on this phone" },
+      );
+      return;
+    }
     if (!id) return;
-    workoutById(id).then(async ({ data, error }) =>
+    workoutById(id).then(async ({ data, error }) => {
+      const typed = isOffline() ? onPhone(backupKey("workout", id)) : null;
       setResult({
         workout:
-          data &&
-          fromWorkoutRow(
-            data,
-            data.author_id === user.id ? await loadWorkoutNotes(data.id) : "",
-          ),
-        mine: data?.author_id === user.id,
+          typed ??
+          (data &&
+            fromWorkoutRow(
+              data,
+              data.author_id === user.id ? await loadWorkoutNotes(data.id) : "",
+            )),
+        mine: !!typed || data?.author_id === user.id,
         privateFinished:
           data?.author_id === user.id &&
           data.status === "published" &&
           data.visibility === "private",
-        error: error?.message,
-      }),
-    );
-  }, [id, user.id]);
+        error: typed ? undefined : error?.message,
+      });
+    });
+  }, [id, local, user.id]);
 
   useEffect(() => {
     if (!id) return;
+    if (isOffline()) {
+      void readPocket().then((pocket) =>
+        setBackblasts(
+          (pocket?.backblasts ?? [])
+            .filter((b) => b.workout_id === id)
+            .map(({ id, status, date }) => ({ id, status, date })),
+        ),
+      );
+      return;
+    }
     createClient()
       .from("backblasts")
       .select("id, status, date")
@@ -175,23 +214,24 @@ function RunWorkout({ user }: { user: CurrentUser }) {
     }
   }
 
-  if (id && !result) return <Loading />;
+  if ((id || local) && !result) return <Loading />;
   if (!result?.workout)
     return <NotFound what="workout" error={result?.error} />;
 
   const { workout } = result;
   const terms = termsFor(user.language);
   // Where and when, as at the top of the copied workout.
-  const where = backblastParts(
-    {
-      ...workout,
-      title: "",
-      notes: "",
-      thang: "",
-      introduction: "",
-    },
-    user.language,
-  )[0]!.text;
+  const where =
+    backblastParts(
+      {
+        ...workout,
+        title: "",
+        notes: "",
+        thang: "",
+        introduction: "",
+      },
+      user.language,
+    )[0]?.text ?? "";
   const thangs = workout.thangs?.length
     ? workout.thangs
     : workout.thang
@@ -226,7 +266,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
         <WrapUpWarning date={workout.date} time={workout.time} />
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
-            <Link href={`/workout?id=${id}`} className="link text-sm">
+            <Link href={backHref} className="link text-sm">
               ← Workout
             </Link>
             <span className="status text-sm">Running</span>
@@ -302,11 +342,13 @@ function RunWorkout({ user }: { user: CurrentUser }) {
           {section(terms.wordsOfWisdom, workout.wordsOfWisdom)}
         </div>
         <div className="flex items-start gap-2">
-          {/* Back to the workout's page, done running it. */}
-          <Link href={`/workout?id=${id}`} className="btn shrink-0 px-7">
+          {/* Done running it: back to Home. */}
+          <Link href="/" className="btn shrink-0 px-7">
             Close
           </Link>
+          {/* Its backblast once it's in Rocket (not for one only on this phone). */}
           {result.mine &&
+            !local &&
             (() => {
               const existing = backblasts[0];
               if (!existing && isUpcoming(workout.date))

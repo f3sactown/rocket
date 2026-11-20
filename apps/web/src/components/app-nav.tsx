@@ -86,10 +86,10 @@ const LINKS: {
     match: (path) => path.startsWith("/discover"),
   },
   {
-    href: "/library",
+    href: "/exicon",
     label: "Exicon",
     icon: <BookIcon />,
-    match: (path) => path.startsWith("/library"),
+    match: (path) => path.startsWith("/exicon"),
   },
   {
     href: "/archive",

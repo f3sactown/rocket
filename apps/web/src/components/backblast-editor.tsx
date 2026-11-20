@@ -1,5 +1,7 @@
 "use client";
 
+import { setFlash } from "@/lib/flash";
+import { withKeptCopy } from "@/lib/kept";
 import type { Backblast } from "@rocket/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -7,6 +9,7 @@ import { saveWorkoutNotes, toInsert, toWorkoutInsert } from "@/lib/backblast";
 import { isUpcoming } from "@/lib/backblast-list";
 import { useConnection } from "@/lib/connection";
 import {
+  alreadyThere,
   backupKey,
   dropBackup,
   localBackblastFor,
@@ -121,6 +124,7 @@ function statusLabel(
   state: SaveState,
   savedAt: Date | null,
   now: number,
+  offline: boolean,
 ): string {
   switch (state) {
     case "new":
@@ -130,7 +134,9 @@ function statusLabel(
     case "saved":
       return savedAt ? `Saved ${savedAgo(savedAt, now)}` : "Saved";
     case "error":
-      return "Not saved yet · kept on this phone";
+      return offline
+        ? "Offline · saved locally"
+        : "Not saved yet · kept on this phone";
   }
 }
 
@@ -233,6 +239,8 @@ export function BackblastEditor({
   const inFrame = typeof window !== "undefined" && window.top !== window;
   // Done tapped offline: finished as soon as the connection's back.
   const finishPending = useRef(false);
+  // Whether anything's been changed here (Done offline says it's in your drafts if so).
+  const changed = useRef(false);
   // Whether Rocket knows it's offline (the phone says so, or requests aren't getting through).
   const { offline } = useConnection();
   const offlineRef = useRef(offline);
@@ -249,12 +257,17 @@ export function BackblastEditor({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    createClient()
-      .from("section_templates")
-      .select(TEMPLATE_COLUMNS)
-      .order("name")
-      .then(({ data }) => {
-        const templates = data ?? [];
+    // Offline, the templates last loaded on this device.
+    withKeptCopy(`templates:${user.id}`, async () => {
+      const { data, error } = await createClient()
+        .from("section_templates")
+        .select(TEMPLATE_COLUMNS)
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    })
+      .catch(() => [])
+      .then((templates) => {
         // A new one starts with the user's default templates filled in.
         const loaded = draftId
           ? initialRef.current
@@ -311,19 +324,29 @@ export function BackblastEditor({
             .eq("id", id.current);
           if (error) throw error;
         } else {
-          const { data, error } = await table
-            .insert({
-              ...row,
-              author_id: user.id,
-              // New ones start public or private as chosen in Settings.
-              visibility:
-                mode === "workout"
-                  ? user.defaultWorkoutVisibility
-                  : user.defaultBackblastVisibility,
-            } as never)
-            .select("id")
-            .single();
-          if (error) throw error;
+          // Made under the phone's ID for it, so it's the same one however often it's sent (the
+          // kept copy may have reached Rocket already, from another screen).
+          const { error } = await table.insert({
+            ...row,
+            id: localId,
+            author_id: user.id,
+            // New ones start public or private as chosen in Settings.
+            visibility:
+              mode === "workout"
+                ? user.defaultWorkoutVisibility
+                : user.defaultBackblastVisibility,
+          } as never);
+          if (error && !alreadyThere(error)) throw error;
+          if (error) {
+            // Already there: this is it, so the latest goes to it.
+            const changes: Record<string, unknown> = { ...row };
+            if (mode === "backblast") delete changes.workout_id;
+            const { error: updateError } = await table
+              .update(changes as never)
+              .eq("id", localId);
+            if (updateError) throw updateError;
+          }
+          const data = { id: localId };
           id.current = data.id;
           openKeys.add(backupKey(mode, data.id));
           // Point the address bar at the draft, so a reload or the back button returns to it.
@@ -357,6 +380,7 @@ export function BackblastEditor({
       user.defaultBackblastVisibility,
       mode,
       words,
+      localId,
     ],
   );
 
@@ -384,6 +408,7 @@ export function BackblastEditor({
   const onChange = useCallback(
     (backblast: Backblast) => {
       if (inFrame) return;
+      changed.current = true;
       latest.current = backblast;
       // Kept on the phone first, so a dropped connection or a closed app loses nothing.
       writeBackup(keyFor(), backblast, user.id);
@@ -480,12 +505,25 @@ export function BackblastEditor({
         heading={
           published ? words.published : draftId ? words.draft : words.new
         }
-        status={statusLabel(saveState, lastSaved, now)}
+        status={statusLabel(saveState, lastSaved, now, offline)}
         saveLabel={words.finish}
         initial={loaded.start}
         fixedDate={fixedDate}
         userId={user.id}
         initialTemplates={loaded.templates}
+        // Offline, a workout's review can open Run workout: from the copy on this phone.
+        onRun={
+          mode === "workout" && offline
+            ? () => {
+                // What's typed is on the phone already (every change is); Run reads it there.
+                router.push(
+                  id.current
+                    ? `/workout/run?id=${id.current}`
+                    : `/workout/run?local=${localId}`,
+                );
+              }
+            : undefined
+        }
         onChange={onChange}
         onSave={async (backblast) => {
           if (timer.current) clearTimeout(timer.current);
@@ -495,10 +533,17 @@ export function BackblastEditor({
             await persist("published");
           } catch (error) {
             if (!navigator.onLine || isConnectionError(error)) {
-              // Kept on the phone as finished: it's sent and finished once there's a connection.
-              writeBackup(keyFor(), backblast, user.id, true);
-              finishPending.current = true;
-              return "You're offline. It's kept on this phone and will be finished as soon as you're back online.";
+              // Offline: Done closes it. Any changes stay on the phone as a draft, saved to Rocket
+              // once there's a connection; Home says so.
+              finishPending.current = false;
+              if (changed.current) {
+                writeBackup(keyFor(), backblast, user.id);
+                setFlash(
+                  `Your ${mode} was added to your drafts. It's kept on this phone and saved to Rocket once you're back online.`,
+                );
+              }
+              router.push("/");
+              return;
             }
             return (error as { message?: string }).message ?? words.failed;
           }

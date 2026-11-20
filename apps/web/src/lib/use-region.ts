@@ -53,7 +53,8 @@ export function useUserRegion(): Region | null | undefined {
   const regionId = useAuth().user?.regionId ?? null;
   const regions = useLoad(() => loadRegions(), []);
   if (!regionId) return null;
-  if (!regions.value) return regions.error ? null : undefined;
+  // Not loaded (offline with none kept yet): not known, rather than "no region".
+  if (!regions.value) return undefined;
   return regions.value.find((r) => r.id === regionId) ?? null;
 }
 
@@ -89,7 +90,8 @@ export function useRegionScope(): RegionScope | null | undefined {
   const regionId = useAuth().user?.regionId ?? null;
   const regions = useLoad(() => loadRegions(), []);
   if (!regionId) return null;
-  if (!regions.value) return regions.error ? null : undefined;
+  // Not loaded (offline with none kept yet): not known, rather than "no region".
+  if (!regions.value) return undefined;
   const all = allRegionsLanguage(regionId);
   if (all)
     return {

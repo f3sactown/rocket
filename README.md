@@ -33,7 +33,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     short beeps at 3, 2 and 1 seconds left and a long, louder beep at 0. The beeps share one audio context, started by the Start tap, which is what iPhones and iPads need to let a page make sound; there it also asks for "playback" audio, so the beeps sound with the ring/silent switch on silent (Safari 16.4 and later). Starting one timer pauses any other that's running. The timer in use pins to the top
     when scrolled away, and the screen stays awake. A stopwatch shows hundredths of a second. On the
     workout's day, five minutes before the end of its time (or 45 minutes after a start with no
-    end), a **5 minutes left** banner with a beep says it's time to wrap up for COT. At the bottom, a **Close** button back to the workout's page sits to the left of
+    end), a **5 minutes left** banner with a beep says it's time to wrap up for COT. At the bottom, a **Close** button back to Home sits to the left of
     Create backblast (or Continue or Open backblast). Leaving the run of a finished private workout of
     yours any way (those buttons, the menu, the Rocket logo, any link, or back) first asks whether
     to make it public (Make public / Keep private), then goes on; closing the app can't be asked
@@ -159,7 +159,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   entry carries a badge: F3 in F3 red, FiA in FiA teal, and a region's own entries in that region's
   color. Each region gets a color in the order regions were added (blue, then pink, violet, amber, lime and on), so it's the same for every user.
   On the light theme the badges and source chips use deeper shades with white text.
-  The **Exicon** page (in the menu, under Discover, at `/library`) browses the same entries on their own, with
+  The **Exicon** page (in the menu, under Discover, at `/exicon`; the old `/library` address goes there) browses the same entries on their own, with
   Copy and Copy with description in place of Add.
 - **Templates:** each text section (all but Notes and the Name-o-rama) can be saved as a template,
   and one per section can be starred as the default that fills new workouts or backblasts. The
@@ -181,15 +181,29 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   page stays usable around the tour's card, and notices wait until the tour is over. It starts
   once per account, after the device setup (`tutorial_done` in the account's metadata), can be
   skipped, and **Settings → Tutorial** shows it again.
-- **Offline:** the service worker (`apps/web/public/sw.js`, registered on every visit) keeps the
-  app's pages and code, so Rocket opens with no signal, and keeps the data you've looked at, so a
-  workout you've opened before can be read and run offline. Rocket also keeps copies of screens
+- **Offline:** the service worker (`apps/web/public/sw.js`) keeps the whole app on the phone,
+  version by version: each build registers it under its own address (`sw.js?v=<build>-<commit>`,
+  `SERVICE_WORKER_URL` in `lib/push.ts`), so the phone installs the new one, which keeps every file
+  listed in `precache.json` (written after `next build` by `apps/web/scripts/precache.mjs`: every
+  page, the data files Next.js loads when moving between screens, and the code) in its own cache
+  (`rocket-app-<version>`). It only takes over once they're all kept, so every screen opens offline
+  and they all match; the version before is kept too, for a screen still open on it. It also keeps
+  the data you've looked at, so a workout you've opened before can be read and run offline.
+  **Always on the phone** (`lib/pocket.ts`, `PocketKeeper`): whenever there's a connection (on
+  opening Rocket, on reconnecting, every 10 minutes, and a few seconds after a save), Rocket fetches
+  your recent workouts and backblasts whole (the 60 newest finished of each and 30 drafts, with
+  workouts' private notes and what you've archived) and the whole Exicon, and keeps them. Offline,
+  every screen goes straight to them rather than waiting on the network: Home's lists, the
+  Workouts and Backblasts pages (which say they show your most recent and the rest come back with
+  the connection), a workout or backblast's page, Run workout, the editors, and New backblast,
+  whose choice of workout comes from them (a backblast offline can be written for any of those
+  workouts, with the workout's copy). With a connection everything loads fresh as usual. Rocket also keeps copies of screens
   by opening them in turn in a hidden frame (`lib/offline.ts`), in order: first the screen you've
   just left (a workout's page brings its Run workout screen, and the other way round), including
   on putting Rocket away; and, forced even if kept recently, any workout or backblast saved since
   (its pages, its workout's, and the Workouts or Backblasts list). Then, once you've stayed on a
   screen for 4 seconds, the rest from Home: the main screens that work offline (Workouts,
-  Backblasts, Settings), your upcoming workouts and those from the last two weeks with their Run
+  Backblasts, the new workout and backblast forms, the Exicon), your upcoming workouts and those from the last two weeks with their Run
   workout screens, and your recent backblasts. A screen kept in the last 3 hours isn't kept again
   unless it's changed; what's waiting is kept on the phone (`rocket-offline-queue`) so closing
   Rocket picks it up next time (not in Data Saver; it waits for the service worker on a first
@@ -202,8 +216,23 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   answer at once. Data requests aren't retried when they can't reach the server (Supabase would
   wait 1, 2 then 4 seconds more). Home's posts and Qs are kept on the device too (`rocket-totals:*`) and show
   offline as last seen; the likes and reuses top right say **Offline** instead, as they're only
-  counted fresh. Discover, Exicon, Archive, Search and PAX need a connection: offline, the menu shows them greyed
-  out ("Offline") and opening one says **Needs a connection** (`components/offline-gate.tsx`).
+  counted fresh. **Kept copies** (`lib/kept.ts`): the regions, your region's AOs, roster,
+  regulars and totals, your section templates and the whole **Exicon** keep their last answer on the device (Cache Storage, `rocket-kept-v1`, dropped on signing out),
+  not tied to the exact request, so a screen that asks a little differently after an update or on
+  another day still finds it; each is loaded fresh when there's a connection. Home shows each of
+  its lists that's kept even if another isn't, and with none kept it says so and that a new
+  workout or backblast can still be written. Your region isn't taken for "none" offline, so Home
+  doesn't ask you to choose one. The **Exicon** (`/exicon`) works offline (its screen, and the forms'
+  Exicon buttons), fetched with your recent workouts whenever there's a connection. Discover,
+  Generate workout, Archive, Search and PAX need a connection: offline, the menu shows them
+  greyed out ("Offline") and opening one says **Needs a connection**
+  (`components/offline-gate.tsx`); so does **Settings**, as changes to your account need a
+  connection. **About** works offline. New backblast offline with no workouts on the phone says to
+  start it **Without a workout**, and it links up with the workout at its AO and date once it
+  reaches Rocket. Your region's AOs and roster, and the regulars at the AOs of your recent
+  workouts, are fetched with them too, for the forms offline; one that isn't on the phone says so
+  rather than showing an error (the AO list: type the AO instead; Name-o-rama's regulars: they show
+  once you're back online).
   Data asked for with today's date (Home's "up to today" and "after today" lists, Today's
   workouts) is also kept under its address with the dates taken out, so offline on a later day
   the latest kept answer still shows. A page asked for without its trailing slash (`/workout?id=…`, which the site
@@ -223,15 +252,24 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   saved on this phone shows in a moment". A request with no kept copy gives up after 15 seconds
   (at once when already offline), except a page itself; signing out drops the kept data. **Signing out offline** first says what it means (`SignOutOffline`): you can't sign back in until you're online, the copies kept for offline use are removed, anything written offline that hasn't reached Rocket stays on the phone and is saved once you're back in that account with a connection, and everything is fetched fresh after. It signs out on the phone only (Supabase can't be told offline). What's kept on the phone notes whose it is, and is only sent, listed or reopened for that account. An **Offline** banner says what still works, and the accent color (buttons, outlines, the rocket) turns grey until the connection's back (`<html data-connection>`). The workout and
   backblast forms keep a copy of what's typed on the phone (`rocket-unsaved:*` in local storage)
-  until it's saved, so a dropped connection or a closed app loses nothing: the status shows "Not
-  saved yet · kept on this phone", it saves again when the connection returns, and opening the
+  until it's saved, so a dropped connection or a closed app loses nothing: the status shows
+  "Offline · saved locally" (or, with a connection that failed, "Not saved yet · kept on this
+  phone"), it saves again when the connection returns, and opening the
   same one later brings the kept copy back and saves it. **Drafts offline:** workouts and
   backblasts can be written with no connection at all (`lib/local-drafts.ts`). A new one gets an
   ID on the phone (its address becomes `/workouts/new?local=…`), is listed on Home and on the
   Workouts or Backblasts page under **On this phone** ("Saves once online"), and is sent to Rocket
   as a draft as soon as there's a connection (`DraftSender`: on opening, on reconnecting, and
-  every minute), then joins the lists. **Done** offline keeps it as finished ("Finishes once
-  online"): it's finished when it's sent, and an editor still open goes on to its page. Changes
+  every minute), then joins the lists. **Done** offline closes it and goes to Home: with changes made, they're kept on the phone as a
+  draft and Home says so ("added to your drafts … saved to Rocket once you're back online", a
+  one-time note, `lib/flash.ts`); what a finished one needs (title, date, AO, the Q) isn't asked
+  for until it's finished with a connection. (One kept as finished by an earlier version,
+  "Finishes once online", is still finished when it's sent.)
+  Offline, a workout's **Review** page has **Run workout** below Done, which runs it from what's
+  typed on the phone: one not in Rocket yet by its phone ID (`/workout/run?local=…`; ← Workout
+  goes back to its form), one already there with any changes made offline. A new one
+  is created in Rocket under the phone's ID for it, so sending it twice (the app closed or moved
+  on just as it was sent) can't make two: the second finds it there and saves the latest to it. Changes
   to one already in Rocket are sent the same way, unless it's been saved since from somewhere
   else. An open editor sends its own; the hidden frames that keep copies never save. To write a
   backblast offline, the new-backblast form is kept for each of your workouts that has happened
@@ -551,8 +589,9 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
   `supabase/migrations/20261105020000_fia_sactown_region.sql`, **F3 Delta** (F3) by
   `supabase/migrations/20261107010000_f3_delta_region.sql`, **F3 DryCreek** (F3) by
   `supabase/migrations/20261108000000_f3_drycreek_region.sql` (its Sites tab has no address
-  column, so the AO's Location is used) and **F3 Iron Corridor** (F3, the default settings) by
-  `supabase/migrations/20261120000100_f3_iron_corridor_region.sql`. Others can be added in Settings,
+  column, so the AO's Location is used), **F3 Iron Corridor** (F3, the default settings) by
+  `supabase/migrations/20261120000100_f3_iron_corridor_region.sql` and **F3 Plumas Lake** (F3) by
+  `supabase/migrations/20261121000000_f3_plumas_lake_region.sql`. Others can be added in Settings,
   with a **Check sheet** button that confirms every column exists.
 - **Nightly sync:** `.github/workflows/sync-regions.yml` runs `scripts/sync-regions.mjs` every
   night (about 2–3am Pacific, or on demand from the Actions tab). It copies each region's active
@@ -562,9 +601,11 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
   weather (see [Weather](#weather)).
 - **Placeholders and retired PAX:** a name like "Site Closed (Archived)" that a sheet puts in the
   PAX column to mark a closed AO isn't a PAX, and a PAX marked retired ("007 (Retired)") is hidden
-  too: both are left out of rosters, the PAX page, Name-o-rama suggestions, regulars, PAX totals
-  and the names to choose at sign-up (`isPlaceholderPax` in `@rocket/core`; the sync does the
-  same).
+  too, and so is a sheet's "last updated" note kept as a row (PAX "UPDATED 1/8/2025", as F3 Iron
+  Corridor's Master Data has): all are left out of rosters, the PAX page, Name-o-rama suggestions,
+  regulars, PAX totals and the names to choose at sign-up (`isPlaceholderPax` in `@rocket/core`;
+  the sync does the same). Attendance rows dated after tomorrow (that note is dated 1/1/2099)
+  aren't posts either: they're left out of the regulars and the region's latest post date.
 - The sync needs the repository **secret** `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project
   Settings → API Keys → secret key) alongside the `SUPABASE_URL` variable.
 - Sheets are read with Google's Visualization API (`apps/web/src/lib/sheets.ts` in the app,

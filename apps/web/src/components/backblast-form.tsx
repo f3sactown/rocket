@@ -25,6 +25,7 @@ import {
   sitesByDay,
 } from "@/lib/regions";
 import { useLoad, useRegionScope } from "@/lib/use-region";
+import { useConnection } from "@/lib/connection";
 import { useWorkoutLink } from "@/lib/workout-link";
 import { AttendanceInput } from "./attendance-input";
 import { ConditionsField } from "./conditions-field";
@@ -33,7 +34,7 @@ import { QPicker } from "./q-picker";
 import { ThangsInput } from "./thangs-input";
 import { Regulars } from "./regulars";
 import { useAuth } from "./auth-provider";
-import { ArrowIcon, SkipIcon, TrashIcon } from "./icons";
+import { ArrowIcon, PlayIcon, SkipIcon, TrashIcon } from "./icons";
 import { ProtectedText } from "./protected-text";
 import {
   SectionTemplates,
@@ -235,6 +236,7 @@ export function BackblastForm({
   userId,
   initialTemplates,
   fixedDate,
+  onRun,
 }: {
   mode?: FormMode;
   heading: string;
@@ -252,6 +254,8 @@ export function BackblastForm({
   initialTemplates: SectionTemplate[];
   /** A date it keeps, shown but not changeable (the app tour's workout is today's). */
   fixedDate?: string;
+  /** Opens Run workout from the review (a workout, offline); omitted, there's no button. */
+  onRun?: () => void;
 }) {
   const [backblast, setBackblast] = useState<Backblast>(
     fixedDate ? { ...initial, date: fixedDate } : initial,
@@ -264,6 +268,7 @@ export function BackblastForm({
   const page = useRef<HTMLDivElement>(null);
   const navigated = useRef(false);
   const language = useAuth().user?.language ?? "f3";
+  const { offline } = useConnection();
   // A shared backblast ends with a link to its workout, when it has a public one.
   const workoutLink = useWorkoutLink(
     mode === "backblast" ? backblast.workoutId : undefined,
@@ -346,6 +351,18 @@ export function BackblastForm({
   }
 
   async function save() {
+    // Offline, Done keeps it as a draft (it's finished later, with a connection), so what a
+    // finished one needs isn't asked for yet.
+    if (offline) {
+      setSaving(true);
+      setError(null);
+      const message = await onSave(backblast);
+      if (message) {
+        setError(message);
+        setSaving(false);
+      }
+      return;
+    }
     if (!isFilled(steps[0]!, backblast)) {
       setError(
         `Add a title, date and AO on the ${steps[0]!.title} page first.`,
@@ -469,7 +486,9 @@ export function BackblastForm({
         )}
         {sites.error && (
           <span className="text-xs font-normal text-accent">
-            AO list unavailable: {sites.error}
+            {offline
+              ? "The AO list isn't available offline: type the AO, or choose it once you're back online."
+              : `AO list unavailable: ${sites.error}`}
           </span>
         )}
       </label>
@@ -825,7 +844,7 @@ export function BackblastForm({
           <button
             type="submit"
             data-tour="editor-save"
-            disabled={saving || tooEarly}
+            disabled={saving || (tooEarly && !offline)}
             className="btn gap-2 px-4 text-base whitespace-nowrap disabled:opacity-50"
           >
             <ArrowIcon />
@@ -833,6 +852,13 @@ export function BackblastForm({
           </button>
         )}
       </div>
+      {stepIndex === lastStep && onRun && (
+        // Offline it can't be finished yet, but it can be run straight from here.
+        <button type="button" onClick={onRun} className="btn w-full">
+          <PlayIcon />
+          Run workout
+        </button>
+      )}
       {stepIndex < lastStep && (
         <button
           type="button"

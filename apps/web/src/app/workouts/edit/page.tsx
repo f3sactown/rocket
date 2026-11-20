@@ -1,5 +1,6 @@
 "use client";
 
+import { rowOrPocket } from "@/lib/backblast";
 import type { Workout } from "@rocket/core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -26,29 +27,23 @@ function EditWorkout({ user }: { user: CurrentUser }) {
 
   useEffect(() => {
     if (!id) return;
-    createClient()
-      .from("workouts")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle()
-      .then(async ({ data }) => {
-        // Only the author can edit; anyone else is shown the finished workout instead.
-        if (data && data.author_id !== user.id && data.status === "published")
-          router.replace(`/workout?id=${data.id}`);
-        else
-          setLoaded(
-            data && data.author_id === user.id
-              ? {
-                  workout: fromWorkoutRow(
-                    data,
-                    await loadWorkoutNotes(data.id),
-                  ),
-                  published: data.status === "published",
-                  savedAt: data.updated_at,
-                }
-              : null,
-          );
-      });
+    rowOrPocket("workout", id, () =>
+      createClient().from("workouts").select("*").eq("id", id).maybeSingle(),
+    ).then(async ({ data }) => {
+      // Only the author can edit; anyone else is shown the finished workout instead.
+      if (data && data.author_id !== user.id && data.status === "published")
+        router.replace(`/workout?id=${data.id}`);
+      else
+        setLoaded(
+          data && data.author_id === user.id
+            ? {
+                workout: fromWorkoutRow(data, await loadWorkoutNotes(data.id)),
+                published: data.status === "published",
+                savedAt: data.updated_at,
+              }
+            : null,
+        );
+    });
   }, [id, user.id, router]);
 
   if (id && loaded === undefined)

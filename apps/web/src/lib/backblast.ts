@@ -7,6 +7,8 @@ import {
   type Thang,
   type Workout,
 } from "@rocket/core";
+import { isOffline } from "./connection";
+import { readPocket } from "./pocket";
 import { createClient } from "./supabase/client";
 import type { Database, Json } from "./supabase/database.types";
 
@@ -168,6 +170,26 @@ export async function workoutById<T = WorkoutRow>(
   id: string,
   columns = "*",
 ): Promise<{ data: T | null; error: { message: string } | null }> {
+  // Offline: your own recent ones are on the phone (lib/pocket.ts).
+  const onPhone = async () => {
+    const found = (await readPocket())?.workouts.find((w) => w.id === id);
+    return found ? { data: found as unknown as T, error: null } : null;
+  };
+  if (isOffline()) {
+    const kept = await onPhone();
+    if (kept) return kept;
+  }
+  const answer = await workoutByIdFresh<T>(id, columns).catch(
+    (error: Error) => ({ data: null, error: { message: error.message } }),
+  );
+  if (answer.error) return (await onPhone()) ?? answer;
+  return answer;
+}
+
+async function workoutByIdFresh<T>(
+  id: string,
+  columns: string,
+): Promise<{ data: T | null; error: { message: string } | null }> {
   const supabase = createClient();
   const listed = await supabase
     .from("workouts")
@@ -209,12 +231,42 @@ export async function loadWorkout(
  * A workout's notes, which only its Q can read: empty for anyone else, or when there are none.
  */
 export async function loadWorkoutNotes(workoutId: string): Promise<string> {
+  if (isOffline()) return (await readPocket())?.notes[workoutId] ?? "";
   const { data } = await createClient()
     .from("workout_notes")
     .select("body")
     .eq("workout_id", workoutId)
     .maybeSingle();
   return data?.body ?? "";
+}
+
+/**
+ * One of your backblasts (or workouts) by ID, fresh with a connection; offline, or if it can't be
+ * loaded, your recent ones on the phone (lib/pocket.ts). `load` is the usual query.
+ */
+export async function rowOrPocket<
+  R extends { data: unknown; error: { message: string } | null },
+>(
+  kind: "workout" | "backblast",
+  id: string,
+  load: () => PromiseLike<R>,
+): Promise<R> {
+  const onPhone = async () => {
+    const pocket = await readPocket();
+    const rows = kind === "workout" ? pocket?.workouts : pocket?.backblasts;
+    const found = rows?.find((r) => r.id === id);
+    return found ? ({ data: found, error: null } as unknown as R) : null;
+  };
+  if (isOffline()) {
+    const kept = await onPhone();
+    if (kept) return kept;
+  }
+  const answer = await Promise.resolve(load()).catch(
+    (error: Error) =>
+      ({ data: null, error: { message: error.message } }) as unknown as R,
+  );
+  if (answer.error) return (await onPhone()) ?? answer;
+  return answer;
 }
 
 /** Saves a workout's private notes. */

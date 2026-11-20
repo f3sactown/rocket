@@ -1,5 +1,8 @@
 "use client";
 
+import { isOffline } from "@/lib/connection";
+import { rowOrPocket } from "@/lib/backblast";
+import { readPocket } from "@/lib/pocket";
 import { Loading, NotFound } from "@/components/not-found";
 import {
   copyText,
@@ -61,25 +64,32 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
 
   useEffect(() => {
     if (!id) return;
-    createClient()
-      .from("backblasts")
-      .select("*, author:profiles!backblasts_author_id_fkey(name)")
-      .eq("id", id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (data) setVisibilityState(data.visibility ?? "public");
-        setResult({
-          backblast: data && fromRow(data),
-          authorId: data?.author_id,
-          authorName: data?.author?.name,
-          status: data?.status,
-          error: error?.message,
-        });
+    rowOrPocket("backblast", id, () =>
+      createClient()
+        .from("backblasts")
+        .select("*, author:profiles!backblasts_author_id_fkey(name)")
+        .eq("id", id)
+        .maybeSingle(),
+    ).then(({ data, error }) => {
+      if (data) setVisibilityState(data.visibility ?? "public");
+      setResult({
+        backblast: data && fromRow(data),
+        authorId: data?.author_id,
+        authorName: data?.author?.name,
+        status: data?.status,
+        error: error?.message,
       });
+    });
   }, [id]);
 
   useEffect(() => {
     if (!id) return;
+    if (isOffline()) {
+      void readPocket().then((pocket) =>
+        setArchived(!!pocket?.archived.backblast.includes(id)),
+      );
+      return;
+    }
     createClient()
       .from("backblast_archives")
       .select("backblast_id")
