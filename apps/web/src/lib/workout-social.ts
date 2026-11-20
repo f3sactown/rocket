@@ -1,6 +1,10 @@
 import { asItems, listColumns, type ListItem } from "./backblast-list";
 import { createClient } from "./supabase/client";
 
+/** The app tour's example workout ("Example Q"), made by everyone who takes the tour. */
+export const isTourExample = (w: { title: string | null }) =>
+  (w.title ?? "").trim().toLowerCase() === "example q";
+
 /** A workout's likes and reuses, and whether the signed-in user likes it. */
 export interface WorkoutStats {
   likes: number;
@@ -107,6 +111,9 @@ export async function loadLikedWorkouts(userId: string): Promise<{
     .in("id", ids);
   if (workoutsError) throw new Error(workoutsError.message);
   const byId = new Map(asItems("workout", data).map((w) => [w.id, w]));
-  const workouts = ids.flatMap((id) => byId.get(id) ?? []);
+  // The tour's examples are left out, as on the rest of Discover.
+  const workouts = ids
+    .flatMap((id) => byId.get(id) ?? [])
+    .filter((w) => !isTourExample(w));
   return { workouts, stats: await loadWorkoutStats(workouts.map((w) => w.id)) };
 }
