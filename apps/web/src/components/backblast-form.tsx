@@ -431,6 +431,33 @@ export function BackblastForm({
     }
   }
 
+  // The app tour's example workout (its date fixed to today): titled "Example Q", at the first
+  // AO on the list, so the user can carry on through the tour (and change them if they like).
+  const exampleTitle = useRef(false);
+  const exampleAo = useRef(false);
+  useEffect(() => {
+    if (!fixedDate || exampleTitle.current) return;
+    // Just after this render, as if typed.
+    const timer = setTimeout(() => {
+      exampleTitle.current = true;
+      if (!backblast.title.trim()) set("title", "Example Q");
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fixedDate]);
+  useEffect(() => {
+    if (!fixedDate || exampleAo.current || !sites.value?.length) return;
+    const list = sites.value;
+    const timer = setTimeout(() => {
+      exampleAo.current = true;
+      const first = sitesByDay(list)[0]?.sites[0];
+      if (!backblast.ao && first) chooseAo(first.name);
+    }, 0);
+    return () => clearTimeout(timer);
+    // Once, when the AO list is in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fixedDate, sites.value]);
+
   const basicsFields = (
     <>
       <label className="label flex flex-col gap-1.5">
