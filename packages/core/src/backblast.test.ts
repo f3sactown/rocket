@@ -317,6 +317,7 @@ describe("paxList", () => {
     ).toBe(true);
     expect(line).toContain("like");
     expect(line).toContain("Reuse");
+    expect(workoutLinkText("https://x/w", "fia")).toContain("and R&R it");
   });
 });
 

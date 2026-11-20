@@ -1,5 +1,6 @@
 "use client";
 
+import { useTerms } from "./auth-provider";
 import { useRef, useState } from "react";
 import {
   CONFLICT_CHOICES,
@@ -252,6 +253,7 @@ function ImportData() {
 }
 
 function ResetAccount() {
+  const terms = useTerms();
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const [pending, setPending] = useState(false);
@@ -278,7 +280,7 @@ function ResetAccount() {
         archive and likes, and puts your settings back to the defaults. You stay
         signed in with the same login and name. Export first if you might want
         any of it back: importing that export restores it, including the likes
-        and reuses others gave your workouts.
+        and {terms.reuse.many} others gave your workouts.
       </p>
       {!open ? (
         <button

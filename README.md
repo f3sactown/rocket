@@ -170,15 +170,19 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **From pickers** (Exicon, PAX, Discover): on a phone, one line of chips that scrolls sideways.
 - **Tutorial:** a step-by-step tour that spotlights one part of the screen at a time, moving
   between pages as it goes. After Home's stats and sections, it walks the user through writing a
-  real workout, dated today (the date can't be changed, so its backblast can follow): it opens
+  real workout, dated today (the date can't be changed, so its backblast can follow), titled
+  **Example Q** at the first AO on the region's list (both filled in, and changeable): it opens
   each page of the form in turn (Basics, Introduction, warm-up, The Thang, Notes, words of
-  wisdom) while they fill it in, then they tap **Done** on Review. On to that workout's page
+  wisdom) while they fill it in, then Review. Every step has the tour's **Next**; on the Review
+  and Done steps it taps the page's Done (the card sits at the top there, clear of it). On to that workout's page
   (Run workout, Copy and Share), then **Create backblast**, and the same for its backblast (the
   copied workout, Notes, Name-o-rama, Announcements, Coffeeteria, Review and **Done**), ending on
   Copy and Share.
   Then Discover, the Exicon and PAX (searching names, e.g. before naming an FNG, and the profile
   of a PAX with at least one public workout and backblast). While the user fills in a page, the
-  page stays usable around the tour's card, and notices wait until the tour is over. It starts
+  page stays usable around the tour's card, and notices wait until the tour is over. The form
+  doesn't put the cursor in each page's box while the tour opens them (so a phone's keyboard
+  doesn't come up on each); writing one normally, it does. It starts
   once per account, after the device setup (`tutorial_done` in the account's metadata), can be
   skipped, and **Settings → Tutorial** shows it again.
 - **Offline:** the service worker (`apps/web/public/sw.js`) keeps the whole app on the phone,
@@ -318,7 +322,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   mailer and standard template, no custom SMTP needed). The link opens `/reset-password` on any
   device, signed in for the reset, where you choose a new password. Supabase → Authentication →
   URL Configuration must have the site as the Site URL and under Redirect URLs.
-- **Settings:** name (shown, not changeable: it's set at sign-up), region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
+- **Settings:** name (shown, not changeable: it's set at sign-up), region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words: Warm-o-rama, The Thang, Coffeeteria and Reuse, or Warm-up, The Workout, CoFiA and **R&R** everywhere Rocket says reuse, the copied workout link and the "… R&R'd your workout" notification included (`termsFor` and `inTermsOf` in `@rocket/core`); set by a shared region, so it's
   locked while you have one, and free to choose with no region or one you added), theme, accent color (Red, Teal, Blue, Green, Orange or Violet; saved to the account as `accent`, so it follows you to every device; the first region you choose sets Red for F3 or Teal for FiA, and later region changes leave it alone), the launch
   animation, what Home shows (every section, Trending included, until you choose),
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,

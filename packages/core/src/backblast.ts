@@ -444,8 +444,11 @@ export function paxList(backblast: Backblast): string {
  * The line that invites PAX to like and reuse the workout a backblast was made from, with a link
  * to it.
  */
-export function workoutLinkText(url: string): string {
-  return `Enjoyed this workout? Give it a like, and Reuse it to run it yourself: ${url}`;
+export function workoutLinkText(
+  url: string,
+  language: Language = "f3",
+): string {
+  return `Enjoyed this workout? Give it a like, and ${termsFor(language).reuse.title} it to run it yourself: ${url}`;
 }
 
 /**

@@ -333,6 +333,22 @@ async function social(
     ...(likes.data ?? []).map((l) => l.user_id),
     ...(reuses.data ?? []).map((r) => r.author_id),
   ]);
+  // A FiA PAX gets FiA's words ("R&R'd" for "reused"), by their region (or "all FiA regions").
+  const { data: owners } = await db
+    .from("profiles")
+    .select(
+      "id, region_scope, region:regions!profiles_region_id_fkey(language)",
+    )
+    .in("id", [...new Set((originals ?? []).map((w) => w.author_id))]);
+  const fia = new Set(
+    (owners ?? [])
+      .filter(
+        (o) =>
+          (o.region as { language?: string } | null)?.language === "fia" ||
+          o.region_scope === "fia",
+      )
+      .map((o) => o.id),
+  );
   const out: Outgoing[] = [];
   for (const like of likes.data ?? []) {
     const w = byId.get(like.workout_id);
@@ -353,7 +369,7 @@ async function social(
       user_id: w.author_id,
       kind: "reuse",
       ref: reuse.id,
-      title: `${people.get(reuse.author_id) ?? "A PAX"} reused your workout`,
+      title: `${people.get(reuse.author_id) ?? "A PAX"} ${fia.has(w.author_id) ? "R&R'd" : "reused"} your workout`,
       body: w.title?.trim() || "Untitled workout",
       url: `workout/?id=${w.id}`,
     });

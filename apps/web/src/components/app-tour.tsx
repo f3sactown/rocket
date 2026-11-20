@@ -1,5 +1,6 @@
 "use client";
 
+import { inTermsOf } from "@rocket/core";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -142,7 +143,7 @@ const STEPS: Step[] = [
     before: openPage("basics"),
     interactive: true,
     title: "Basics",
-    body: "Give it a title and choose the AO (that fills in the address and time). It's dated today, so you can write its backblast next. Then tap Next.",
+    body: "Its title and AO (which fills in the address and time) are filled in as an example; change them if you like. It's dated today, so you can write its backblast next. Then tap Next.",
   },
   {
     target: "editor-page",
@@ -185,7 +186,7 @@ const STEPS: Step[] = [
     interactive: true,
     until: "/workout",
     title: "Review and Done",
-    body: "Check it over (tap a section to change it), then tap Done to finish it.",
+    body: "Check it over (tap a section to change it), then tap Next to finish it.",
   },
   {
     target: "workout-share",
@@ -261,7 +262,7 @@ const STEPS: Step[] = [
     interactive: true,
     until: "/backblast",
     title: "Review and Done",
-    body: "Check it over, then tap Done to finish it.",
+    body: "Check it over, then tap Next to finish it.",
   },
   {
     target: "backblast-share",
@@ -520,10 +521,12 @@ export function AppTour() {
   if (otherDialog) return null;
   // The card sits on the half of the screen away from what's spotlighted; while filling in a
   // page, at the bottom, out of the way of the page's top.
+  // A step that ends with the page's own button (Done): at the top, clear of it.
   const cardAtTop =
-    !interactive &&
-    rect !== null &&
-    rect.top + rect.height / 2 > window.innerHeight / 2;
+    !!step.until ||
+    (!interactive &&
+      rect !== null &&
+      rect.top + rect.height / 2 > window.innerHeight / 2);
   const canGoBack =
     index > 0 &&
     !step.noBack &&
@@ -573,7 +576,9 @@ export function AppTour() {
         >
           {step.title}
         </h2>
-        <p className="text-sm text-ink-soft">{step.body}</p>
+        <p className="text-sm text-ink-soft">
+          {inTermsOf(step.body, user?.language)}
+        </p>
         <div className="flex items-center justify-between gap-2">
           <button type="button" onClick={finish} className="link text-sm">
             Skip tour
@@ -588,17 +593,21 @@ export function AppTour() {
                 Back
               </button>
             )}
-            {!step.until && (
+            {
               <button
                 type="button"
                 // Not while filling in a page: the cursor stays in its field.
                 autoFocus={!interactive}
-                onClick={() => go(1)}
+                // A step that ends on the page's own button (Done) presses it: the tour goes on
+                // once its page opens.
+                onClick={() =>
+                  step.until && step.target ? find(step.target)?.click() : go(1)
+                }
                 className="rounded-full border border-accent/60 bg-accent-soft px-5 py-1.5 text-sm font-medium text-ink transition hover:border-accent"
               >
                 {index === steps.length - 1 ? "Done" : "Next"}
               </button>
-            )}
+            }
           </span>
         </div>
       </div>

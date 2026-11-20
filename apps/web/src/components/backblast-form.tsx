@@ -35,6 +35,7 @@ import { ThangsInput } from "./thangs-input";
 import { Regulars } from "./regulars";
 import { useAuth } from "./auth-provider";
 import { ArrowIcon, PlayIcon, SkipIcon, TrashIcon } from "./icons";
+import { tourRunning } from "./app-tour";
 import { ProtectedText } from "./protected-text";
 import {
   SectionTemplates,
@@ -335,10 +336,12 @@ export function BackblastForm({
     if (edited.current) onChange(backblast);
   }, [backblast, onChange]);
 
-  // On each new page, start at the top and put the cursor in its main field.
+  // On each new page, start at the top and put the cursor in its main field (not during the app
+  // tour, which opens the pages itself: on a phone the keyboard would come up on each).
   useEffect(() => {
     if (!navigated.current) return;
     window.scrollTo({ top: 0 });
+    if (tourRunning()) return;
     page.current
       ?.querySelector<HTMLElement>("textarea, input:not([type=hidden])")
       ?.focus({ preventScroll: true });
@@ -430,6 +433,33 @@ export function BackblastForm({
       set("date", date);
     }
   }
+
+  // The app tour's example workout (its date fixed to today): titled "Example Q", at the first
+  // AO on the list, so the user can carry on through the tour (and change them if they like).
+  const exampleTitle = useRef(false);
+  const exampleAo = useRef(false);
+  useEffect(() => {
+    if (!fixedDate || exampleTitle.current) return;
+    // Just after this render, as if typed.
+    const timer = setTimeout(() => {
+      exampleTitle.current = true;
+      if (!backblast.title.trim()) set("title", "Example Q");
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fixedDate]);
+  useEffect(() => {
+    if (!fixedDate || exampleAo.current || !sites.value?.length) return;
+    const list = sites.value;
+    const timer = setTimeout(() => {
+      exampleAo.current = true;
+      const first = sitesByDay(list)[0]?.sites[0];
+      if (!backblast.ao && first) chooseAo(first.name);
+    }, 0);
+    return () => clearTimeout(timer);
+    // Once, when the AO list is in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fixedDate, sites.value]);
 
   const basicsFields = (
     <>

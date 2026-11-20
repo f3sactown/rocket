@@ -9,7 +9,11 @@ import Link from "next/link";
 import { Linkify } from "@/components/linkify";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { SignedIn, type CurrentUser } from "@/components/auth-provider";
+import {
+  useTerms,
+  SignedIn,
+  type CurrentUser,
+} from "@/components/auth-provider";
 import { ArrowIcon } from "@/components/icons";
 import { ActiveTimer, ThangTimer } from "@/components/thang-timer";
 import { WorkoutWeather } from "@/components/workout-weather";
@@ -405,6 +409,7 @@ function MakePublic({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const reuse = useTerms().reuse.one;
   const chip =
     "rounded-full border border-line-strong px-3 py-1.5 text-sm font-medium text-ink transition hover:border-accent/60 disabled:opacity-50";
   return (
@@ -420,7 +425,7 @@ function MakePublic({
         </h2>
         <p className="text-sm text-ink-soft">
           It&apos;s private, so only you can see it. Public, other PAX can see
-          it on Discover and your PAX profile, and like and reuse it.
+          it on Discover and your PAX profile, and like and {reuse} it.
         </p>
         {error && <p className="text-sm text-accent">{error}</p>}
         <div className="flex flex-wrap gap-2">

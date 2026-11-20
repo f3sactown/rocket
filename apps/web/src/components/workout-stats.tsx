@@ -1,5 +1,6 @@
 "use client";
 
+import { useTerms } from "./auth-provider";
 import { useState } from "react";
 import { setLiked, type WorkoutStats } from "@/lib/workout-social";
 import { HeartIcon, ReuseIcon } from "./icons";
@@ -40,7 +41,8 @@ export function WorkoutStatsBar({
   }
 
   const likes = `${stats.likes} ${stats.likes === 1 ? "like" : "likes"}`;
-  const reuses = `${stats.reuses} ${stats.reuses === 1 ? "reuse" : "reuses"}`;
+  const words = useTerms().reuse;
+  const reuses = `${stats.reuses} ${stats.reuses === 1 ? words.one : words.many}`;
   return (
     <div
       className={`flex flex-wrap items-center gap-x-4 gap-y-1 ${compact ? "text-xs" : "text-sm"} text-ink-soft`}
