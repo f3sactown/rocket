@@ -107,8 +107,8 @@ export default function AboutPage() {
           </Feature>
           <Feature title="Share and discover">
             Make a workout or backblast public or private, share a link to it,
-            and see what other Qs are doing on Discover: trending, most liked,
-            most {reuse.done}, at your region&apos;s AOs and newest. Like a
+            and see what other Qs are doing on Discover: trending, newest, most
+            liked, most {reuse.done} and at your region&apos;s AOs. Like a
             workout, or {reuse.one} it as your own.
           </Feature>
           <Feature title="The Exicon">

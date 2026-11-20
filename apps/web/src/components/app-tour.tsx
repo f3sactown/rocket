@@ -289,7 +289,7 @@ const STEPS: Step[] = [
     target: "discover-group",
     optional: true,
     title: "Rows to browse",
-    body: "Trending, most liked, most reused, at your region's AOs, newest, and the ones you've liked. Like a workout with the heart, or open it and Reuse it to make it your own.",
+    body: "Trending, newest, most liked, most reused, at your region's AOs, and the ones you've liked. Like a workout with the heart, or open it and Reuse it to make it your own.",
   },
   {
     route: "/exicon",
