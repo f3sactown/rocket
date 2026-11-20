@@ -1,5 +1,7 @@
 "use client";
 
+import { useTerms } from "./auth-provider";
+
 export type Visibility = "public" | "private";
 
 /** Public (anyone signed in can see it) or private (only you), as a two-way switch. */
@@ -7,13 +9,15 @@ export function VisibilitySwitch({
   value,
   onChange,
   label = "Who can see this workout",
-  publicHint = "Anyone signed in can see, like and reuse it",
+  publicHint,
 }: {
   value: Visibility;
   onChange: (value: Visibility) => void;
   label?: string;
   publicHint?: string;
 }) {
+  const reuse = useTerms().reuse.one;
+  const hint = publicHint ?? `Anyone signed in can see, like and ${reuse} it`;
   return (
     <div
       role="radiogroup"
@@ -26,7 +30,7 @@ export function VisibilitySwitch({
           type="button"
           role="radio"
           aria-checked={value === option}
-          title={option === "public" ? publicHint : "Only you can see it"}
+          title={option === "public" ? hint : "Only you can see it"}
           onClick={() => value !== option && onChange(option)}
           className={`rounded-full px-3 py-1 font-medium transition-colors ${
             value === option

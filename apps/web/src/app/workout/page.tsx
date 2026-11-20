@@ -8,6 +8,7 @@ import { BackblastNotYet } from "@/components/backblast-not-yet";
 import {
   formatBackblast,
   formatDate,
+  termsFor,
   workoutLinkText,
   type Workout,
 } from "@rocket/core";
@@ -185,6 +186,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     user.shareWorkoutLink && shareable
       ? workoutLinkText(
           `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/workout/?id=${id}`,
+          user.language,
         )
       : null;
   const text = [formatBackblast(workout, user.language), closing]
@@ -276,7 +278,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         {/* Starts a new workout with this one's sections, for running it again. */}
         <Link href={`/workouts/new?from=${id}`} className="btn w-full">
           <CopyIcon />
-          Reuse
+          {termsFor(user.language).reuse.title}
         </Link>
       </div>
       <div className="-mt-1 flex flex-wrap justify-center gap-x-6 gap-y-2">

@@ -1,5 +1,6 @@
 "use client";
 
+import { inTermsOf } from "@rocket/core";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   canPromptInstall,
@@ -368,6 +369,7 @@ export function IosNotificationNote() {
 }
 
 function NotificationsStep({ onFinish }: { onFinish: () => void }) {
+  const language = useAuth().user?.language;
   const support = useSyncExternalStore(
     noSubscribe,
     pushSupport,
@@ -414,9 +416,10 @@ function NotificationsStep({ onFinish }: { onFinish: () => void }) {
         Turn on notifications
       </h2>
       <p className="text-sm text-ink-soft">
-        Reminders the day before and the morning of your workouts, a nudge to
-        write the backblast, and when PAX like or reuse your workouts. Choose
-        which ones, and when, in Settings → Notifications.
+        {inTermsOf(
+          "Reminders the day before and the morning of your workouts, a nudge to write the backblast, and when PAX like or reuse your workouts. Choose which ones, and when, in Settings → Notifications.",
+          language,
+        )}
       </p>
       <IosNotificationNote />
       {support === "needs-home-screen" ? (

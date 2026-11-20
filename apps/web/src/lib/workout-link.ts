@@ -25,14 +25,18 @@ export function useWorkoutLinkState(workoutId: string | undefined): {
   link: string | undefined;
   ready: boolean;
 } {
-  const on = useAuth().user?.shareWorkoutLink ?? true;
+  const user = useAuth().user;
+  const on = user?.shareWorkoutLink ?? true;
   const id = on ? workoutId : undefined;
   const shareable = useLoad(id ? () => isShareable(id) : null, [id]);
   if (!id) return { link: undefined, ready: true };
   if (shareable.loading) return { link: undefined, ready: false };
   if (!shareable.value) return { link: undefined, ready: true };
   const base = `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}`;
-  return { link: workoutLinkText(`${base}/workout/?id=${id}`), ready: true };
+  return {
+    link: workoutLinkText(`${base}/workout/?id=${id}`, user?.language),
+    ready: true,
+  };
 }
 
 /** The closing line alone, once known (see `useWorkoutLinkState`). */

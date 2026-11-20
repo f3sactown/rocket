@@ -1,5 +1,6 @@
 "use client";
 
+import { useTerms } from "./auth-provider";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -136,6 +137,7 @@ export function VisibilityNotice({
   noticesOff: string[];
 }) {
   const saved = useSearchParams().get("saved") === "1";
+  const reuse = useTerms().reuse.one;
   const [open, setOpen] = useState(true);
   if (!saved || !open || noticesOff.includes(VISIBILITY_SWITCH)) return null;
   return (
@@ -143,7 +145,7 @@ export function VisibilityNotice({
       The <strong className="text-ink">Public / Private</strong> switch sets who
       can see this {kind}.{" "}
       {kind === "workout"
-        ? "Public: anyone signed in can see it on Discover and your PAX profile, and like and reuse it."
+        ? `Public: anyone signed in can see it on Discover and your PAX profile, and like and ${reuse} it.`
         : "Public: anyone signed in can see it on your PAX profile."}{" "}
       Private: only you. New {kind}s start as chosen in Settings → Sharing.
     </InlineNotice>

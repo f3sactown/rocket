@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "./auth-provider";
+import { inTermsOf } from "@rocket/core";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   normalizeSettings,
@@ -27,6 +29,7 @@ const timeZone = () =>
  * when (saved to the account, so every device follows them).
  */
 export function PushSettings({ userId }: { userId: string }) {
+  const language = useAuth().user?.language;
   const support = useSyncExternalStore(
     noSubscribe,
     pushSupport,
@@ -290,7 +293,7 @@ export function PushSettings({ userId }: { userId: string }) {
             </Row>
           ))}
           <Row
-            label="Likes and reuses of your workouts"
+            label={inTermsOf("Likes and reuses of your workouts", language)}
             on={settings.social.on}
             onToggle={(on) => change({ ...settings, social: { on } })}
           />

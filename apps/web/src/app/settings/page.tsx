@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LANGUAGES, type Language } from "@rocket/core";
+import { inTermsOf, LANGUAGES, type Language } from "@rocket/core";
 import {
   SignedIn,
   useTerms,
@@ -211,7 +211,7 @@ function Settings({ user }: { user: CurrentUser }) {
 
       <Section
         title="Organization"
-        description="Whether you post with F3 or FiA. It also sets the words the app uses: F3 says Warm-o-rama, The Thang and Coffeeteria; FiA says Warm-up, The Workout and CoFiA. Saved to your account."
+        description="Whether you post with F3 or FiA. It also sets the words the app uses: F3 says Warm-o-rama, The Thang, Coffeeteria and Reuse; FiA says Warm-up, The Workout, CoFiA and R&R. Saved to your account."
       >
         <OrganizationPicker user={user} />
       </Section>
@@ -241,7 +241,10 @@ function Settings({ user }: { user: CurrentUser }) {
       <Section title="Sharing" description="Saved to your account.">
         <DefaultVisibility
           label="New workouts start"
-          hint="Public workouts show on Discover and your PAX profile, where others can like and reuse them. You can change each one on its page."
+          hint={inTermsOf(
+            "Public workouts show on Discover and your PAX profile, where others can like and reuse them. You can change each one on its page.",
+            user.language,
+          )}
           saved={user.defaultWorkoutVisibility}
           metaKey="default_workout_visibility"
         />
@@ -255,7 +258,10 @@ function Settings({ user }: { user: CurrentUser }) {
           divided
           on={user.shareWorkoutLink}
           label="Link to the workout in shared workouts and backblasts"
-          hint="When a public workout, or a backblast from one, is copied or shared, it ends with a link to that workout, asking PAX to like it and reuse it. Not shown on screen."
+          hint={inTermsOf(
+            "When a public workout, or a backblast from one, is copied or shared, it ends with a link to that workout, asking PAX to like it and reuse it. Not shown on screen.",
+            user.language,
+          )}
           save={(on) => ({ share_workout_link: on })}
         />
       </Section>

@@ -1,6 +1,6 @@
 "use client";
 
-import { parseChangelog } from "@rocket/core";
+import { termsFor, parseChangelog } from "@rocket/core";
 import Link from "next/link";
 import { Fragment } from "react";
 import { useAuth } from "@/components/auth-provider";
@@ -62,6 +62,8 @@ function releaseDate(date: string): string {
 /** What Rocket is and does, which version is running, and every release's changes. */
 export default function AboutPage() {
   const { user } = useAuth();
+  // Reuse in the user's words (FiA's R&R).
+  const reuse = termsFor(user?.language).reuse;
   const version = process.env.NEXT_PUBLIC_APP_VERSION;
   const build = process.env.NEXT_PUBLIC_BUILD_NUMBER;
   const commit = process.env.NEXT_PUBLIC_COMMIT;
@@ -106,8 +108,8 @@ export default function AboutPage() {
           <Feature title="Share and discover">
             Make a workout or backblast public or private, share a link to it,
             and see what other Qs are doing on Discover: trending, most liked,
-            most reused, at your region&apos;s AOs and newest. Like a workout,
-            or reuse it as your own.
+            most {reuse.done}, at your region&apos;s AOs and newest. Like a
+            workout, or {reuse.one} it as your own.
           </Feature>
           <Feature title="The Exicon">
             Exercises and routines from the F3 and FiA Exicons and your
@@ -119,7 +121,7 @@ export default function AboutPage() {
             and backblasts.
           </Feature>
           <Feature title="Home">
-            Your posts and Qs, the likes and reuses of your workouts, and
+            Your posts and Qs, the likes and {reuse.many} of your workouts, and
             today&apos;s, upcoming and recent workouts and backblasts, with your
             drafts. Choose which sections show in Settings.
           </Feature>
@@ -131,7 +133,8 @@ export default function AboutPage() {
           <Feature title="Reminders">
             Notifications the day before (with the forecast) and before your
             workouts, a nudge to write the backblast, drafts left unfinished,
-            likes and reuses, and new PAX on Rocket. Choose which and when.
+            likes and {reuse.many}, and new PAX on Rocket. Choose which and
+            when.
           </Feature>
           <Feature title="Works with no signal">
             Write new workouts and backblasts, run your workouts and look things
