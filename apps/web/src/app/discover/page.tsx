@@ -1,5 +1,6 @@
 "use client";
 
+import { termsFor } from "@rocket/core";
 import type { Language } from "@rocket/core";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -132,7 +133,7 @@ function Discover({ user }: { user: CurrentUser }) {
           .sort((a, b) => statsOf(b).likes - statsOf(a).likes),
       },
       {
-        title: "Most reused",
+        title: `Most ${termsFor(user.language).reuse.done}`,
         items: shown
           .filter((w) => statsOf(w).reuses > 0)
           .sort((a, b) => statsOf(b).reuses - statsOf(a).reuses),
@@ -155,8 +156,8 @@ function Discover({ user }: { user: CurrentUser }) {
       <header className="flex flex-col gap-1">
         <h1 className="card-title">Discover</h1>
         <p className="text-sm text-muted">
-          Public workouts from other Qs. Like the ones you enjoy, and Reuse one
-          to run it yourself.
+          Public workouts from other Qs. Like the ones you enjoy, and{" "}
+          {termsFor(user.language).reuse.title} one to run it yourself.
         </p>
       </header>
       <div className="flex flex-col gap-3">

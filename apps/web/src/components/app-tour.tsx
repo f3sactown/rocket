@@ -1,5 +1,6 @@
 "use client";
 
+import { inTermsOf } from "@rocket/core";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -573,7 +574,9 @@ export function AppTour() {
         >
           {step.title}
         </h2>
-        <p className="text-sm text-ink-soft">{step.body}</p>
+        <p className="text-sm text-ink-soft">
+          {inTermsOf(step.body, user?.language)}
+        </p>
         <div className="flex items-center justify-between gap-2">
           <button type="button" onClick={finish} className="link text-sm">
             Skip tour

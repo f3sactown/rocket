@@ -1,6 +1,6 @@
 "use client";
 
-import { LANGUAGES, type Language } from "@rocket/core";
+import { termsFor, LANGUAGES, type Language } from "@rocket/core";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
@@ -30,6 +30,7 @@ export default function PaxProfilePage() {
  * name, the public workouts trending lately and all their public workouts and backblasts.
  */
 function PaxProfile({ user }: { user: CurrentUser }) {
+  const terms = termsFor(user.language);
   const params = useSearchParams();
   const name = params.get("name") ?? "";
   // The same name in F3 and FiA is two different PAX.
@@ -106,7 +107,7 @@ function PaxProfile({ user }: { user: CurrentUser }) {
               ["Posts", entry.posts],
               ["Qs", entry.qs],
               ["Likes", entry.likes],
-              ["Reuses", entry.reuses],
+              [terms.reuse.manyTitle, entry.reuses],
             ].map(([label, value]) => (
               <div
                 key={label}

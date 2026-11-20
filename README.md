@@ -318,7 +318,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   mailer and standard template, no custom SMTP needed). The link opens `/reset-password` on any
   device, signed in for the reset, where you choose a new password. Supabase → Authentication →
   URL Configuration must have the site as the Site URL and under Redirect URLs.
-- **Settings:** name (shown, not changeable: it's set at sign-up), region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words; set by a shared region, so it's
+- **Settings:** name (shown, not changeable: it's set at sign-up), region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words: Warm-o-rama, The Thang, Coffeeteria and Reuse, or Warm-up, The Workout, CoFiA and **R&R** everywhere Rocket says reuse, the copied workout link and the "… R&R'd your workout" notification included (`termsFor` and `inTermsOf` in `@rocket/core`); set by a shared region, so it's
   locked while you have one, and free to choose with no region or one you added), theme, accent color (Red, Teal, Blue, Green, Orange or Violet; saved to the account as `accent`, so it follows you to every device; the first region you choose sets Red for F3 or Teal for FiA, and later region changes leave it alone), the launch
   animation, what Home shows (every section, Trending included, until you choose),
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,

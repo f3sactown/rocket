@@ -4,7 +4,11 @@ import { takeFlash } from "@/lib/flash";
 import { formatDate, type Language } from "@rocket/core";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { SignedIn, type CurrentUser } from "@/components/auth-provider";
+import {
+  SignedIn,
+  useTerms,
+  type CurrentUser,
+} from "@/components/auth-provider";
 import { BackblastList } from "@/components/backblast-list";
 import { HeartIcon, PlayIcon, PlusIcon, ReuseIcon } from "@/components/icons";
 import {
@@ -426,13 +430,14 @@ function Totals({ user }: { user: CurrentUser }) {
 function MyTotals({ userId }: { userId: string }) {
   const totals = useLoad(() => loadMyTotals(userId), [userId]);
   const { offline } = useConnection();
+  const reuse = useTerms().reuse;
   // Counted fresh only: offline, it says so where they'd be.
   if (offline || (totals.error && !totals.value))
     return (
       <span
         data-tour="home-stats"
         className="mt-2 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3 py-1 text-sm text-muted"
-        title="Likes and reuses show once you're back online"
+        title={`Likes and ${reuse.many} show once you're back online`}
       >
         <span className="size-2 rounded-full bg-muted" aria-hidden />
         Offline
@@ -444,7 +449,7 @@ function MyTotals({ userId }: { userId: string }) {
     <div
       data-tour="home-stats"
       className="mt-2 flex shrink-0 items-center gap-4 text-sm text-ink-soft"
-      title="Likes and reuses your workouts have had"
+      title={`Likes and ${reuse.many} your workouts have had`}
     >
       <span
         className="inline-flex items-center gap-1.5"
@@ -457,7 +462,7 @@ function MyTotals({ userId }: { userId: string }) {
       </span>
       <span
         className="inline-flex items-center gap-1.5"
-        aria-label={`${reuses} ${reuses === 1 ? "reuse" : "reuses"}`}
+        aria-label={`${reuses} ${reuses === 1 ? reuse.one : reuse.many}`}
       >
         <span className="text-accent">
           <ReuseIcon />

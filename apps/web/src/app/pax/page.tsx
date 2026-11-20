@@ -1,5 +1,6 @@
 "use client";
 
+import { termsFor } from "@rocket/core";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { TOUR_SHOW_PAX_EVENT } from "@/components/app-tour";
@@ -26,6 +27,7 @@ const PAGE = 60;
  * to the account.
  */
 function Pax({ user }: { user: CurrentUser }) {
+  const terms = termsFor(user.language);
   const data = useLoad(loadAllPax, []);
   const [query, setQuery] = useState("");
   const [off, setOff] = useState(user.paxSourcesOff);
@@ -228,7 +230,7 @@ function Pax({ user }: { user: CurrentUser }) {
                       </span>
                       <span
                         className="inline-flex items-center gap-1.5"
-                        title={`${p.reuses} ${p.reuses === 1 ? "reuse" : "reuses"}`}
+                        title={`${p.reuses} ${p.reuses === 1 ? terms.reuse.one : terms.reuse.many}`}
                       >
                         <span className="text-accent">
                           <ReuseIcon />
