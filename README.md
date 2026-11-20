@@ -82,10 +82,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   With yours included, a **My workouts** section ranks them by likes, then reuses. A **Liked by
   you** row lists every workout you've liked, most recently liked first, whatever the From choice
   (one made private since drops out). The
-  groups are Trending (likes and reuses on the
-  last 30 days' workouts, newer ones weighted up), Most liked, Most reused, At your region's AOs and
-  Newest, each a row of tiles that scrolls sideways, naming each author and their region, with
-  like buttons. Trending on Home follows the From choice and leaves out your own workouts, and
+  rows, top to bottom, are Trending (likes and reuses on the
+  last 30 days' workouts, newer ones weighted up), Newest, Most liked, Most reused, At your region's
+  AOs, Liked by you and (with yours included) My workouts, each a row of tiles that scrolls sideways, naming each author and their region, with
+  like buttons. The app tour's example workouts (titled "Example Q", `isTourExample`) are left off
+  Discover, Liked by you and Home's Trending. Trending on Home follows the From choice and leaves out your own workouts, and
   scrolls sideways the same way. Rows that scroll sideways (here and throughout the app) show no scrollbar; with a mouse, arrow
   buttons at either end page through a row of tiles, and it can be dragged.
 - **PAX** (in the menu, under Search) lists everyone on your region's roster (or every region's,

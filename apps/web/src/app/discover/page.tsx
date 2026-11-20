@@ -123,9 +123,8 @@ function Discover({ user }: { user: CurrentUser }) {
           )
       : [];
     return [
-      { title: "My workouts", items: mine, all: true },
-      { title: "Liked by you", items: liked, all: true },
       { title: "Trending", items: trending(shown, stats) },
+      { title: "Newest", items: shown },
       {
         title: "Most liked",
         items: shown
@@ -139,7 +138,8 @@ function Discover({ user }: { user: CurrentUser }) {
           .sort((a, b) => statsOf(b).reuses - statsOf(a).reuses),
       },
       ...atRegions,
-      { title: "Newest", items: shown },
+      { title: "Liked by you", items: liked, all: true },
+      { title: "My workouts", items: mine, all: true },
     ]
       .filter((group) => group.title && group.items.length > 0)
       .map((group) => ({

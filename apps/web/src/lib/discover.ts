@@ -3,6 +3,7 @@ import { asItems, listColumns, type ListItem } from "./backblast-list";
 import { loadRegions, loadSites } from "./regions";
 import { createClient } from "./supabase/client";
 import {
+  isTourExample,
   loadWorkoutStats,
   NO_STATS,
   type WorkoutStats,
@@ -64,6 +65,8 @@ export async function loadPublicWorkouts(
   const workouts = asItems(
     "workout",
     rows
+      // The tour's examples aren't anyone's real workout: left off Discover and Trending.
+      .filter((row) => !isTourExample(row as unknown as { title: string }))
       .filter((row) => {
         const language =
           row.author_region?.region?.language ??
