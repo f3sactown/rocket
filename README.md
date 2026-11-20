@@ -170,9 +170,11 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
 - **From pickers** (Exicon, PAX, Discover): on a phone, one line of chips that scrolls sideways.
 - **Tutorial:** a step-by-step tour that spotlights one part of the screen at a time, moving
   between pages as it goes. After Home's stats and sections, it walks the user through writing a
-  real workout, dated today (the date can't be changed, so its backblast can follow): it opens
+  real workout, dated today (the date can't be changed, so its backblast can follow), titled
+  **Example Q** at the first AO on the region's list (both filled in, and changeable): it opens
   each page of the form in turn (Basics, Introduction, warm-up, The Thang, Notes, words of
-  wisdom) while they fill it in, then they tap **Done** on Review. On to that workout's page
+  wisdom) while they fill it in, then Review. Every step has the tour's **Next**; on the Review
+  and Done steps it taps the page's Done (the card sits at the top there, clear of it). On to that workout's page
   (Run workout, Copy and Share), then **Create backblast**, and the same for its backblast (the
   copied workout, Notes, Name-o-rama, Announcements, Coffeeteria, Review and **Done**), ending on
   Copy and Share.
