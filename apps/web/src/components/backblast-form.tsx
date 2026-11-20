@@ -35,6 +35,7 @@ import { ThangsInput } from "./thangs-input";
 import { Regulars } from "./regulars";
 import { useAuth } from "./auth-provider";
 import { ArrowIcon, PlayIcon, SkipIcon, TrashIcon } from "./icons";
+import { tourRunning } from "./app-tour";
 import { ProtectedText } from "./protected-text";
 import {
   SectionTemplates,
@@ -335,10 +336,12 @@ export function BackblastForm({
     if (edited.current) onChange(backblast);
   }, [backblast, onChange]);
 
-  // On each new page, start at the top and put the cursor in its main field.
+  // On each new page, start at the top and put the cursor in its main field (not during the app
+  // tour, which opens the pages itself: on a phone the keyboard would come up on each).
   useEffect(() => {
     if (!navigated.current) return;
     window.scrollTo({ top: 0 });
+    if (tourRunning()) return;
     page.current
       ?.querySelector<HTMLElement>("textarea, input:not([type=hidden])")
       ?.focus({ preventScroll: true });

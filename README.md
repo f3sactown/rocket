@@ -180,7 +180,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   Copy and Share.
   Then Discover, the Exicon and PAX (searching names, e.g. before naming an FNG, and the profile
   of a PAX with at least one public workout and backblast). While the user fills in a page, the
-  page stays usable around the tour's card, and notices wait until the tour is over. It starts
+  page stays usable around the tour's card, and notices wait until the tour is over. The form
+  doesn't put the cursor in each page's box while the tour opens them (so a phone's keyboard
+  doesn't come up on each); writing one normally, it does. It starts
   once per account, after the device setup (`tutorial_done` in the account's metadata), can be
   skipped, and **Settings → Tutorial** shows it again.
 - **Offline:** the service worker (`apps/web/public/sw.js`) keeps the whole app on the phone,
