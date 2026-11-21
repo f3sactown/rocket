@@ -363,6 +363,34 @@ export type Database = {
         >;
         Relationships: [];
       };
+      admins: {
+        Row: { user_id: string; added_by: string | null; added_at: string };
+        Insert: {
+          user_id: string;
+          added_by?: string | null;
+          added_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["admins"]["Insert"]>;
+        Relationships: [];
+      };
+      admin_log: {
+        Row: {
+          id: number;
+          at: string;
+          admin_id: string | null;
+          action: string;
+          target: string;
+          details: Json;
+        };
+        Insert: {
+          admin_id?: string | null;
+          action: string;
+          target?: string;
+          details?: Json;
+        };
+        Update: Partial<Database["public"]["Tables"]["admin_log"]["Insert"]>;
+        Relationships: [];
+      };
       place_coordinates: {
         Row: {
           address: string;
@@ -489,6 +517,36 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      is_admin: {
+        Args: { p_user?: string };
+        Returns: boolean;
+      };
+      admin_people: {
+        Args: { p_query?: string };
+        Returns: {
+          id: string;
+          name: string;
+          email: string;
+          region_id: string | null;
+          region_scope: string | null;
+          region_name: string | null;
+          created_at: string;
+          last_sign_in_at: string | null;
+          is_admin: boolean;
+        }[];
+      };
+      admin_set_name: {
+        Args: { p_user: string; p_name: string };
+        Returns: undefined;
+      };
+      admin_set_region: {
+        Args: { p_user: string; p_region: string | null };
+        Returns: undefined;
+      };
+      admin_set_admin: {
+        Args: { p_user: string; p_admin: boolean };
+        Returns: undefined;
+      };
       name_taken: {
         Args: { p_region: string; p_name: string };
         Returns: boolean;

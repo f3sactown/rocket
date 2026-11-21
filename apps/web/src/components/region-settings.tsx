@@ -62,9 +62,7 @@ export async function chooseRegion(
 
 /** Region choice, the user's totals from the region's sheet, and adding a new region. */
 export function RegionSettings({ user }: { user: CurrentUser }) {
-  const [version, setVersion] = useState(0);
-  const regions = useLoad(() => loadRegions(version > 0), [version]);
-  const [adding, setAdding] = useState(false);
+  const regions = useLoad(() => loadRegions(), []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const region = regions.value?.find((r) => r.id === user.regionId) ?? null;
@@ -92,7 +90,6 @@ export function RegionSettings({ user }: { user: CurrentUser }) {
           value={user.regionId ?? ""}
           disabled={saving || !regions.value}
           onChange={(e) => {
-            if (e.target.value === "__add") return setAdding(true);
             const allOf = allRegionsLanguage(e.target.value);
             choose(
               allOf
@@ -118,7 +115,6 @@ export function RegionSettings({ user }: { user: CurrentUser }) {
               All {termsFor(l.value).org} regions
             </option>
           ))}
-          <option value="__add">My region isn&apos;t listed…</option>
         </select>
       </label>
       {(error || regions.error) && (
@@ -146,24 +142,14 @@ export function RegionSettings({ user }: { user: CurrentUser }) {
       )}
       {covered.length > 0 && <RegionStats regions={covered} name={user.name} />}
 
-      {adding ? (
-        <RegionForm
-          onCancel={() => setAdding(false)}
-          onSaved={async (region) => {
-            setAdding(false);
-            setVersion((v) => v + 1);
-            await choose(region);
-          }}
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          className="link self-start"
-        >
-          <span className="text-accent">＋</span> Add a region
-        </button>
-      )}
+      <p className="text-xs text-muted">
+        Region not listed? Regions are added by Rocket&apos;s admins: ask one,
+        or{" "}
+        <a href="mailto:contact@f3sactown.com" className="link">
+          contact the developer
+        </a>{" "}
+        with its Google Sheet.
+      </p>
     </div>
   );
 }
@@ -242,18 +228,29 @@ const SECTIONS: {
   },
 ];
 
-/** Adds a region: its name, Google Sheet and which tabs and columns hold the data. */
-function RegionForm({
+/**
+ * Adds a region, or changes one (given `region`): its name, Google Sheet and which tabs and columns
+ * hold the data. Only admins can save (the Admin page).
+ */
+export function RegionForm({
+  region,
   onCancel,
   onSaved,
 }: {
+  region?: Region;
   onCancel: () => void;
   onSaved: (region: Region) => void;
 }) {
-  const [name, setName] = useState("");
-  const [language, setLanguage] = useState<Language>("f3");
-  const [sheet, setSheet] = useState("");
-  const [config, setConfig] = useState<RegionConfig>(DEFAULT_CONFIG);
+  const [name, setName] = useState(region?.name ?? "");
+  const [language, setLanguage] = useState<Language>(region?.language ?? "f3");
+  const [sheet, setSheet] = useState(
+    region
+      ? `https://docs.google.com/spreadsheets/d/${region.sheet_id}/edit`
+      : "",
+  );
+  const [config, setConfig] = useState<RegionConfig>(
+    region?.config ?? DEFAULT_CONFIG,
+  );
   const [status, setStatus] = useState<{ text: string; error: boolean } | null>(
     null,
   );
@@ -284,14 +281,16 @@ function RegionForm({
     event.preventDefault();
     if (!(await check())) return;
     setBusy(true);
-    const { data, error } = await createClient()
-      .from("regions")
-      .insert({
-        name: name.trim(),
-        sheet_id: sheetId,
-        language,
-        config: config as unknown as Json,
-      })
+    const fields = {
+      name: name.trim(),
+      sheet_id: sheetId,
+      language,
+      config: config as unknown as Json,
+    };
+    const table = createClient().from("regions");
+    const { data, error } = await (
+      region ? table.update(fields).eq("id", region.id) : table.insert(fields)
+    )
       .select("id, name, sheet_id, language, config, created_by")
       .single();
     setBusy(false);
@@ -311,7 +310,9 @@ function RegionForm({
       className="flex flex-col gap-4 rounded-2xl border border-line-strong p-4"
     >
       <div className="flex flex-col gap-1">
-        <h3 className="font-semibold text-ink">Add a region</h3>
+        <h3 className="font-semibold text-ink">
+          {region ? `Change ${region.name}` : "Add a region"}
+        </h3>
         <p className="text-sm text-muted">
           Rocket reads the region&apos;s Google Sheet for AOs, PAX names and
           attendance. Share the sheet so anyone with the link can view it.
