@@ -2,9 +2,9 @@
 
 import {
   AUTHOR_ORG_COLUMNS,
-  Byline,
   orgOf,
   regionOf,
+  TitleMeta,
 } from "@/components/author-link";
 import { isOffline } from "@/lib/connection";
 import { rowOrPocket } from "@/lib/backblast";
@@ -141,21 +141,22 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
   return (
     <article className="card">
       <h1 className="card-title">{backblast.title}</h1>
-      {/* Who wrote it: their name opens their profile (yours too). */}
-      {result.authorName && (
-        <Byline
-          name={result.authorName}
-          org={result.authorOrg ?? user.language}
-          region={result.authorRegion}
-        />
-      )}
+      {/* Who wrote it and their region on the left; the AO and date on the right. */}
+      <TitleMeta
+        author={
+          result.authorName
+            ? {
+                name: result.authorName,
+                org: result.authorOrg ?? user.language,
+                region: result.authorRegion,
+              }
+            : null
+        }
+        ao={backblast.ao}
+        date={formatDate(backblast.date)}
+      />
 
       <CountPanel backblast={backblast} />
-
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-ink">{backblast.ao}</span>
-        <span className="text-ink-soft">{formatDate(backblast.date)}</span>
-      </div>
       {(backblast.workoutId || (mine && result.status === "published")) && (
         // Like a workout's likes and reuses, its workout link sits left of Public / Private.
         <div className="-mt-2 flex items-center justify-between gap-3">

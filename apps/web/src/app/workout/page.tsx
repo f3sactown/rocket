@@ -1,10 +1,11 @@
 "use client";
 
 import {
+  AuthorLink,
   AUTHOR_ORG_COLUMNS,
-  Byline,
   orgOf,
   regionOf,
+  TitleMeta,
 } from "@/components/author-link";
 import { isOffline } from "@/lib/connection";
 import { readPocket } from "@/lib/pocket";
@@ -235,35 +236,44 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
   return (
     <article className="card">
       <h1 className="card-title">{workout.title}</h1>
-      {/* Who wrote it: their name opens their profile (yours too). */}
-      {result.authorName && (
-        <Byline
-          name={result.authorName}
-          org={result.authorOrg ?? user.language}
-          region={result.authorRegion}
-        />
-      )}
-      {result.originalAuthorName &&
-        (result.originalAuthor ? (
-          <Byline
-            prefix="Originally by"
-            name={result.originalAuthor.name}
-            org={orgOf(result.originalAuthor) ?? user.language}
-            region={regionOf(result.originalAuthor)}
-          />
-        ) : (
-          <p className="-mt-2 text-sm text-ink-soft">
+      {/* Who wrote it and their region on the left; the AO and date on the right. */}
+      <TitleMeta
+        author={
+          result.authorName
+            ? {
+                name: result.authorName,
+                org: result.authorOrg ?? user.language,
+                region: result.authorRegion,
+              }
+            : null
+        }
+        ao={workout.ao}
+        date={formatDate(workout.date)}
+      >
+        {result.originalAuthorName && (
+          <span className="mt-1 text-ink-soft">
             Originally by{" "}
-            <span className="font-medium text-ink">
-              {result.originalAuthorName}
-            </span>
-          </p>
-        ))}
-
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-ink">{workout.ao}</span>
-        <span className="text-ink-soft">{formatDate(workout.date)}</span>
-      </div>
+            {result.originalAuthor ? (
+              <AuthorLink
+                name={result.originalAuthor.name}
+                org={orgOf(result.originalAuthor) ?? user.language}
+                className="font-medium text-ink underline decoration-accent/70 decoration-2 underline-offset-4 hover:decoration-accent"
+              />
+            ) : (
+              <span className="font-medium text-ink">
+                {result.originalAuthorName}
+              </span>
+            )}
+            {result.originalAuthor && regionOf(result.originalAuthor) && (
+              <span className="text-muted">
+                {" "}
+                · {regionOf(result.originalAuthor)}
+              </span>
+            )}
+          </span>
+        )}
+      </TitleMeta>
+      {/* The weather there, its credit below it. */}
       <WorkoutWeather workout={workout} className="-mt-2" />
       <div className="-mt-2 flex flex-wrap items-center justify-between gap-3">
         <WorkoutStatsBar
