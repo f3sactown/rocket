@@ -1,9 +1,10 @@
 "use client";
 
 import {
-  AuthorLink,
   AUTHOR_ORG_COLUMNS,
+  Byline,
   orgOf,
+  regionOf,
 } from "@/components/author-link";
 import { isOffline } from "@/lib/connection";
 import { rowOrPocket } from "@/lib/backblast";
@@ -64,6 +65,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     authorId?: string;
     authorName?: string;
     authorOrg?: Language;
+    authorRegion?: string | null;
     status?: string;
     error?: string;
   } | null>(null);
@@ -87,6 +89,9 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         authorName: data?.author?.name,
         authorOrg: orgOf(
           (data as { author?: Parameters<typeof orgOf>[0] } | null)?.author,
+        ),
+        authorRegion: regionOf(
+          (data as { author?: Parameters<typeof regionOf>[0] } | null)?.author,
         ),
         status: data?.status,
         error: error?.message,
@@ -135,17 +140,15 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
   const shared = copyText(backblast, user.language, workoutLink);
   return (
     <article className="card">
-      <header className="flex items-start justify-between gap-4">
-        <h1 className="card-title">{backblast.title}</h1>
-        {result.authorName && (
-          // Opens the author's profile (yours too).
-          <AuthorLink
-            name={result.authorName}
-            org={result.authorOrg ?? user.language}
-            className="status mt-2 shrink-0"
-          />
-        )}
-      </header>
+      <h1 className="card-title">{backblast.title}</h1>
+      {/* Who wrote it: their name opens their profile (yours too). */}
+      {result.authorName && (
+        <Byline
+          name={result.authorName}
+          org={result.authorOrg ?? user.language}
+          region={result.authorRegion}
+        />
+      )}
 
       <CountPanel backblast={backblast} />
 

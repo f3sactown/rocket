@@ -1,9 +1,10 @@
 "use client";
 
 import {
-  AuthorLink,
   AUTHOR_ORG_COLUMNS,
+  Byline,
   orgOf,
+  regionOf,
 } from "@/components/author-link";
 import { isOffline } from "@/lib/connection";
 import { readPocket } from "@/lib/pocket";
@@ -86,6 +87,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     authorId?: string;
     authorName?: string;
     authorOrg?: Language;
+    authorRegion?: string | null;
     originalAuthor?: {
       name: string;
       region_scope?: string | null;
@@ -133,6 +135,9 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
           ?.name,
         authorOrg: orgOf(
           (data as { author?: Parameters<typeof orgOf>[0] } | null)?.author,
+        ),
+        authorRegion: regionOf(
+          (data as { author?: Parameters<typeof regionOf>[0] } | null)?.author,
         ),
         originalAuthor:
           data?.original_author_id && data.original_author_id !== data.author_id
@@ -229,35 +234,31 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
   const shown = formatBackblast({ ...workout, notes }, user.language);
   return (
     <article className="card">
-      <header className="flex items-start justify-between gap-4">
-        <h1 className="card-title">{workout.title}</h1>
-        {result.authorName && (
-          // Opens the author's profile (yours too).
-          <AuthorLink
-            name={result.authorName}
-            org={result.authorOrg ?? user.language}
-            className="status mt-2 shrink-0"
+      <h1 className="card-title">{workout.title}</h1>
+      {/* Who wrote it: their name opens their profile (yours too). */}
+      {result.authorName && (
+        <Byline
+          name={result.authorName}
+          org={result.authorOrg ?? user.language}
+          region={result.authorRegion}
+        />
+      )}
+      {result.originalAuthorName &&
+        (result.originalAuthor ? (
+          <Byline
+            prefix="Originally by"
+            name={result.originalAuthor.name}
+            org={orgOf(result.originalAuthor) ?? user.language}
+            region={regionOf(result.originalAuthor)}
           />
-        )}
-      </header>
-      {result.originalAuthorName && (
-        <p className="-mt-2 text-sm text-ink-soft">
-          Originally by{" "}
-          {result.originalAuthor ? (
-            <AuthorLink
-              name={result.originalAuthor.name}
-              org={orgOf(result.originalAuthor) ?? user.language}
-              className="link font-medium text-ink"
-            >
-              {result.originalAuthorName}
-            </AuthorLink>
-          ) : (
+        ) : (
+          <p className="-mt-2 text-sm text-ink-soft">
+            Originally by{" "}
             <span className="font-medium text-ink">
               {result.originalAuthorName}
             </span>
-          )}
-        </p>
-      )}
+          </p>
+        ))}
 
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-ink">{workout.ao}</span>
@@ -415,7 +416,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
             theirs && (
               <Link href={`/backblast?id=${theirs.id}`} className="btn w-full">
                 <ArrowIcon />
-                Read its backblast
+                Read backblast
               </Link>
             )
           );
