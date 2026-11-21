@@ -150,12 +150,13 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         />
       )}
 
-      <CountPanel backblast={backblast} />
-
-      <div className="flex items-center justify-between text-sm">
+      {/* Where and when, stacked under the byline. */}
+      <div className="-mt-2 flex flex-col gap-0.5 text-sm">
         <span className="font-medium text-ink">{backblast.ao}</span>
         <span className="text-ink-soft">{formatDate(backblast.date)}</span>
       </div>
+
+      <CountPanel backblast={backblast} />
       {(backblast.workoutId || (mine && result.status === "published")) && (
         // Like a workout's likes and reuses, its workout link sits left of Public / Private.
         <div className="-mt-2 flex items-center justify-between gap-3">

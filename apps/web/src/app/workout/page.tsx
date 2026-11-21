@@ -260,11 +260,12 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
           </p>
         ))}
 
-      <div className="flex items-center justify-between text-sm">
+      {/* Where and when, then the weather there: one block, stacked. */}
+      <div className="-mt-2 flex flex-col gap-0.5 text-sm">
         <span className="font-medium text-ink">{workout.ao}</span>
         <span className="text-ink-soft">{formatDate(workout.date)}</span>
+        <WorkoutWeather workout={workout} className="mt-1.5" />
       </div>
-      <WorkoutWeather workout={workout} className="-mt-2" />
       <div className="-mt-2 flex flex-wrap items-center justify-between gap-3">
         <WorkoutStatsBar
           workoutId={id!}

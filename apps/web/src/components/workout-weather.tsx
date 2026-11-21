@@ -20,10 +20,7 @@ export function WorkoutWeather({
   const found = useWorkoutWeather(workout);
   if (!found) return null;
   return (
-    <p
-      data-weather
-      className={`flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-sm ${className}`}
-    >
+    <p data-weather className={`flex flex-col gap-0.5 text-sm ${className}`}>
       <span className="text-ink-soft">
         <span className="font-medium text-ink">
           {found.past ? "Weather" : "Forecast"}:
@@ -34,9 +31,9 @@ export function WorkoutWeather({
         href={WEATHER_CREDIT.url}
         target="_blank"
         rel="noreferrer"
-        className="text-xs text-muted hover:text-ink"
+        className="self-start text-xs text-muted hover:text-ink"
       >
-        Open-Meteo
+        Weather by Open-Meteo
       </a>
     </p>
   );
