@@ -4,17 +4,21 @@ import { LANGUAGES, termsFor } from "@rocket/core";
 import { useEffect, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
 import { RegionForm } from "@/components/region-settings";
+import { parseExport } from "@/lib/account-data";
 import {
   describe,
+  exportPerson,
   findPeople,
+  importPerson,
   loadAdminLog,
+  removePerson,
   setPersonAdmin,
   setPersonName,
   setPersonRegion,
   useIsAdmin,
   type Person,
 } from "@/lib/admin";
-import { loadRegions, type Region } from "@/lib/regions";
+import { loadRegions, regionColors, type Region } from "@/lib/regions";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/use-region";
 
@@ -43,6 +47,9 @@ function Admin({ user }: { user: CurrentUser }) {
   // Bumped after a change, so the lists and the log load again.
   const [changes, setChanges] = useState(0);
   const changed = () => setChanges((n) => n + 1);
+  // Bumped when only the log needs loading again (an export or import), so open entries stay.
+  const [logged, setLogged] = useState(0);
+  const noted = () => setLogged((n) => n + 1);
 
   if (admin === undefined)
     return <section className="card h-64 animate-pulse" />;
@@ -65,9 +72,14 @@ function Admin({ user }: { user: CurrentUser }) {
           Every change is logged below.
         </p>
       </header>
-      <People userId={user.id} changes={changes} onChange={changed} />
+      <People
+        userId={user.id}
+        changes={changes}
+        onChange={changed}
+        onLogged={noted}
+      />
       <Regions changes={changes} onChange={changed} />
-      <Log changes={changes} />
+      <Log changes={changes + logged} />
     </section>
   );
 }
@@ -99,10 +111,12 @@ function People({
   userId,
   changes,
   onChange,
+  onLogged,
 }: {
   userId: string;
   changes: number;
   onChange: () => void;
+  onLogged: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
@@ -165,6 +179,7 @@ function People({
                 regions={regions.value ?? []}
                 isYou={person.id === userId}
                 onChange={onChange}
+                onLogged={onLogged}
               />
             )}
           </li>
@@ -187,11 +202,13 @@ function PersonEditor({
   regions,
   isYou,
   onChange,
+  onLogged,
 }: {
   person: Person;
   regions: Region[];
   isYou: boolean;
   onChange: () => void;
+  onLogged: () => void;
 }) {
   const [name, setName] = useState(person.name);
   const [region, setRegion] = useState(
@@ -324,6 +341,148 @@ function PersonEditor({
           </button>
         )}
       </div>
+      <PersonData
+        person={person}
+        isYou={isYou}
+        onRemoved={onChange}
+        onLogged={onLogged}
+      />
+      {message && (
+        <p
+          className={`text-sm ${message.error ? "text-accent" : "text-ink-soft"}`}
+        >
+          {message.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Someone's data: export it (the same file as Settings → Your data), import a file into their
+ * account (adding what isn't there; their settings too if ticked), or remove them from Rocket.
+ */
+function PersonData({
+  person,
+  isYou,
+  onRemoved,
+  onLogged,
+}: {
+  person: Person;
+  isYou: boolean;
+  onRemoved: () => void;
+  onLogged: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [withSettings, setWithSettings] = useState(false);
+  const [message, setMessage] = useState<{
+    text: string;
+    error: boolean;
+  } | null>(null);
+
+  async function exportData() {
+    setBusy(true);
+    setMessage(null);
+    const error = await exportPerson(person);
+    setBusy(false);
+    setMessage(
+      error
+        ? { text: error, error: true }
+        : { text: "Their data is downloading.", error: false },
+    );
+    if (!error) onLogged();
+  }
+
+  async function importData(file: File) {
+    setMessage(null);
+    let data;
+    try {
+      data = parseExport(await file.text());
+    } catch (error) {
+      return setMessage({ text: (error as Error).message, error: true });
+    }
+    if (
+      !confirm(
+        `Import ${file.name} into ${person.name}'s account? What isn't there is added; what's already theirs stays as it is.${withSettings ? " Their settings, name and region come from the file too." : ""}`,
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      const result = await importPerson(person.id, data, withSettings);
+      setMessage({
+        text: `Imported: ${result.added} added, ${result.kept} already there.${
+          result.failed.length
+            ? ` ${result.failed.length} couldn't be: ${result.failed.join("; ")}`
+            : ""
+        }`,
+        error: result.failed.length > 0,
+      });
+      onLogged();
+    } catch (error) {
+      setMessage({ text: (error as Error).message, error: true });
+    }
+    setBusy(false);
+  }
+
+  async function remove() {
+    const typed = prompt(
+      `Remove ${person.name} from Rocket? Their account and everything they made (workouts, backblasts, templates, likes) is deleted, and can't be brought back except from an export. Type REMOVE to confirm.`,
+    );
+    if (typed?.trim().toUpperCase() !== "REMOVE") return;
+    setBusy(true);
+    setMessage(null);
+    const error = await removePerson(person.id);
+    setBusy(false);
+    if (error) setMessage({ text: error, error: true });
+    else onRemoved();
+  }
+
+  return (
+    <div className="flex flex-col gap-2 border-t border-line pt-3">
+      <span className="label">Their data</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={exportData}
+          className={button}
+        >
+          Export
+        </button>
+        <label className={`${button} cursor-pointer`}>
+          Import…
+          <input
+            type="file"
+            accept="application/json,.json"
+            disabled={busy}
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void importData(file);
+            }}
+          />
+        </label>
+      </div>
+      <label className="flex items-center gap-2 text-sm text-ink-soft">
+        <input
+          type="checkbox"
+          checked={withSettings}
+          onChange={(e) => setWithSettings(e.target.checked)}
+        />
+        Import their settings, name and region too
+      </label>
+      {!isYou && !person.is_admin && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={remove}
+          className="link self-start text-sm hover:text-accent"
+        >
+          Remove from Rocket…
+        </button>
+      )}
       {message && (
         <p
           className={`text-sm ${message.error ? "text-accent" : "text-ink-soft"}`}
@@ -358,6 +517,8 @@ function Regions({
 }) {
   const regions = useLoad(() => loadRegions(true), [changes]);
   const counts = useLoad(peoplePerRegion, [changes]);
+  // Each region's color, as on the Exicon and PAX pages.
+  const colors = regionColors(regions.value ?? []);
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -395,7 +556,15 @@ function Regions({
           <li key={region.id} className="flex flex-col gap-2 py-2">
             <div className="flex items-start justify-between gap-3">
               <span className="flex min-w-0 flex-col">
-                <span className="font-medium text-ink">{region.name}</span>
+                <span className="flex items-center gap-2 font-medium text-ink">
+                  <span
+                    className="size-3 shrink-0 rounded-full"
+                    style={{ background: colors.get(region.id) }}
+                    title="Its color on the Exicon and PAX pages"
+                    aria-hidden
+                  />
+                  {region.name}
+                </span>
                 <span className="text-sm text-muted">
                   {termsFor(region.language).org} ·{" "}
                   {counts.value?.get(region.id) ?? 0} on Rocket ·{" "}

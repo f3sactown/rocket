@@ -543,6 +543,18 @@ export type Database = {
         Args: { p_user: string; p_region: string | null };
         Returns: undefined;
       };
+      admin_remove_user: {
+        Args: { p_user: string };
+        Returns: undefined;
+      };
+      admin_export_user: {
+        Args: { p_user: string };
+        Returns: Json;
+      };
+      admin_import_user: {
+        Args: { p_user: string; p_data: Json; p_settings: boolean };
+        Returns: Json;
+      };
       admin_set_admin: {
         Args: { p_user: string; p_admin: boolean };
         Returns: undefined;
