@@ -352,7 +352,8 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   exactly what Copy gives, link and PAX list included. **Your data** exports everything you have
   (settings, including the Discover and PAX pickers, workouts with their notes, backblasts, saved templates, archive and likes) as a JSON
   file, and imports one back: it shows what's new and, for workouts, backblasts or templates you
-  already have, lets you keep yours, replace them or keep both (settings are optional). **Reset
+  already have, lets you keep yours, replace them or keep both (settings are optional; they bring your F3 name
+  from `f3_name`, not `name`, which signing in with Google sets to the account's real name). **Reset
   account** (type RESET to confirm) deletes all of that and restores default settings; your login
   and name stay. Likes and reuses others gave a deleted workout (deleted on its own or by a reset)
   are set aside in the database and come back when that workout is imported again by its author;
