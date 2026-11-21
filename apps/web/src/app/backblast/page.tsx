@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  AuthorLink,
+  AUTHOR_ORG_COLUMNS,
+  orgOf,
+} from "@/components/author-link";
 import { isOffline } from "@/lib/connection";
 import { rowOrPocket } from "@/lib/backblast";
 import { readPocket } from "@/lib/pocket";
@@ -9,6 +14,7 @@ import {
   formatBackblast,
   formatDate,
   type Backblast,
+  type Language,
 } from "@rocket/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -57,6 +63,7 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     backblast: Backblast | null;
     authorId?: string;
     authorName?: string;
+    authorOrg?: Language;
     status?: string;
     error?: string;
   } | null>(null);
@@ -67,7 +74,9 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     rowOrPocket("backblast", id, () =>
       createClient()
         .from("backblasts")
-        .select("*, author:profiles!backblasts_author_id_fkey(name)")
+        .select(
+          `*, author:profiles!backblasts_author_id_fkey(name, ${AUTHOR_ORG_COLUMNS})`,
+        )
         .eq("id", id)
         .maybeSingle(),
     ).then(({ data, error }) => {
@@ -76,6 +85,9 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         backblast: data && fromRow(data),
         authorId: data?.author_id,
         authorName: data?.author?.name,
+        authorOrg: orgOf(
+          (data as { author?: Parameters<typeof orgOf>[0] } | null)?.author,
+        ),
         status: data?.status,
         error: error?.message,
       });
@@ -126,9 +138,12 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
       <header className="flex items-start justify-between gap-4">
         <h1 className="card-title">{backblast.title}</h1>
         {result.authorName && (
-          <span className="status mt-2 shrink-0" title="Written by">
-            {result.authorName}
-          </span>
+          // Opens the author's profile (yours too).
+          <AuthorLink
+            name={result.authorName}
+            org={result.authorOrg ?? user.language}
+            className="status mt-2 shrink-0"
+          />
         )}
       </header>
 
