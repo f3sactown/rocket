@@ -143,20 +143,7 @@ export function ProfileName({
   } | null>(null);
 
   if (onRoster !== false)
-    return (
-      <div className="flex flex-col gap-1.5">
-        <span className="label">{label}</span>
-        {/* Set at sign-up for good: the roster, backblasts and stats all find you by it. */}
-        <p className="input cursor-default text-ink" aria-readonly="true">
-          {user.name}
-        </p>
-        <span className="text-xs text-muted">
-          {message && !message.error
-            ? message.text
-            : "Your name was set when you signed up and can't be changed."}
-        </span>
-      </div>
-    );
+    return <DisplayName user={user} label={label} renamed={message} />;
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -236,6 +223,92 @@ export function ProfileName({
             ? `Yes, I'm ${confirming}: change my name`
             : "Change my name"}
       </button>
+    </form>
+  );
+}
+
+/**
+ * Settings → Profile: the name Home greets you by (`display_name` in your account), yours to
+ * change. It's only for Home: your name in the database (set at sign-up, what the roster,
+ * backblasts and stats go by) stays as it is, and is shown below it. Blank or the same as your
+ * name, it's your name.
+ */
+function DisplayName({
+  user,
+  label,
+  renamed,
+}: {
+  user: CurrentUser;
+  label: string;
+  /** Your name just changed (from off the roster): said here. */
+  renamed: { text: string; error: boolean } | null;
+}) {
+  const [value, setValue] = useState(user.displayName ?? user.name);
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState<{
+    text: string;
+    error: boolean;
+  } | null>(renamed && !renamed.error ? renamed : null);
+  const wanted = value.trim();
+  const current = user.displayName ?? user.name;
+
+  async function save(event: React.FormEvent) {
+    event.preventDefault();
+    setPending(true);
+    setMessage(null);
+    // The same as your name (or blank): none, so Home uses your name.
+    const display = wanted && wanted !== user.name ? wanted : null;
+    const { error } = await createClient().auth.updateUser({
+      data: { display_name: display },
+    });
+    setPending(false);
+    if (!display) setValue(user.name);
+    setMessage(
+      error
+        ? { text: error.message, error: true }
+        : {
+            text: display
+              ? `Home now says "Hey, ${display}".`
+              : `Home uses your ${label} again.`,
+            error: false,
+          },
+    );
+  }
+
+  return (
+    <form onSubmit={save} className="flex flex-col gap-1.5">
+      <label className="label flex flex-col gap-1.5">
+        Display name
+        <span className="flex gap-2">
+          <input
+            name="display_name"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            maxLength={60}
+            className="input min-w-0 flex-1"
+          />
+          <button
+            type="submit"
+            disabled={
+              pending || wanted === current || (!wanted && !user.displayName)
+            }
+            className="rounded-full border border-line-strong px-4 py-2 text-sm font-medium text-ink transition hover:border-accent/60 disabled:opacity-50"
+          >
+            {pending ? "Saving…" : "Save"}
+          </button>
+        </span>
+      </label>
+      <span className="text-xs text-muted">
+        {message ? (
+          <span className={message.error ? "text-accent" : undefined}>
+            {message.text}{" "}
+          </span>
+        ) : null}
+        Shown on your Home screen only. It doesn&apos;t change your {label} in
+        the database, which is{" "}
+        <strong className="font-medium text-ink">{user.name}</strong> (set at
+        sign-up: what workouts, backblasts, the roster and stats go by).
+      </span>
     </form>
   );
 }
