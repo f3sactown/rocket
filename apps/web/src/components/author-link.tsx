@@ -39,34 +39,6 @@ export function regionOf(
 }
 
 /**
- * The byline under a workout's or backblast's title: "by Tinman · F3 SacTown", the name opening
- * their profile.
- */
-export function Byline({
-  prefix = "by",
-  name,
-  org,
-  region,
-}: {
-  prefix?: string;
-  name: string;
-  org: Language;
-  region?: string | null;
-}) {
-  return (
-    <p className="-mt-2 text-sm text-ink-soft">
-      {prefix}{" "}
-      <AuthorLink
-        name={name}
-        org={org}
-        className="font-medium text-ink underline decoration-accent/70 decoration-2 underline-offset-4 hover:decoration-accent"
-      />
-      {region && <span className="text-muted"> · {region}</span>}
-    </p>
-  );
-}
-
-/**
  * An author's name that opens their PAX profile (posts, Qs, their public workouts and
  * backblasts). Offline, profiles can't load, so it's just the name.
  */
@@ -96,5 +68,45 @@ export function AuthorLink({
     >
       {children ?? name}
     </Link>
+  );
+}
+
+/**
+ * Under a workout's or backblast's title, in two columns: on the left who wrote it ("by Tinman",
+ * the name opening their profile) with their region below (and anything else, e.g. "Originally
+ * by …"); on the right the AO, with the date below.
+ */
+export function TitleMeta({
+  author,
+  ao,
+  date,
+  children,
+}: {
+  author: { name: string; org: Language; region?: string | null } | null;
+  ao: string;
+  date: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="-mt-2 flex items-start justify-between gap-4 text-sm">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        {author && (
+          <span className="text-ink-soft">
+            by{" "}
+            <AuthorLink
+              name={author.name}
+              org={author.org}
+              className="font-medium text-ink underline decoration-accent/70 decoration-2 underline-offset-4 hover:decoration-accent"
+            />
+          </span>
+        )}
+        {author?.region && <span className="text-muted">{author.region}</span>}
+        {children}
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
+        {ao.trim() && <span className="font-medium text-ink">{ao}</span>}
+        {date && <span className="text-ink-soft">{date}</span>}
+      </div>
+    </div>
   );
 }

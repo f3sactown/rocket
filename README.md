@@ -44,13 +44,13 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     choose again. Each workout shows how many times it's been reused by other Qs (counting archived copies; reusing your own doesn't count, just as you can't like your own).
     A reused workout credits the Q who wrote the first one (`workouts.original_author_id`), even
     when it's a reuse of a reuse: its page shows "Originally by" them and their region.
-  - **Where and when:** a workout's and a backblast's page show the AO, then the date under it,
-    just below the byline; a workout's forecast follows, credited "Weather by Open-Meteo" on the
-    line below.
-  - **Authors link to their profiles:** a workout's and a backblast's page has a byline under the
-    title, "by Tinman · F3 SacTown" (and "Originally by …" for a reuse), the name underlined in
-    the accent color and opening that PAX's profile (`Byline`, `AuthorLink`: by name and their
-    region's organization; yours too; just the name offline). The Q's name in the text stays
+  - **Under the title**, in two columns: on the left "by Tinman" (the name opening their
+    profile) with their region below (and "Originally by …" for a reuse); on the right the AO with
+    the date below (`TitleMeta`). A workout's forecast follows, with "Weather by Open-Meteo" below
+    it; a backblast's PAX, FNGs and Downrange counts follow.
+  - **Authors link to their profiles:** the author's name (and "Originally by …"'s) is underlined
+    in the accent color and opens that PAX's profile (`AuthorLink`: by name and their region's
+    organization; yours too; just the name offline). The Q's name in the text stays
     plain. Someone else's workout ends with **Read backblast** once they've finished it.
   - A finished workout is **public** by default (Settings → Sharing can make new ones start
     private): anyone signed in can see, like and reuse it. Its Q
