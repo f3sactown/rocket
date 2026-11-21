@@ -49,6 +49,19 @@ export default function Home() {
   return <SignedIn>{(user) => <HomePage user={user} />}</SignedIn>;
 }
 
+/** How far back Recent workouts and Recent backblasts go: two months. */
+const RECENT_MONTHS = 2;
+
+/** Whether a workout or backblast is dated within the last two months (an undated one isn't). */
+function isRecent(item: ListItem): boolean {
+  if (!item.date) return false;
+  const since = new Date();
+  since.setMonth(since.getMonth() - RECENT_MONTHS);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const cutoff = `${since.getFullYear()}-${pad(since.getMonth() + 1)}-${pad(since.getDate())}`;
+  return item.date >= cutoff;
+}
+
 /** How many of each kind the home page shows. */
 const RECENT = 5;
 
@@ -119,8 +132,8 @@ function HomePage({ user }: { user: CurrentUser }) {
       setLists({
         drafts: [...workouts.drafts, ...backblasts.drafts].sort(byWorkoutDate),
         future,
-        workouts: workouts.published,
-        backblasts: backblasts.published,
+        workouts: workouts.published.filter(isRecent),
+        backblasts: backblasts.published.filter(isRecent),
       });
     });
   }, [user.id, wantsFuture, reloads]);
@@ -236,7 +249,13 @@ function HomePage({ user }: { user: CurrentUser }) {
             <Recent title="Recent workouts" href="/workouts">
               <BackblastList
                 user={user}
-                groups={[{ items: lists.workouts, empty: "No workouts yet." }]}
+                groups={[
+                  {
+                    items: lists.workouts,
+                    empty:
+                      "Nothing in the last two months. Recent shows your workouts dated within the last two months; older ones are under See all.",
+                  },
+                ]}
               />
             </Recent>
           )}
@@ -245,7 +264,11 @@ function HomePage({ user }: { user: CurrentUser }) {
               <BackblastList
                 user={user}
                 groups={[
-                  { items: lists.backblasts, empty: "No backblasts yet." },
+                  {
+                    items: lists.backblasts,
+                    empty:
+                      "Nothing in the last two months. Recent shows your backblasts dated within the last two months; older ones are under See all.",
+                  },
                 ]}
               />
             </Recent>
