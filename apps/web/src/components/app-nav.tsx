@@ -21,8 +21,10 @@ import {
   PeopleIcon,
   PlusIcon,
   SearchIcon,
+  ShieldIcon,
   SparkleIcon,
 } from "./icons";
+import { useIsAdmin } from "@/lib/admin";
 import { RocketArt } from "./rocket-art";
 import { Wordmark } from "./wordmark";
 
@@ -32,6 +34,8 @@ const LINKS: {
   label: string;
   icon: React.ReactNode;
   sub?: boolean;
+  /** Shown to admins only. */
+  admin?: boolean;
   match: (path: string) => boolean;
 }[] = [
   {
@@ -116,6 +120,13 @@ const LINKS: {
     match: (path) => path.startsWith("/settings"),
   },
   {
+    href: "/admin",
+    label: "Admin",
+    icon: <ShieldIcon />,
+    admin: true,
+    match: (path) => path.startsWith("/admin"),
+  },
+  {
     href: "/about",
     label: "About",
     icon: <InfoIcon />,
@@ -128,6 +139,7 @@ export function AppNav() {
   const { user } = useAuth();
   const pathname = usePathname();
   const { offline } = useConnection();
+  const admin = useIsAdmin();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
@@ -188,7 +200,7 @@ export function AppNav() {
           <p className="truncate px-3 py-2 text-xs text-muted">
             Signed in as {user.name}
           </p>
-          {LINKS.map((link) => {
+          {LINKS.filter((link) => !link.admin || admin).map((link) => {
             const current = link.match(pathname);
             // Offline, the screens that need a connection are shown but can't be opened.
             if (offline && needsConnection(link.href))

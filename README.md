@@ -280,6 +280,18 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   backblast offline, the new-backblast form is kept for each of your workouts that has happened
   (with the workout's copy, the roster and the AO's regulars), along with the new workout and
   new backblast forms.
+- **Admin** (in the menu for admins only, below Settings; needs a connection): **People** (search
+  everyone by name or email; change a name, still one per region, on their profile and account;
+  change their region; make or remove admins), **Regions** (add, change and remove them, with how
+  many people have each and its last sync; a removed region's people are asked to choose one
+  again, their workouts and backblasts untouched) and **Activity** (every admin change, who made
+  it and when, `admin_log`). Admins are the `admins` table; the database checks every change
+  (`is_admin`, `admin_people`, `admin_set_name`, `admin_set_region`, `admin_set_admin`; only
+  admins may add, change or remove regions). No one can remove themselves as an admin, and the
+  last admin stays. The first admin is added in the SQL Editor:
+  `insert into public.admins (user_id) select id from auth.users where email = '…';`. A change to
+  someone shows on their phone once Rocket refreshes their sign-in (within an hour) or they sign
+  in again.
 - **About** (last in the menu): what Rocket is and everything it does, **Contact the developer**
   (a `mailto:contact@f3sactown.com` link that opens the phone's mail app, its subject naming the
   version and build), the running version and build, and the **Changelog**: every release from `CHANGELOG.md` (read when the site is built), newest first and
@@ -596,8 +608,8 @@ workout's AO belongs to (or just F3 or FiA for an AO typed in that's on no regio
   `supabase/migrations/20261108000000_f3_drycreek_region.sql` (its Sites tab has no address
   column, so the AO's Location is used), **F3 Iron Corridor** (F3, the default settings) by
   `supabase/migrations/20261120000100_f3_iron_corridor_region.sql` and **F3 Plumas Lake** (F3) by
-  `supabase/migrations/20261121000000_f3_plumas_lake_region.sql`. Others can be added in Settings,
-  with a **Check sheet** button that confirms every column exists.
+  `supabase/migrations/20261121000000_f3_plumas_lake_region.sql`. Others are added by admins on the **Admin** page (with a **Check sheet** button that
+  confirms every column exists); Settings only chooses one.
 - **Nightly sync:** `.github/workflows/sync-regions.yml` runs `scripts/sync-regions.mjs` every
   night (about 2–3am Pacific, or on demand from the Actions tab). It copies each region's active
   AOs, roster, regulars per AO (last 3 months), all-time totals per PAX and the newest post date
