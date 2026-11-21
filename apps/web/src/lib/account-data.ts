@@ -164,7 +164,12 @@ export async function exportAccount(): Promise<AccountExport> {
     format: 1,
     version: process.env.NEXT_PUBLIC_APP_VERSION ?? "",
     exportedAt: new Date().toISOString(),
-    account: { id, email: user.email ?? "", name: meta.name ?? "" },
+    account: {
+      id,
+      email: user.email ?? "",
+      // The F3 name (`name` can be the Google account's real name).
+      name: meta.f3_name ?? meta.name ?? "",
+    },
     settings: {
       account: Object.fromEntries(
         ACCOUNT_KEYS.filter((k) => meta[k] !== undefined).map((k) => [
@@ -587,10 +592,18 @@ async function importSettings(
     region_id: scope ? null : regionId,
     region_scope: scope,
   };
-  if (typeof account.name === "string" && account.name.trim()) {
-    profile.name = account.name.trim();
-    // An export from before f3_name: the name it holds is the F3 name.
-    account.f3_name ??= profile.name;
+  // The F3 name is what others see. `name` can be the Google account's real name (signing in with
+  // Google sets it each time), so it's only used for an export from before f3_name, which held the
+  // F3 name there.
+  const f3Name =
+    typeof account.f3_name === "string" && account.f3_name.trim()
+      ? account.f3_name.trim()
+      : typeof account.name === "string" && account.name.trim()
+        ? account.name.trim()
+        : null;
+  if (f3Name) {
+    profile.name = f3Name;
+    account.f3_name = f3Name;
   }
   let { error } = await supabase
     .from("profiles")

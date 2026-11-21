@@ -510,3 +510,21 @@ export function MailIcon() {
     </svg>
   );
 }
+
+export function ShieldIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="btn-icon size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M8 1.75 2.75 3.75v4c0 3.1 2.2 5.4 5.25 6.5 3.05-1.1 5.25-3.4 5.25-6.5v-4L8 1.75Z" />
+      <path d="m5.75 8 1.6 1.6L10.5 6.5" />
+    </svg>
+  );
+}
