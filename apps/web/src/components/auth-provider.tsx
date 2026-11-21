@@ -18,6 +18,8 @@ export interface CurrentUser {
   /** Permanent unique account ID; all of a user's data is tied to this, never to their name. */
   id: string;
   name: string;
+  /** What Home greets you by, if you've set one (Settings → Profile); your name is unchanged. */
+  displayName: string | null;
   email: string;
   /** Which vocabulary the app uses for this user (F3 or FiA). */
   language: Language;
@@ -157,6 +159,11 @@ function toCurrentUser(user: User | undefined): CurrentUser | null {
   return {
     id: user.id,
     name: name || user.email || "PAX",
+    displayName:
+      typeof user.user_metadata?.display_name === "string" &&
+      user.user_metadata.display_name.trim()
+        ? user.user_metadata.display_name.trim()
+        : null,
     needsProfile,
     providers,
     email: user.email ?? "",

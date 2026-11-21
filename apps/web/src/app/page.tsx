@@ -162,7 +162,7 @@ function HomePage({ user }: { user: CurrentUser }) {
   return (
     <section className="card">
       <header className="flex items-start justify-between gap-3">
-        <h1 className="card-title">Hey, {user.name}</h1>
+        <h1 className="card-title">Hey, {user.displayName ?? user.name}</h1>
         <MyTotals userId={user.id} />
       </header>
       {flash && (
