@@ -284,11 +284,16 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   new backblast forms.
 - **Admin** (in the menu for admins only, below Settings; needs a connection): **People** (search
   everyone by name or email; change a name, still one per region, on their profile and account;
-  change their region; make or remove admins), **Regions** (add, change and remove them, with how
+  change their region; make or remove admins; **Export** their data, the same file as Settings →
+  Your data, and **Import** one into their account, adding what isn't there and keeping what is,
+  with their settings, name and region too if ticked; **Remove from Rocket**, typing REMOVE,
+  which deletes their account and everything they made, not for yourself or another admin),
+  **Regions** (each with its color as on the Exicon and PAX pages; add, change and remove them, with how
   many people have each and its last sync; a removed region's people are asked to choose one
   again, their workouts and backblasts untouched) and **Activity** (every admin change, who made
   it and when, `admin_log`). Admins are the `admins` table; the database checks every change
-  (`is_admin`, `admin_people`, `admin_set_name`, `admin_set_region`, `admin_set_admin`; only
+  (`is_admin`, `admin_people`, `admin_set_name`, `admin_set_region`, `admin_set_admin`,
+  `admin_remove_user`, `admin_export_user`, `admin_import_user`; only
   admins may add, change or remove regions). No one can remove themselves as an admin, and the
   last admin stays. The first admin is added in the SQL Editor:
   `insert into public.admins (user_id) select id from auth.users where email = '…';`. A change to
