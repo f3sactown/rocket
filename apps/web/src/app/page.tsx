@@ -252,7 +252,8 @@ function HomePage({ user }: { user: CurrentUser }) {
                 groups={[
                   {
                     items: lists.workouts,
-                    empty: "No workouts in the last two months.",
+                    empty:
+                      "Nothing in the last two months. Recent shows your workouts dated within the last two months; older ones are under See all.",
                   },
                 ]}
               />
@@ -265,7 +266,8 @@ function HomePage({ user }: { user: CurrentUser }) {
                 groups={[
                   {
                     items: lists.backblasts,
-                    empty: "No backblasts in the last two months.",
+                    empty:
+                      "Nothing in the last two months. Recent shows your backblasts dated within the last two months; older ones are under See all.",
                   },
                 ]}
               />
