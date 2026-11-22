@@ -158,8 +158,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     the workout started, e.g. "48°F (feels like 41°F), overcast, wind 12 mph". Once the workout's
     day has come it fills in on its own (when blank), **Use the weather at the AO** fills it in
     again, and it can be typed over. It's the backblast's own (`backblasts.weather`, not shared
-    with its workout), and the copied text has it in Event Data, below the place
-    (`Conditions: …`). See [Weather](#weather).
+    with its workout), and the copied text has it in Event Data on its own
+    line between the place and Total Attendees (`Weather: …`). When it's blank, the backblast's
+    page and its copied text use the weather at the AO for the workout's time instead. See [Weather](#weather).
   - On a finished backblast's page, **Copy**, **Share** and copying the text on screen all give
     exactly the same text, including the link to its workout. Share sends only that text (no
     separate title), and Copy and Share wait the moment it takes to check the workout is public.

@@ -18,6 +18,7 @@ import {
   type Language,
 } from "@rocket/core";
 import Link from "next/link";
+import { describeWeather, useWorkoutWeather } from "@/lib/weather";
 import { useRouter, useSearchParams } from "next/navigation";
 import { VisibilityNotice } from "@/components/notice-dialog";
 import { Suspense, useEffect, useState } from "react";
@@ -120,6 +121,13 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     result?.backblast?.workoutId,
   );
 
+  // Its Weather line: its own, or when that's blank, the weather at the AO for its time.
+  const found = useWorkoutWeather(
+    result?.backblast && !result.backblast.weather?.trim()
+      ? result.backblast
+      : null,
+  );
+
   async function toggleArchive() {
     setDeleteError(null);
     try {
@@ -134,7 +142,9 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
   if (!result?.backblast)
     return <NotFound what="backblast" error={result?.error} />;
 
-  const { backblast } = result;
+  const backblast = found
+    ? { ...result.backblast, weather: describeWeather(found.weather) }
+    : result.backblast;
   const mine = result.authorId === user.id;
   const text = formatBackblast(backblast, user.language);
   const shared = copyText(backblast, user.language, workoutLink);
