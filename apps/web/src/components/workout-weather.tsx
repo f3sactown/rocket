@@ -22,9 +22,10 @@ export function WorkoutWeather({
   return (
     <p data-weather className={`flex flex-col gap-0.5 text-sm ${className}`}>
       <span className="text-ink-soft">
-        <span className="font-medium text-ink">
-          {found.past ? "Weather" : "Forecast"}:
-        </span>{" "}
+        {/* A forecast says so; what the weather was needs no label. */}
+        {!found.past && (
+          <span className="font-medium text-ink">Forecast: </span>
+        )}
         {describeWeather(found.weather)}
       </span>
       <a

@@ -756,7 +756,7 @@ tested in `packages/core`).
   kept without coordinates and tried again after 30 days; at most 150 are looked up a night. A
   workout at an AO typed by hand (no address from the region's list) has no weather.
 - **Workout page and Run workout:** the forecast at the AO for when it starts, from a week ahead
-  (**Forecast: …**), and once its day is past, what the weather was (**Weather: …**, for up to
+  (**Forecast: …**), and once its day is past, what the weather was (no label, for up to
   three months). The last one found is kept on the phone for offline use.
 - **Backblast:** its **Conditions** line (see above).
 - **Day-before reminder:** the forecast, added to the notification.
