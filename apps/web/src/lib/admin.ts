@@ -9,6 +9,7 @@
 import { useAuth } from "@/components/auth-provider";
 import { isTakenNameError } from "./regions";
 import { createClient } from "./supabase/client";
+import type { Json } from "./supabase/database.types";
 import { useLoad } from "./use-region";
 
 const checked = new Map<string, Promise<boolean>>();
@@ -89,6 +90,58 @@ export async function setPersonAdmin(userId: string, admin: boolean) {
   return error ? problem(error) : null;
 }
 
+/** Removes someone and everything they made; an error message if it can't be done. */
+export async function removePerson(userId: string) {
+  const { error } = await createClient().rpc("admin_remove_user", {
+    p_user: userId,
+  });
+  return error ? problem(error) : null;
+}
+
+/** Someone's data as an export file (as Settings → Your data makes), downloaded. */
+export async function exportPerson(person: Person): Promise<string | null> {
+  const { data, error } = await createClient().rpc("admin_export_user", {
+    p_user: person.id,
+  });
+  if (error) return problem(error);
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  const slug = person.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  link.download = `rocket-export-${slug}-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return null;
+}
+
+export interface PersonImport {
+  added: number;
+  kept: number;
+  failed: string[];
+}
+
+/**
+ * Brings an export file into someone's account: what isn't there is added, what's theirs already
+ * is kept; with `settings`, their settings, name and region come from it too.
+ */
+export async function importPerson(
+  userId: string,
+  data: unknown,
+  settings: boolean,
+): Promise<PersonImport> {
+  const { data: result, error } = await createClient().rpc(
+    "admin_import_user",
+    { p_user: userId, p_data: data as Json, p_settings: settings },
+  );
+  if (error) throw new Error(problem(error));
+  return result as unknown as PersonImport;
+}
+
 export interface LogEntry {
   id: number;
   at: string;
@@ -132,6 +185,12 @@ export function describe(entry: LogEntry): string {
       return `Changed a name to ${entry.target}${d.from ? ` (was ${String(d.from)})` : ""}`;
     case "region_set":
       return `Set ${entry.target}'s region to ${String(d.region ?? "")}`;
+    case "user_removed":
+      return `Removed ${entry.target} from Rocket, with everything they made`;
+    case "data_exported":
+      return `Exported ${entry.target}'s data`;
+    case "data_imported":
+      return `Imported data into ${entry.target}'s account (${String(d.added ?? 0)} added, ${String(d.kept ?? 0)} already there${d.failed ? `, ${String(d.failed)} failed` : ""}${d.settings ? ", settings too" : ""})`;
     case "admin_added":
       return `Made ${entry.target} an admin`;
     case "admin_removed":

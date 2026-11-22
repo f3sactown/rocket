@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  AuthorLink,
+  AUTHOR_ORG_COLUMNS,
+  orgOf,
+  regionOf,
+  TitleMeta,
+} from "@/components/author-link";
 import { isOffline } from "@/lib/connection";
 import { readPocket } from "@/lib/pocket";
 import { Loading, NotFound } from "@/components/not-found";
@@ -10,6 +17,7 @@ import {
   formatDate,
   termsFor,
   workoutLinkText,
+  type Language,
   type Workout,
 } from "@rocket/core";
 import Link from "next/link";
@@ -79,6 +87,13 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     workout: Workout | null;
     authorId?: string;
     authorName?: string;
+    authorOrg?: Language;
+    authorRegion?: string | null;
+    originalAuthor?: {
+      name: string;
+      region_scope?: string | null;
+      region?: { name: string; language: string } | null;
+    };
     /** Who wrote the first workout in a chain of reuses, when that's someone else. */
     originalAuthorName?: string;
     status?: string;
@@ -86,9 +101,15 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
   } | null>(null);
   // The Q's private notes, readable only by the workout's author.
   const [notes, setNotes] = useState("");
-  // Backblasts you've already written from this workout.
+  // Backblasts written from this workout: yours, and others' finished ones you can read.
   const [backblasts, setBackblasts] = useState<
-    { id: string; title: string; status: string; date: string | null }[]
+    {
+      id: string;
+      title: string;
+      status: string;
+      date: string | null;
+      author_id?: string;
+    }[]
   >([]);
   const [archived, setArchived] = useState<boolean | null>(null);
   const [stats, setStats] = useState<WorkoutStats>(NO_STATS);
@@ -104,7 +125,7 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
     // By its link: a public workout dated after today opens here though it isn't listed yet.
     workoutById<WorkoutRow & { author?: { name: string } | null }>(
       id,
-      "*, author:profiles!workouts_author_id_fkey(name), original_author:profiles!workouts_original_author_id_fkey(name, region:regions!profiles_region_id_fkey(name))",
+      `*, author:profiles!workouts_author_id_fkey(name, ${AUTHOR_ORG_COLUMNS}), original_author:profiles!workouts_original_author_id_fkey(name, region_scope, region:regions!profiles_region_id_fkey(name, language))`,
     ).then(({ data, error }) => {
       if (data?.author_id === user.id) loadWorkoutNotes(data.id).then(setNotes);
       if (data) setVisibilityState(data.visibility ?? "public");
@@ -113,6 +134,24 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         authorId: data?.author_id,
         authorName: (data as { author?: { name: string } } | null)?.author
           ?.name,
+        authorOrg: orgOf(
+          (data as { author?: Parameters<typeof orgOf>[0] } | null)?.author,
+        ),
+        authorRegion: regionOf(
+          (data as { author?: Parameters<typeof regionOf>[0] } | null)?.author,
+        ),
+        originalAuthor:
+          data?.original_author_id && data.original_author_id !== data.author_id
+            ? ((
+                data as {
+                  original_author?: {
+                    name: string;
+                    region_scope?: string | null;
+                    region?: { name: string; language: string } | null;
+                  } | null;
+                }
+              ).original_author ?? undefined)
+            : undefined,
         originalAuthorName:
           data?.original_author_id && data.original_author_id !== data.author_id
             ? originalAuthor(
@@ -145,11 +184,12 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
         ),
       );
     else
+      // Yours from this workout (drafts too), and the finished ones others can read.
       supabase
         .from("backblasts")
-        .select("id, title, status, date")
+        .select("id, title, status, date, author_id")
         .eq("workout_id", id)
-        .eq("author_id", user.id)
+        .or(`author_id.eq.${user.id},status.eq.published`)
         .then(({ data }) => setBackblasts(data ?? []));
     loadWorkoutStats([id]).then(
       (all) => setStats(all.get(id) ?? NO_STATS),
@@ -195,27 +235,45 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
   const shown = formatBackblast({ ...workout, notes }, user.language);
   return (
     <article className="card">
-      <header className="flex items-start justify-between gap-4">
-        <h1 className="card-title">{workout.title}</h1>
-        {result.authorName && (
-          <span className="status mt-2 shrink-0" title="Written by">
-            {result.authorName}
+      <h1 className="card-title">{workout.title}</h1>
+      {/* Who wrote it and their region on the left; the AO and date on the right. */}
+      <TitleMeta
+        author={
+          result.authorName
+            ? {
+                name: result.authorName,
+                org: result.authorOrg ?? user.language,
+                region: result.authorRegion,
+              }
+            : null
+        }
+        ao={workout.ao}
+        date={formatDate(workout.date)}
+      >
+        {result.originalAuthorName && (
+          <span className="mt-1 text-ink-soft">
+            Originally by{" "}
+            {result.originalAuthor ? (
+              <AuthorLink
+                name={result.originalAuthor.name}
+                org={orgOf(result.originalAuthor) ?? user.language}
+                className="font-medium text-ink underline decoration-accent/70 decoration-2 underline-offset-4 hover:decoration-accent"
+              />
+            ) : (
+              <span className="font-medium text-ink">
+                {result.originalAuthorName}
+              </span>
+            )}
+            {result.originalAuthor && regionOf(result.originalAuthor) && (
+              <span className="text-muted">
+                {" "}
+                · {regionOf(result.originalAuthor)}
+              </span>
+            )}
           </span>
         )}
-      </header>
-      {result.originalAuthorName && (
-        <p className="-mt-2 text-sm text-ink-soft">
-          Originally by{" "}
-          <span className="font-medium text-ink">
-            {result.originalAuthorName}
-          </span>
-        </p>
-      )}
-
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-ink">{workout.ao}</span>
-        <span className="text-ink-soft">{formatDate(workout.date)}</span>
-      </div>
+      </TitleMeta>
+      {/* The weather there, its credit below it. */}
       <WorkoutWeather workout={workout} className="-mt-2" />
       <div className="-mt-2 flex flex-wrap items-center justify-between gap-3">
         <WorkoutStatsBar
@@ -333,7 +391,9 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
       {mine &&
         (() => {
           // One backblast per workout: open yours if you've started it.
-          const existing = backblasts[0];
+          const existing = backblasts.find(
+            (b) => !b.author_id || b.author_id === user.id,
+          );
           if (!existing && isUpcoming(workout.date))
             return <BackblastNotYet date={workout.date!} />;
           const href = !existing
@@ -354,6 +414,21 @@ function WorkoutDetail({ user }: { user: CurrentUser }) {
                   ? "Continue your backblast"
                   : "Open your backblast"}
             </Link>
+          );
+        })()}
+      {/* Someone else's workout: its backblast, once they've finished it. */}
+      {!mine &&
+        (() => {
+          const theirs = backblasts.find(
+            (b) => b.status === "published" && b.author_id !== user.id,
+          );
+          return (
+            theirs && (
+              <Link href={`/backblast?id=${theirs.id}`} className="btn w-full">
+                <ArrowIcon />
+                Read backblast
+              </Link>
+            )
           );
         })()}
     </article>

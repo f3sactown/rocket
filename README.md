@@ -13,7 +13,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   updated), **Today's workouts** (your finished workouts dated today, by start time; tap one to
   run it; each drops off an hour after its end time, and the section hides when none are left), your drafts, **Future workouts** (your finished workouts dated after today, soonest
   first; Recent workouts then keeps to today and earlier), trending workouts, and your most recent
-  workouts and backblasts. Drafts and your workouts and backblasts are listed by workout date, the
+  workouts and backblasts (**Recent workouts** and **Recent backblasts**: your finished ones, not
+  archived, dated within the last two months, the 5 newest of each; See all → has the rest; with none that recent, the section says so and
+  that older ones are under See all). Drafts and your workouts and backblasts are listed by workout date, the
   most recent on top (undated ones last), here and on the Workouts and Backblasts pages, as are the Archive, Search results, PAX profiles, Discover's Newest and New backblast's choice of workout. Which of
   these show is chosen in Settings → Home screen (all but trending, to start).
   At the top right, next to "Hey, …", a heart and a reuse icon show the likes and reuses your
@@ -42,6 +44,14 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     choose again. Each workout shows how many times it's been reused by other Qs (counting archived copies; reusing your own doesn't count, just as you can't like your own).
     A reused workout credits the Q who wrote the first one (`workouts.original_author_id`), even
     when it's a reuse of a reuse: its page shows "Originally by" them and their region.
+  - **Under the title**, in two columns: on the left "by Tinman" (the name opening their
+    profile) with their region below (and "Originally by …" for a reuse); on the right the AO with
+    the date below (`TitleMeta`). A workout's forecast follows, with "Weather by Open-Meteo" below
+    it; a backblast's PAX, FNGs and Downrange counts follow.
+  - **Authors link to their profiles:** the author's name (and "Originally by …"'s) is underlined
+    in the accent color and opens that PAX's profile (`AuthorLink`: by name and their region's
+    organization; yours too; just the name offline). The Q's name in the text stays
+    plain. Someone else's workout ends with **Read backblast** once they've finished it.
   - A finished workout is **public** by default (Settings → Sharing can make new ones start
     private): anyone signed in can see, like and reuse it. Its Q
     can make it **private** on its page: it disappears for everyone else (Discover, Trending, lists
@@ -125,9 +135,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   in both, and a change to either is made to the other (the backblast's Workout page says so). Its pages are Workout, Notes, Name-o-rama (Qs and
   PAX, with roster suggestions and the AO's regulars), Announcements (optional; the backblast's own, not
   copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
-  and Share are on the finished backblast's page). On a finished backblast's page, **From a
-  workout →** sits left of the Public / Private switch (where a workout shows its likes and
-  reuses); Copy, Share and Edit share one row, with **Close** (back to Home) below, and beside it
+  and Share are on the finished backblast's page). On a finished backblast's page, the Public /
+  Private switch sits on the right below the counts (its workout is reached by **Open workout**
+  at the bottom); Copy, Share and Edit share one row, with **Close** (back to Home) below, and beside it
   **Open workout** when the backblast has a workout.
   - **Linking to a workout:** a backblast without a workout links on its own to its Q's one
     finished workout at the same AO on the same date (ignoring case and spaces) that has no
@@ -282,11 +292,16 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   new backblast forms.
 - **Admin** (in the menu for admins only, below Settings; needs a connection): **People** (search
   everyone by name or email; change a name, still one per region, on their profile and account;
-  change their region; make or remove admins), **Regions** (add, change and remove them, with how
+  change their region; make or remove admins; **Export** their data, the same file as Settings →
+  Your data, and **Import** one into their account, adding what isn't there and keeping what is,
+  with their settings, name and region too if ticked; **Remove from Rocket**, typing REMOVE,
+  which deletes their account and everything they made, not for yourself or another admin),
+  **Regions** (each with its color as on the Exicon and PAX pages; add, change and remove them, with how
   many people have each and its last sync; a removed region's people are asked to choose one
   again, their workouts and backblasts untouched) and **Activity** (every admin change, who made
   it and when, `admin_log`). Admins are the `admins` table; the database checks every change
-  (`is_admin`, `admin_people`, `admin_set_name`, `admin_set_region`, `admin_set_admin`; only
+  (`is_admin`, `admin_people`, `admin_set_name`, `admin_set_region`, `admin_set_admin`,
+  `admin_remove_user`, `admin_export_user`, `admin_import_user`; only
   admins may add, change or remove regions). No one can remove themselves as an admin, and the
   last admin stays. The first admin is added in the SQL Editor:
   `insert into public.admins (user_id) select id from auth.users where email = '…';`. A change to
@@ -335,7 +350,7 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   mailer and standard template, no custom SMTP needed). The link opens `/reset-password` on any
   device, signed in for the reset, where you choose a new password. Supabase → Authentication →
   URL Configuration must have the site as the Site URL and under Redirect URLs.
-- **Settings:** name (shown, not changeable: it's set at sign-up), region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words: Warm-o-rama, The Thang, Coffeeteria and Reuse, or Warm-up, The Workout, CoFiA and **R&R** everywhere Rocket says reuse, the copied workout link and the "… R&R'd your workout" notification included (`termsFor` and `inTermsOf` in `@rocket/core`); set by a shared region, so it's
+- **Settings:** a **Display name** in Profile (`display_name` in the account; Home's "Hey, …" only; it starts as and defaults back to your name, and the note under it shows your name in the database, which it doesn't change: that one's set at sign-up), region (right below the profile), email, password, organization (F3 or FiA, which also sets the app's words: Warm-o-rama, The Thang, Coffeeteria and Reuse, or Warm-up, The Workout, CoFiA and **R&R** everywhere Rocket says reuse, the copied workout link and the "… R&R'd your workout" notification included (`termsFor` and `inTermsOf` in `@rocket/core`); set by a shared region, so it's
   locked while you have one, and free to choose with no region or one you added), theme, accent color (Red, Teal, Blue, Green, Orange or Violet; saved to the account as `accent`, so it follows you to every device; the first region you choose sets Red for F3 or Teal for FiA, and later region changes leave it alone), the launch
   animation, what Home shows (every section, Trending included, until you choose),
   swipe directions, and **Sharing**: whether new workouts and new backblasts start public or private,
@@ -741,7 +756,7 @@ tested in `packages/core`).
   kept without coordinates and tried again after 30 days; at most 150 are looked up a night. A
   workout at an AO typed by hand (no address from the region's list) has no weather.
 - **Workout page and Run workout:** the forecast at the AO for when it starts, from a week ahead
-  (**Forecast: …**), and once its day is past, what the weather was (**Weather: …**, for up to
+  (**Forecast: …**), and once its day is past, what the weather was (no label, for up to
   three months). The last one found is kept on the phone for offline use.
 - **Backblast:** its **Conditions** line (see above).
 - **Day-before reminder:** the forecast, added to the notification.

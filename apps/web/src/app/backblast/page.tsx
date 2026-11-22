@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  AUTHOR_ORG_COLUMNS,
+  orgOf,
+  regionOf,
+  TitleMeta,
+} from "@/components/author-link";
 import { isOffline } from "@/lib/connection";
 import { rowOrPocket } from "@/lib/backblast";
 import { readPocket } from "@/lib/pocket";
@@ -9,6 +15,7 @@ import {
   formatBackblast,
   formatDate,
   type Backblast,
+  type Language,
 } from "@rocket/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -57,6 +64,8 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     backblast: Backblast | null;
     authorId?: string;
     authorName?: string;
+    authorOrg?: Language;
+    authorRegion?: string | null;
     status?: string;
     error?: string;
   } | null>(null);
@@ -67,7 +76,9 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
     rowOrPocket("backblast", id, () =>
       createClient()
         .from("backblasts")
-        .select("*, author:profiles!backblasts_author_id_fkey(name)")
+        .select(
+          `*, author:profiles!backblasts_author_id_fkey(name, ${AUTHOR_ORG_COLUMNS})`,
+        )
         .eq("id", id)
         .maybeSingle(),
     ).then(({ data, error }) => {
@@ -76,6 +87,12 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
         backblast: data && fromRow(data),
         authorId: data?.author_id,
         authorName: data?.author?.name,
+        authorOrg: orgOf(
+          (data as { author?: Parameters<typeof orgOf>[0] } | null)?.author,
+        ),
+        authorRegion: regionOf(
+          (data as { author?: Parameters<typeof regionOf>[0] } | null)?.author,
+        ),
         status: data?.status,
         error: error?.message,
       });
@@ -123,52 +140,42 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
   const shared = copyText(backblast, user.language, workoutLink);
   return (
     <article className="card">
-      <header className="flex items-start justify-between gap-4">
-        <h1 className="card-title">{backblast.title}</h1>
-        {result.authorName && (
-          <span className="status mt-2 shrink-0" title="Written by">
-            {result.authorName}
-          </span>
-        )}
-      </header>
+      <h1 className="card-title">{backblast.title}</h1>
+      {/* Who wrote it and their region on the left; the AO and date on the right. */}
+      <TitleMeta
+        author={
+          result.authorName
+            ? {
+                name: result.authorName,
+                org: result.authorOrg ?? user.language,
+                region: result.authorRegion,
+              }
+            : null
+        }
+        ao={backblast.ao}
+        date={formatDate(backblast.date)}
+      />
 
       <CountPanel backblast={backblast} />
-
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-ink">{backblast.ao}</span>
-        <span className="text-ink-soft">{formatDate(backblast.date)}</span>
-      </div>
-      {(backblast.workoutId || (mine && result.status === "published")) && (
-        // Like a workout's likes and reuses, its workout link sits left of Public / Private.
-        <div className="-mt-2 flex items-center justify-between gap-3">
-          {backblast.workoutId ? (
-            <Link
-              href={`/workout?id=${backblast.workoutId}`}
-              className="link text-sm"
-            >
-              From a workout →
-            </Link>
-          ) : (
-            <span />
-          )}
-          {mine && result.status === "published" && (
-            <VisibilitySwitch
-              value={visibility}
-              label="Who can see this backblast"
-              publicHint="Anyone signed in can see it on your PAX profile"
-              onChange={async (next) => {
-                const before = visibility;
-                setVisibilityState(next);
-                setDeleteError(null);
-                try {
-                  await setVisibility(id!, next, "backblast");
-                } catch (error) {
-                  setVisibilityState(before);
-                  setDeleteError((error as Error).message);
-                }
-              }}
-            />
-          )}
+      {mine && result.status === "published" && (
+        // Like a workout's Public / Private, it sits on the right below the counts.
+        <div className="-mt-2 flex items-center justify-end gap-3">
+          <VisibilitySwitch
+            value={visibility}
+            label="Who can see this backblast"
+            publicHint="Anyone signed in can see it on your PAX profile"
+            onChange={async (next) => {
+              const before = visibility;
+              setVisibilityState(next);
+              setDeleteError(null);
+              try {
+                await setVisibility(id!, next, "backblast");
+              } catch (error) {
+                setVisibilityState(before);
+                setDeleteError((error as Error).message);
+              }
+            }}
+          />
         </div>
       )}
       {mine && result.status === "published" && (
