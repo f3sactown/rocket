@@ -157,37 +157,25 @@ function BackblastDetail({ user }: { user: CurrentUser }) {
       />
 
       <CountPanel backblast={backblast} />
-      {(backblast.workoutId || (mine && result.status === "published")) && (
-        // Like a workout's likes and reuses, its workout link sits left of Public / Private.
-        <div className="-mt-2 flex items-center justify-between gap-3">
-          {backblast.workoutId ? (
-            <Link
-              href={`/workout?id=${backblast.workoutId}`}
-              className="link text-sm"
-            >
-              From a workout →
-            </Link>
-          ) : (
-            <span />
-          )}
-          {mine && result.status === "published" && (
-            <VisibilitySwitch
-              value={visibility}
-              label="Who can see this backblast"
-              publicHint="Anyone signed in can see it on your PAX profile"
-              onChange={async (next) => {
-                const before = visibility;
-                setVisibilityState(next);
-                setDeleteError(null);
-                try {
-                  await setVisibility(id!, next, "backblast");
-                } catch (error) {
-                  setVisibilityState(before);
-                  setDeleteError((error as Error).message);
-                }
-              }}
-            />
-          )}
+      {mine && result.status === "published" && (
+        // Like a workout's Public / Private, it sits on the right below the counts.
+        <div className="-mt-2 flex items-center justify-end gap-3">
+          <VisibilitySwitch
+            value={visibility}
+            label="Who can see this backblast"
+            publicHint="Anyone signed in can see it on your PAX profile"
+            onChange={async (next) => {
+              const before = visibility;
+              setVisibilityState(next);
+              setDeleteError(null);
+              try {
+                await setVisibility(id!, next, "backblast");
+              } catch (error) {
+                setVisibilityState(before);
+                setDeleteError((error as Error).message);
+              }
+            }}
+          />
         </div>
       )}
       {mine && result.status === "published" && (
