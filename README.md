@@ -135,9 +135,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   in both, and a change to either is made to the other (the backblast's Workout page says so). Its pages are Workout, Notes, Name-o-rama (Qs and
   PAX, with roster suggestions and the AO's regulars), Announcements (optional; the backblast's own, not
   copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
-  and Share are on the finished backblast's page). On a finished backblast's page, **From a
-  workout →** sits left of the Public / Private switch (where a workout shows its likes and
-  reuses); Copy, Share and Edit share one row, with **Close** (back to Home) below, and beside it
+  and Share are on the finished backblast's page). On a finished backblast's page, the Public /
+  Private switch sits on the right below the counts (its workout is reached by **Open workout**
+  at the bottom); Copy, Share and Edit share one row, with **Close** (back to Home) below, and beside it
   **Open workout** when the backblast has a workout.
   - **Linking to a workout:** a backblast without a workout links on its own to its Q's one
     finished workout at the same AO on the same date (ignoring case and spaces) that has no
