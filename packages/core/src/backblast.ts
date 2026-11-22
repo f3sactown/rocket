@@ -353,7 +353,6 @@ function eventData(backblast: Backblast): string {
       .filter(Boolean)
       .join(" - "),
     location(backblast.address),
-    backblast.weather?.trim() && `Conditions: ${backblast.weather.trim()}`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -361,6 +360,8 @@ function eventData(backblast: Backblast): string {
 
   return blocks(
     where,
+    // The weather at the AO on its own line, between the place and the attendance.
+    backblast.weather?.trim() && `Weather: ${backblast.weather.trim()}`,
     total > 0 && `Total Attendees: ${total}`,
     qs.length > 0 &&
       `${qs.length > 1 ? "Qs" : "Q"}: ${qs.map(mention).join(", ")}`,
