@@ -133,7 +133,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   its workout **shares** it: the title, basics (date, AO, address, time) and sections
   (Introduction, Warm-o-rama, The Thang with its timers and music, Words of Wisdom) are the same
   in both, and a change to either is made to the other (the backblast's Workout page says so). Its pages are Workout, Notes, Name-o-rama (Qs and
-  PAX, with roster suggestions and the AO's regulars), Announcements (optional; the backblast's own, not
+  PAX, with roster suggestions and the AO's regulars; **+ Add PAX**, **+ Add FNG**, **+ Add
+  Downrange** and **+ Add 2.0** each add a row of that kind, and a row's kind can still be changed
+  in its menu), Announcements (optional; the backblast's own, not
   copied from the workout), Coffeeteria (CoFiA in FiA wording) and Review (to check it over; Copy
   and Share are on the finished backblast's page). On a finished backblast's page, the Public /
   Private switch sits on the right below the counts (its workout is reached by **Open workout**
