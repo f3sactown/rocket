@@ -15,6 +15,9 @@ const KIND_LABELS: Record<AttendeeKind, string> = {
   "2.0": "2.0",
 };
 
+/** The add links, most common first. */
+const ADD_ORDER: AttendeeKind[] = ["pax", "fng", "visitor", "2.0"];
+
 /** Editable list of everyone who posted, with the extra detail each kind needs. */
 export function AttendanceInput({
   value,
@@ -42,8 +45,9 @@ export function AttendanceInput({
     return suggestions?.includes(name) ? attendeeFromName(name) : { name };
   }
 
-  function add() {
-    onChange([...value, { name: "", kind: "pax" }]);
+  /** A new row of the given kind, so an FNG or downrange PAX isn't left as PAX by default. */
+  function add(kind: AttendeeKind = "pax") {
+    onChange([...value, { name: "", kind }]);
     // Focus the new row's name once it renders.
     requestAnimationFrame(() =>
       list.current
@@ -69,7 +73,7 @@ export function AttendanceInput({
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  if (index === value.length - 1) add();
+                  if (index === value.length - 1) add(attendee.kind);
                 }
               }}
               className="input min-w-0 flex-1"
@@ -124,9 +128,19 @@ export function AttendanceInput({
           ))}
         </datalist>
       )}{" "}
-      <button type="button" onClick={add} className="link self-start py-1">
-        <span className="text-accent">＋</span> Add PAX
-      </button>
+      {/* One add link per kind, so the others aren't hidden in the row's menu. */}
+      <div className="flex flex-wrap gap-x-5">
+        {ADD_ORDER.map((kind) => (
+          <button
+            key={kind}
+            type="button"
+            onClick={() => add(kind)}
+            className="link py-1"
+          >
+            <span className="text-accent">＋</span> Add {KIND_LABELS[kind]}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
