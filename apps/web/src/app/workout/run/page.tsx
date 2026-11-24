@@ -59,7 +59,7 @@ function savedSize(): Size {
 
 /**
  * The workout to read from while leading it: the whole plan in a choice of text sizes, with the
- * Q's private notes at the end. The screen is kept awake while it's open, where the browser
+ * Q's private notes first. The screen is kept awake while it's open, where the browser
  * allows.
  */
 function RunWorkout({ user }: { user: CurrentUser }) {
@@ -304,7 +304,9 @@ function RunWorkout({ user }: { user: CurrentUser }) {
           <p className="leading-relaxed whitespace-pre-wrap text-ink-soft">
             <Linkify text={where} />
           </p>
-          <WorkoutWeather workout={workout} className="-mt-4" />
+          <WorkoutWeather workout={workout} className="-mt-4" scaled />
+          {/* The Q's notes first, to have in mind before starting. */}
+          {section("Notes", workout.notes)}
           {section("Introduction", workout.introduction)}
           {section(terms.warmup, workout.warmup)}
           {thangs.length > 0 && (
@@ -324,7 +326,7 @@ function RunWorkout({ user }: { user: CurrentUser }) {
                       href={thang.music.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="btn gap-2 self-start px-4 py-2 text-base"
+                      className="btn gap-[0.5em] self-start px-[1em] py-[0.5em] text-[1em]"
                     >
                       <span aria-hidden>♫</span>
                       {thang.music.title || "Play music"}
@@ -342,7 +344,6 @@ function RunWorkout({ user }: { user: CurrentUser }) {
               ))}
             </section>
           )}
-          {section("Notes", workout.notes)}
           {section(terms.wordsOfWisdom, workout.wordsOfWisdom)}
         </div>
         <div className="flex items-start gap-2">

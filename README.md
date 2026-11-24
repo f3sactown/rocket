@@ -31,7 +31,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - A workout's **Notes** are private to its Q: stored in their own table only the author can read,
     and left out of anything copied or shared.
   - **Run workout** shows the whole workout to lead from (web addresses are clickable links), in Normal, Large or Extra large text, with
-    each timer's countdown and each song as a button (♫ Title ♫) that opens its link. Like a Tabata timer, every stretch (each round's work and rest) ends with
+    each timer's countdown and each song as a button (♫ Title ♫) that opens its link. The weather,
+    song buttons and timers (with their buttons) grow with the text size, each timer spans the
+    card's full width on a phone, and the Q's notes come first, before the Introduction. Like a Tabata timer, every stretch (each round's work and rest) ends with
     short beeps at 3, 2 and 1 seconds left and a long, louder beep at 0. The beeps share one audio context, started by the Start tap, which is what iPhones and iPads need to let a page make sound; there it also asks for "playback" audio, so the beeps sound with the ring/silent switch on silent (Safari 16.4 and later). Starting one timer pauses any other that's running. The timer in use pins to the top
     when scrolled away, and the screen stays awake. A stopwatch shows hundredths of a second. On the
     workout's day, five minutes before the end of its time (or 45 minutes after a start with no

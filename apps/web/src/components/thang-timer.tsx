@@ -218,19 +218,34 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
     count === (timer.type === "stopwatch" ? 0 : (phases[0]?.seconds ?? 0));
   const pause = () => setRunning(false);
   const pinned = active === id && !onScreen && !fresh;
-  const controls = (
-    <span className="ml-auto flex gap-2 text-base">
+  // In its box the buttons follow the text size; pinned to the top they stay a set size.
+  const controls = (scaled: boolean) => (
+    <span
+      className={`ml-auto flex gap-[0.5em] ${scaled ? "text-[1em]" : "text-base"}`}
+    >
       {running ? (
-        <button type="button" onClick={pause} className="btn px-4 py-2">
+        <button
+          type="button"
+          onClick={pause}
+          className="btn px-[1em] py-[0.5em] text-[1em]"
+        >
           {timer.type === "stopwatch" ? "Stop" : "Pause"}
         </button>
       ) : (
-        <button type="button" onClick={start} className="btn px-4 py-2">
+        <button
+          type="button"
+          onClick={start}
+          className="btn px-[1em] py-[0.5em] text-[1em]"
+        >
           {done ? "Again" : fresh ? "Start" : "Resume"}
         </button>
       )}
       {!fresh && !done && (
-        <button type="button" onClick={() => reset()} className="link px-2">
+        <button
+          type="button"
+          onClick={() => reset()}
+          className="link px-[0.5em] text-[0.875em]"
+        >
           Reset
         </button>
       )}
@@ -259,12 +274,13 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
               {done ? "Time!" : shown}
             </span>
           </span>
-          {controls}
+          {controls(false)}
         </div>
       )}
       <div
         ref={box}
-        className={`flex flex-col gap-2 rounded-2xl border px-4 py-3 ${
+        // Edge to edge of the card on a phone; inside its padding on wider screens.
+        className={`-mx-4 flex flex-col gap-[0.4em] rounded-2xl border px-4 py-3 sm:mx-0 ${
           done
             ? "border-accent bg-accent-soft"
             : current?.rest
@@ -286,7 +302,7 @@ export function ThangTimer({ timer, label }: { timer: Timer; label?: string }) {
           >
             {done ? "Time!" : shown}
           </span>
-          {controls}
+          {controls(true)}
         </div>
       </div>
     </>
