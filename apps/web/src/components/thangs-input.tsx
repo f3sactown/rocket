@@ -8,7 +8,7 @@ import {
   type Thang,
   type Timer,
 } from "@rocket/core";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LibraryButton } from "./library-picker";
 
 /** Reads a time typed as minutes ("5") or m:ss ("4:30"); null if it isn't one. */
@@ -28,10 +28,20 @@ export function ThangsInput({
   onChange,
   placeholder,
   minBoxHeight = 96,
+  templates,
 }: {
   value: Thang[];
   onChange: (thangs: Thang[]) => void;
   placeholder: string;
+  /**
+   * Each thang's save and load template buttons, given its text, its name (e.g. "Thang 2") and
+   * how to put a template's text into it.
+   */
+  templates?: (
+    text: string,
+    label: string,
+    load: (body: string) => void,
+  ) => ReactNode;
   /** The least height for each box (down a long page, the screen leaves little room). */
   minBoxHeight?: number;
 }) {
@@ -89,10 +99,16 @@ export function ThangsInput({
           data-thang={index}
           className="flex flex-col gap-2 rounded-xl border border-line p-3"
         >
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-medium text-ink">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="mr-auto text-sm font-medium text-ink">
               {rows.length > 1 ? `Thang ${index + 1}` : "Thang"}
             </span>
+            {/* Its own templates: save this thang, or load one into it. */}
+            {templates?.(
+              thang.text,
+              rows.length > 1 ? `Thang ${index + 1}` : "Thang",
+              (body) => update(index, { text: body }),
+            )}
             {rows.length > 1 && (
               <div className="flex items-center gap-1">
                 <MoveButton

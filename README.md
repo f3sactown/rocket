@@ -184,7 +184,10 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   Introduction also offers a built-in template: **F3 standard** (welcome, the three Fs, mission,
   five core principles, disclaimer and credo) in F3, or **FiA Disclaimer** in FiA. A built-in
   template can be starred as the default too (saved as `builtin_defaults` in the account's
-  metadata); starring one clears the section's other default.
+  metadata); starring one clears the section's other default. In a workout (and a backblast's
+  Workout page), each thang has its own save and load buttons in its header, sharing the Thang's
+  saved templates: save that thang's text, or load a template into it (replacing its text after
+  asking, and keeping its timer and music).
 - **From pickers** (Exicon, PAX, Discover): on a phone, one line of chips that scrolls sideways.
 - **Tutorial:** a step-by-step tour that spotlights one part of the screen at a time, moving
   between pages as it goes. After Home's stats and sections, it walks the user through writing a
