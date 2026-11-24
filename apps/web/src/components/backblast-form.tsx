@@ -406,16 +406,27 @@ export function BackblastForm({
     }));
   }
 
-  /** Loads a saved template into a section; on a workout, a Thang template becomes a new thang. */
+  /** Loads a saved template into a section (a workout's thangs each load their own). */
   function loadTemplate(name: TextKey, body: string) {
-    if (mode === "workout" && name === "thang") {
-      const current = (
-        backblast.thangs ?? [{ text: backblast.thang ?? "" }]
-      ).filter((t) => t.text.trim() || t.timer || t.music);
-      return setThangs([...current, { text: body }]);
-    }
     set(name, body);
   }
+
+  /** A thang's own save and load template buttons, sharing the Thang's saved templates. */
+  const thangTemplates = (
+    text: string,
+    label: string,
+    load: (body: string) => void,
+  ) => (
+    <SectionTemplates
+      userId={userId}
+      section="thang"
+      label={label}
+      body={text}
+      templates={templates}
+      onLoad={load}
+      onTemplatesChange={setTemplates}
+    />
+  );
 
   /**
    * Sets the AO and, for an AO from the region's sheet, adds its location and time, and the next
@@ -661,18 +672,21 @@ export function BackblastForm({
                 }
               />
             )}
-          {step.kind === "text" && !step.noTemplates && (
-            <SectionTemplates
-              userId={userId}
-              section={step.name}
-              label={step.title}
-              body={backblast[step.name] ?? ""}
-              templates={templates}
-              builtIns={step.builtIns}
-              onLoad={(body) => loadTemplate(step.name, body)}
-              onTemplatesChange={setTemplates}
-            />
-          )}
+          {/* The Thang's templates are on each thang, in a workout. */}
+          {step.kind === "text" &&
+            !step.noTemplates &&
+            !(mode === "workout" && step.name === "thang") && (
+              <SectionTemplates
+                userId={userId}
+                section={step.name}
+                label={step.title}
+                body={backblast[step.name] ?? ""}
+                templates={templates}
+                builtIns={step.builtIns}
+                onLoad={(body) => loadTemplate(step.name, body)}
+                onTemplatesChange={setTemplates}
+              />
+            )}
         </div>
         {step.kind === "attendance" && (
           <p className="-mt-2 text-sm text-ink-soft">
@@ -718,6 +732,7 @@ export function BackblastForm({
                     onChange={setThangs}
                     placeholder="The actual workout"
                     minBoxHeight={320}
+                    templates={thangTemplates}
                   />
                 </div>
               ) : (
@@ -744,6 +759,7 @@ export function BackblastForm({
               value={backblast.thangs ?? [{ text: backblast.thang ?? "" }]}
               onChange={setThangs}
               placeholder={step.hint}
+              templates={thangTemplates}
             />
           )}
 
