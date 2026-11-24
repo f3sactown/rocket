@@ -74,7 +74,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
     ("Step 4 of 7 · The Thang"). The last page's button
     is **Done**, which finishes it. The Thang's boxes are all as tall as the screen allows for
     the first while its timer, music and Exicon buttons and "Add another thang" stay in view
-    (worked out once, so adding a thang doesn't shrink the first).
+    (worked out once, so adding a thang doesn't shrink the first). With more than one thang, each
+    has up and down arrows beside its × to move it a place (greyed out at the top and bottom), with
+    its timer and music going with it.
 - **Generate workout** (in the menu under New workout, and from the Workouts page): choose 2 to 5
   of the Exicon's tags, with the same From, All / Exercises / Routines and tag chips as the Exicon,
   and **Generate** puts a workout together at random from them (`generateWorkout` in
