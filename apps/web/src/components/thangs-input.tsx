@@ -66,12 +66,27 @@ export function ThangsInput({
   }, [minBoxHeight]);
   const update = (index: number, patch: Partial<Thang>) =>
     onChange(rows.map((t, i) => (i === index ? { ...t, ...patch } : t)));
+  // Swaps a thang with the one above (-1) or below (+1), keeping it in view as it moves.
+  const list = useRef<HTMLDivElement>(null);
+  const move = (index: number, by: -1 | 1) => {
+    const to = index + by;
+    if (to < 0 || to >= rows.length) return;
+    const next = [...rows];
+    [next[index], next[to]] = [next[to]!, next[index]!];
+    onChange(next);
+    requestAnimationFrame(() =>
+      list.current
+        ?.querySelector<HTMLElement>(`[data-thang="${to}"]`)
+        ?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
+    );
+  };
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <div ref={list} className="flex flex-1 flex-col gap-4">
       {rows.map((thang, index) => (
         <div
           key={index}
+          data-thang={index}
           className="flex flex-col gap-2 rounded-xl border border-line p-3"
         >
           <div className="flex items-center justify-between gap-2">
@@ -79,14 +94,27 @@ export function ThangsInput({
               {rows.length > 1 ? `Thang ${index + 1}` : "Thang"}
             </span>
             {rows.length > 1 && (
-              <button
-                type="button"
-                aria-label={`Remove thang ${index + 1}`}
-                onClick={() => onChange(rows.filter((_, i) => i !== index))}
-                className="link px-2 text-lg"
-              >
-                ×
-              </button>
+              <div className="flex items-center gap-1">
+                <MoveButton
+                  label={`Move thang ${index + 1} up`}
+                  up
+                  disabled={index === 0}
+                  onClick={() => move(index, -1)}
+                />
+                <MoveButton
+                  label={`Move thang ${index + 1} down`}
+                  disabled={index === rows.length - 1}
+                  onClick={() => move(index, 1)}
+                />
+                <button
+                  type="button"
+                  aria-label={`Remove thang ${index + 1}`}
+                  onClick={() => onChange(rows.filter((_, i) => i !== index))}
+                  className="link px-2 text-lg"
+                >
+                  ×
+                </button>
+              </div>
             )}
           </div>
           <textarea
@@ -146,6 +174,43 @@ export function ThangsInput({
 }
 
 /** "＋ Add timer", then a choice of kind, then that kind's settings. */
+/** Moves a thang up or down one place; greyed out at the top or bottom. */
+function MoveButton({
+  label,
+  up = false,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  up?: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="grid h-8 w-8 place-items-center rounded-full border border-line-strong text-ink-soft transition-colors hover:border-accent/60 hover:text-ink disabled:opacity-30 disabled:hover:border-line-strong disabled:hover:text-ink-soft"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        className={`h-4 w-4 ${up ? "" : "rotate-180"}`}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="m6 15 6-6 6 6" />
+      </svg>
+    </button>
+  );
+}
+
 function TimerInput({
   timer,
   onChange,
