@@ -358,7 +358,7 @@ async function censusLookup(address) {
 }
 
 /** Where a place is, from OpenStreetMap (parks and other named places), or null. */
-async function osmLookup(place) {
+async function osmLookup(place, near) {
   // Nominatim asks for no more than one request a second, from a named app.
   await sleep(1100);
   const params = new URLSearchParams({
@@ -367,6 +367,20 @@ async function osmLookup(place) {
     limit: "1",
     countrycodes: "us",
   });
+  // Near the region's other AOs: only within about 80 km of them.
+  if (near) {
+    const d = NEAR_DEGREES;
+    params.set(
+      "viewbox",
+      [
+        near.longitude - d,
+        near.latitude + d,
+        near.longitude + d,
+        near.latitude - d,
+      ].join(","),
+    );
+    params.set("bounded", "1");
+  }
   const response = await fetch(
     `https://nominatim.openstreetmap.org/search?${params}`,
     { headers: { "User-Agent": "Rocket F3 Q planner, AO weather lookup" } },
@@ -378,6 +392,40 @@ async function osmLookup(place) {
   return Number.isFinite(latitude) && Number.isFinite(longitude)
     ? { latitude, longitude }
     : null;
+}
+
+/** How far around a region's AOs (degrees) a place is looked for: about 80 km. */
+const NEAR_DEGREES = 0.75;
+/** Farther than this (km) from the rest of its region's AOs, an AO's place is taken as wrong. */
+const FAR_KM = 100;
+
+/** The distance between two points in km. */
+function kmBetween(a, b) {
+  const rad = Math.PI / 180;
+  const dLat = (b.latitude - a.latitude) * rad;
+  const dLng = (b.longitude - a.longitude) * rad;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.latitude * rad) *
+      Math.cos(b.latitude * rad) *
+      Math.sin(dLng / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
+}
+
+/** The middle of some points (the median of each coordinate, so one far-off point doesn't move it). */
+function middle(points) {
+  if (points.length === 0) return null;
+  const median = (values) => {
+    const sorted = [...values].sort((x, y) => x - y);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2
+      ? sorted[mid]
+      : (sorted[mid - 1] + sorted[mid]) / 2;
+  };
+  return {
+    latitude: median(points.map((p) => p.latitude)),
+    longitude: median(points.map((p) => p.longitude)),
+  };
 }
 
 /** The most addresses looked up in one run (the rest wait for the next night). */
@@ -394,22 +442,28 @@ const LOOKUPS_SINCE = Date.parse("2026-11-25T00:00:00Z");
 /**
  * Where an AO is: a street address (the sheet's own, beside the place's name) from the Census
  * geocoder; otherwise its place's name in its city from OpenStreetMap, or failing that the city
- * itself (near enough for the weather). With no city known, the place's name alone.
+ * itself (near enough for the weather). With no city known, the place's name alone. Once some
+ * of the region's AOs are known, only places near them count ("Galt" is also in Iowa).
  */
-async function locate(address, city, fullStreet) {
+async function locate(address, city, fullStreet, near) {
+  // A street address found far from the region's other AOs is taken as wrong.
+  const census = async (street) => {
+    const found = await censusLookup(street);
+    return found && (!near || kmBetween(found, near) <= FAR_KM) ? found : null;
+  };
   if (fullStreet && /\d/.test(fullStreet) && /,/.test(fullStreet)) {
-    const found = await censusLookup(fullStreet);
+    const found = await census(fullStreet);
     if (found) return found;
   }
   const street = streetAddress(address);
   const inCity = city && !street.toLowerCase().includes(city.toLowerCase());
   return (
-    (/\d/.test(street) && /,/.test(street) && (await censusLookup(street))) ||
+    (/\d/.test(street) && /,/.test(street) && (await census(street))) ||
     (city
-      ? (await osmLookup(inCity ? `${street}, ${city}` : street)) ||
-        (await osmLookup(city))
-      : (await osmLookup(street)) ||
-        (street !== address ? await osmLookup(address) : null))
+      ? (await osmLookup(inCity ? `${street}, ${city}` : street, near)) ||
+        (await osmLookup(city, near))
+      : (await osmLookup(street, near)) ||
+        (street !== address ? await osmLookup(address, near) : null))
   );
 }
 
@@ -417,26 +471,41 @@ async function locate(address, city, fullStreet) {
 async function locateSites(addresses) {
   const known = new Map(
     (
-      await supabase("place_coordinates?select=address,latitude,looked_up_at")
+      await supabase(
+        "place_coordinates?select=address,latitude,longitude,looked_up_at",
+      )
     ).map((p) => [p.address, p]),
   );
-  const wanted = [...addresses.entries()].filter(([key]) => {
+  // The middle of each region's AOs, from where they're already known, to look near.
+  const byRegion = new Map();
+  for (const [key, { region }] of addresses) {
     const kept = known.get(key);
+    if (kept?.latitude == null || kept.longitude == null) continue;
+    byRegion.set(region, [...(byRegion.get(region) ?? []), kept]);
+  }
+  const near = new Map(
+    [...byRegion].map(([region, points]) => [region, middle(points)]),
+  );
+  const wanted = [...addresses.entries()].filter(([key, { region }]) => {
+    const kept = known.get(key);
+    const centre = near.get(region);
     return (
       !kept ||
       Date.parse(kept.looked_up_at) < LOOKUPS_SINCE ||
       (kept.latitude === null &&
-        Date.now() - Date.parse(kept.looked_up_at) > RETRY_MS)
+        Date.now() - Date.parse(kept.looked_up_at) > RETRY_MS) ||
+      // Far from the rest of its region (a same-named place in another state): look again.
+      (kept.latitude !== null && centre && kmBetween(kept, centre) > FAR_KM)
     );
   });
   let found = 0;
-  for (const [key, { address, city, street }] of wanted.slice(
+  for (const [key, { address, city, street, region }] of wanted.slice(
     0,
     MOST_LOOKUPS,
   )) {
     let place = null;
     try {
-      place = await locate(address, city, street);
+      place = await locate(address, city, street, near.get(region));
     } catch (error) {
       console.log(`::warning::Couldn't look up "${address}": ${error.message}`);
       continue;
@@ -463,7 +532,7 @@ const regions = await supabase(
   "regions?select=id,name,sheet_id,config&order=name",
 );
 let failures = 0;
-/** Every AO's address and city, by its key, for looking up where they are. */
+/** Every AO's address, city and region, by its key, for looking up where they are. */
 const siteAddresses = new Map();
 for (const region of regions) {
   try {
@@ -472,6 +541,7 @@ for (const region of regions) {
       if (site.address?.trim())
         siteAddresses.set(placeKey(site.address), {
           address: site.address.trim(),
+          region: region.id,
           ...data.places.get(site.address.trim()),
         });
     await supabase("rpc/replace_region_data", {
