@@ -15,7 +15,10 @@ interface Count {
   people: string[];
 }
 
-/** Everyone counted in each total, labelled as on the backblast (Q, home region, inviter, 2.0). */
+/**
+ * Who's in each total, labelled as on the backblast (Q, home region, inviter, 2.0). Each person is
+ * in one: FNGs and downrange PAX in their own, everyone else (the Qs, PAX and 2.0s) in PAX.
+ */
 function countsFor(backblast: Backblast): Count[] {
   const label = (attendee: Attendee) =>
     isQ(backblast, attendee.name)
@@ -25,7 +28,14 @@ function countsFor(backblast: Backblast): Count[] {
   const ofKind = (kind: Attendee["kind"]) =>
     everyone.filter((attendee) => attendee.kind === kind).map(label);
   return [
-    { label: "PAX", people: everyone.map(label) },
+    {
+      label: "PAX",
+      people: everyone
+        .filter(
+          (attendee) => attendee.kind !== "fng" && attendee.kind !== "visitor",
+        )
+        .map(label),
+    },
     { label: "FNGs", people: ofKind("fng") },
     { label: "Downrange", people: ofKind("visitor") },
   ];
