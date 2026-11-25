@@ -49,7 +49,9 @@ Rocket helps a Q plan a **workout**, run it, and then write and share the **back
   - **Under the title**, in two columns: on the left "by Tinman" (the name opening their
     profile) with their region below (and "Originally by …" for a reuse); on the right the AO with
     the date below (`TitleMeta`). A workout's forecast follows, with "Weather by Open-Meteo" below
-    it; a backblast's PAX, FNGs and Downrange counts follow.
+    it; a backblast's PAX, FNGs and Downrange counts follow (tap one to list who's in it). Each
+    person is in one: FNGs and downrange PAX in their own, the Qs, PAX and 2.0s in PAX, so the three
+    add up to the total. The copied text is unchanged.
   - **Authors link to their profiles:** the author's name (and "Originally by …"'s) is underlined
     in the accent color and opens that PAX's profile (`AuthorLink`: by name and their region's
     organization; yours too; just the name offline). The Q's name in the text stays
