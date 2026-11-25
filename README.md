@@ -764,9 +764,10 @@ tested in `packages/core`).
   geocoder, else the place's name in its city (the Sites tab's **City** column, e.g. "Oak Meadow
   Park, Sacramento") on OpenStreetMap (Nominatim, one request a second), else the city itself.
   Without a city, a park's name alone can land in another state; lookups made before the city was
-  used are redone once. Once some of a region's AOs are known, places are only looked for within
-  about 80 km of them (a city's name like "Galt" is in more than one state), and an AO found more
-  than 100 km from the rest of its region is looked up again. It keeps the coordinates in `place_coordinates`, keyed by the
+  used are redone once. Places are only looked for within about 80 km of the region's known
+  AOs (a city's name like "Galt" is in more than one state): the middle of its own once it has at
+  least 4, else the middle of every region's. An AO found more than 100 km from there is looked up
+  again. It keeps the coordinates in `place_coordinates`, keyed by the
   address trimmed and in lower case (readable by anyone signed in). One that can't be found is
   kept without coordinates and tried again after 30 days; at most 150 are looked up a night. A
   workout at an AO typed by hand (no address from the region's list) has no weather.

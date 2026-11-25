@@ -399,6 +399,9 @@ const NEAR_DEGREES = 0.75;
 /** Farther than this (km) from the rest of its region's AOs, an AO's place is taken as wrong. */
 const FAR_KM = 100;
 
+/** How many of its AOs' places a region needs known before they say where it is. */
+const MIN_OWN_PLACES = 4;
+
 /** The distance between two points in km. */
 function kmBetween(a, b) {
   const rad = Math.PI / 180;
@@ -476,19 +479,25 @@ async function locateSites(addresses) {
       )
     ).map((p) => [p.address, p]),
   );
-  // The middle of each region's AOs, from where they're already known, to look near.
+  // Where to look for each region's AOs: the middle of those already known. A region with only a
+  // few known can't be trusted to place itself (two of DryCreek's three were found in Galt, Iowa),
+  // so it uses the middle of every region's AOs instead.
   const byRegion = new Map();
+  const everywhere = [];
   for (const [key, { region }] of addresses) {
     const kept = known.get(key);
     if (kept?.latitude == null || kept.longitude == null) continue;
     byRegion.set(region, [...(byRegion.get(region) ?? []), kept]);
+    everywhere.push(kept);
   }
-  const near = new Map(
-    [...byRegion].map(([region, points]) => [region, middle(points)]),
-  );
+  const overall = middle(everywhere);
+  const nearOf = (region) => {
+    const points = byRegion.get(region) ?? [];
+    return points.length >= MIN_OWN_PLACES ? middle(points) : overall;
+  };
   const wanted = [...addresses.entries()].filter(([key, { region }]) => {
     const kept = known.get(key);
-    const centre = near.get(region);
+    const centre = nearOf(region);
     return (
       !kept ||
       Date.parse(kept.looked_up_at) < LOOKUPS_SINCE ||
@@ -505,7 +514,7 @@ async function locateSites(addresses) {
   )) {
     let place = null;
     try {
-      place = await locate(address, city, street, near.get(region));
+      place = await locate(address, city, street, nearOf(region));
     } catch (error) {
       console.log(`::warning::Couldn't look up "${address}": ${error.message}`);
       continue;
