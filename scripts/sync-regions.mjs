@@ -6,9 +6,10 @@
  * a compact copy: active AOs with addresses, roster names, each AO's regulars over the last few
  * months, and every PAX's total posts and Qs. The app reads that copy instead of the sheet.
  *
- * Then it looks up where each AO is (from its address) for its weather, once per address: the US
- * Census geocoder, then OpenStreetMap's Nominatim for what that can't find (a park's name), kept
- * in place_coordinates. One that can't be found is tried again after 30 days.
+ * Then it looks up where each AO is for its weather, once per address: its street address (from
+ * the tab's Address column when it has one) with the US Census geocoder, else its place's name in
+ * its city (the tab's City column) with OpenStreetMap's Nominatim, else the city itself; kept in
+ * place_coordinates. One that can't be found is tried again after 30 days.
  *
  * Needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY. The sheets must be shared so anyone with the
  * link can view them. SHEETS_BASE overrides the Google address (for tests).
@@ -137,6 +138,12 @@ async function columns(sheetId, tab, names) {
   return result;
 }
 
+/** Whether a tab has a column with this header. */
+async function hasColumn(sheetId, tab, name) {
+  const { cols } = await query(sheetId, tab, "select * limit 0");
+  return cols.some((c) => c.label.trim().toLowerCase() === name.toLowerCase());
+}
+
 function unique(items, key) {
   const seen = new Map();
   for (const item of items) if (!seen.has(key(item))) seen.set(key(item), item);
@@ -146,6 +153,11 @@ function unique(items, key) {
 async function readRegion({ sheet_id: id, config }) {
   // AOs (sites), leaving out retired ones.
   const { sheet: sitesTab, ...siteNames } = config.sites;
+  // The AO's city, when the tab has a City column: it's what places a park's name on the map.
+  const cityColumn = config.sites.city ?? "City";
+  if (!("city" in config.sites) && !(await hasColumn(id, sitesTab, cityColumn)))
+    delete siteNames.city;
+  else siteNames.city = cityColumn;
   const siteCols = await columns(id, sitesTab, siteNames);
   const siteKeys = Object.keys(siteCols);
   const siteRows = (
@@ -167,6 +179,19 @@ async function readRegion({ sheet_id: id, config }) {
         time: s.time ?? "",
       })),
     (s) => s.name.toLowerCase(),
+  );
+  // What finds each AO on the map, by the address it's shown with (not saved with the AO): its
+  // street address when the tab has one besides the place's name, and its city.
+  const places = new Map(
+    siteRows
+      .filter((s) => s.location || s.address)
+      .map((s) => [
+        (s.location || s.address).trim(),
+        {
+          street: s.location && s.address ? s.address.trim() : "",
+          city: s.city?.trim() ?? "",
+        },
+      ]),
   );
 
   // Roster names, leaving out placeholders such as "Site Closed (Archived)".
@@ -232,7 +257,14 @@ async function readRegion({ sheet_id: id, config }) {
   );
   const latestPostOn = sheetDate(latest.rows[0]?.[0]);
 
-  return { sites, roster, regulars, stats, latestPostOn };
+  return {
+    places,
+    sites,
+    roster,
+    regulars,
+    stats,
+    latestPostOn,
+  };
 }
 
 /**
@@ -353,6 +385,34 @@ const MOST_LOOKUPS = 150;
 /** How long before an address that couldn't be found is tried again. */
 const RETRY_MS = 30 * 24 * 60 * 60 * 1000;
 
+/**
+ * Lookups made before this used a park's name alone, which can land in another state (Oak Meadow
+ * Park, Sacramento was found in Wisconsin); those are looked up again once with the AO's city.
+ */
+const LOOKUPS_SINCE = Date.parse("2026-11-25T00:00:00Z");
+
+/**
+ * Where an AO is: a street address (the sheet's own, beside the place's name) from the Census
+ * geocoder; otherwise its place's name in its city from OpenStreetMap, or failing that the city
+ * itself (near enough for the weather). With no city known, the place's name alone.
+ */
+async function locate(address, city, fullStreet) {
+  if (fullStreet && /\d/.test(fullStreet) && /,/.test(fullStreet)) {
+    const found = await censusLookup(fullStreet);
+    if (found) return found;
+  }
+  const street = streetAddress(address);
+  const inCity = city && !street.toLowerCase().includes(city.toLowerCase());
+  return (
+    (/\d/.test(street) && /,/.test(street) && (await censusLookup(street))) ||
+    (city
+      ? (await osmLookup(inCity ? `${street}, ${city}` : street)) ||
+        (await osmLookup(city))
+      : (await osmLookup(street)) ||
+        (street !== address ? await osmLookup(address) : null))
+  );
+}
+
 /** Looks up where every AO is that isn't known yet, for its weather. */
 async function locateSites(addresses) {
   const known = new Map(
@@ -364,19 +424,19 @@ async function locateSites(addresses) {
     const kept = known.get(key);
     return (
       !kept ||
+      Date.parse(kept.looked_up_at) < LOOKUPS_SINCE ||
       (kept.latitude === null &&
         Date.now() - Date.parse(kept.looked_up_at) > RETRY_MS)
     );
   });
   let found = 0;
-  for (const [key, address] of wanted.slice(0, MOST_LOOKUPS)) {
+  for (const [key, { address, city, street }] of wanted.slice(
+    0,
+    MOST_LOOKUPS,
+  )) {
     let place = null;
     try {
-      const street = streetAddress(address);
-      place =
-        (/\d/.test(street) && (await censusLookup(street))) ||
-        (await osmLookup(street)) ||
-        (street !== address ? await osmLookup(address) : null);
+      place = await locate(address, city, street);
     } catch (error) {
       console.log(`::warning::Couldn't look up "${address}": ${error.message}`);
       continue;
@@ -403,14 +463,17 @@ const regions = await supabase(
   "regions?select=id,name,sheet_id,config&order=name",
 );
 let failures = 0;
-/** Every AO's address, by its key, for looking up where they are. */
+/** Every AO's address and city, by its key, for looking up where they are. */
 const siteAddresses = new Map();
 for (const region of regions) {
   try {
     const data = await readRegion(region);
     for (const site of data.sites)
       if (site.address?.trim())
-        siteAddresses.set(placeKey(site.address), site.address.trim());
+        siteAddresses.set(placeKey(site.address), {
+          address: site.address.trim(),
+          ...data.places.get(site.address.trim()),
+        });
     await supabase("rpc/replace_region_data", {
       p_region: region.id,
       p_sites: data.sites,

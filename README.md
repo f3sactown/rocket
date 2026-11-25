@@ -759,9 +759,12 @@ shown), in °F and mph, for the hour nearest the workout's start (6am for one wi
 helpers are in `supabase/functions/_shared/weather.ts` (used by the app and the push function,
 tested in `packages/core`).
 
-- **Where each AO is:** the nightly region sync looks each AO's address up once: the street
-  address after its name with the US Census geocoder, else the place itself on OpenStreetMap
-  (Nominatim, one request a second). It keeps the coordinates in `place_coordinates`, keyed by the
+- **Where each AO is:** the nightly region sync looks each AO's address up once: its street
+  address (after its name, or the Sites tab's Address column beside a Location) with the US Census
+  geocoder, else the place's name in its city (the Sites tab's **City** column, e.g. "Oak Meadow
+  Park, Sacramento") on OpenStreetMap (Nominatim, one request a second), else the city itself.
+  Without a city, a park's name alone can land in another state; lookups made before the city was
+  used are redone once. It keeps the coordinates in `place_coordinates`, keyed by the
   address trimmed and in lower case (readable by anyone signed in). One that can't be found is
   kept without coordinates and tried again after 30 days; at most 150 are looked up a night. A
   workout at an AO typed by hand (no address from the region's list) has no weather.
