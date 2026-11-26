@@ -180,10 +180,12 @@ export function sendLocalDrafts(user: {
         // Still no connection, or it failed: kept, and tried again next time.
       }
     }
+    // Lists load again only when something reached Rocket (announcing every try reloaded Home's
+    // lists over and over).
+    if (sent > 0) window.dispatchEvent(new Event(LOCAL_DRAFTS_EVENT));
     return sent;
   })().finally(() => {
     sending = null;
-    window.dispatchEvent(new Event(LOCAL_DRAFTS_EVENT));
   });
   return sending;
 }

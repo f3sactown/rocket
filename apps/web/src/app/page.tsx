@@ -303,10 +303,11 @@ function TodaysWorkouts({
   user: CurrentUser;
   reloads: number;
 }) {
-  const workouts = useLoad(
-    () => loadTodaysWorkouts(user.id),
-    [user.id, reloads],
-  );
+  const loaded = useLoad(() => loadTodaysWorkouts(user.id), [user.id, reloads]);
+  // While they load again, the last ones stay up (so the section doesn't blink away and back).
+  const [last, setLast] = useState<typeof loaded.value>(undefined);
+  if (loaded.value && loaded.value !== last) setLast(loaded.value);
+  const workouts = { value: loaded.value ?? last };
   // The time now, updated each minute so workouts drop off on their own.
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
