@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LISTS_CHANGED_EVENT } from "@/lib/backblast-list";
 import { useConnection } from "@/lib/connection";
 import {
@@ -22,12 +22,21 @@ import { useAuth } from "./auth-provider";
 export function DraftSender() {
   const { user } = useAuth();
   const { offline, reconnects } = useConnection();
+  // The latest account details, without starting over each time they're loaded again (a page
+  // kept for offline use refreshes the sign-in, which hands back a new copy).
+  const latest = useRef(user);
   useEffect(() => {
-    if (!user || user.needsProfile || offline) return;
-    void sendLocalDrafts(user);
-    const timer = setInterval(() => void sendLocalDrafts(user), 60_000);
+    latest.current = user;
+  }, [user]);
+  const ready = !!user && !user.needsProfile && !offline;
+  const userId = user?.id;
+  useEffect(() => {
+    if (!ready || !userId) return;
+    const send = () => latest.current && void sendLocalDrafts(latest.current);
+    send();
+    const timer = setInterval(send, 60_000);
     return () => clearInterval(timer);
-  }, [user, offline, reconnects]);
+  }, [ready, userId, reconnects]);
   return null;
 }
 
