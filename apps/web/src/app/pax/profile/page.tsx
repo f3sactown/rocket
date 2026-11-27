@@ -2,6 +2,7 @@
 
 import { termsFor, LANGUAGES, type Language } from "@rocket/core";
 import Link from "next/link";
+import { ShareLinkButton } from "@/components/share-link-button";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { SignedIn, type CurrentUser } from "@/components/auth-provider";
@@ -209,6 +210,14 @@ function PaxProfile({ user }: { user: CurrentUser }) {
             )}
           </Group>
         </>
+      )}
+      {/* This profile's link, for sending to another PAX (they open it once signed in). */}
+      {entry && (
+        <div className="flex justify-center">
+          <ShareLinkButton
+            path={`/pax/profile/?name=${encodeURIComponent(entry.name)}&org=${org}`}
+          />
+        </div>
       )}
     </article>
   );
